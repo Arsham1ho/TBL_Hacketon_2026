@@ -82,7 +82,7 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 
 **Session data:** don't ask for identity details the app already has. Keep only what the active journey needs, delete it when the session ends, and leave unnecessary details out of handoffs.
 
-**LLM provider:** masked text and permitted facts are sent to the OpenAI API. The consent text and Data Receipt must say so.
+**LLM provider:** masked text and permitted facts are sent to the Gemini API. A free-tier key may let Google use that data to improve its products, so a real service would need a paid tier. The consent text and Data Receipt must say so.
 
 ## 6. Fallbacks
 
@@ -126,7 +126,7 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 | Reviewed fallback exists | **Needs review** | Drafted in three languages; Finnish and Swedish need a native speaker |
 | Both teammates approve | Done | Confirmed below |
 
-**Approved by the team** on 7 November 2026, as confirmed by Arsham.
+**Approved by:** Arsham and Mehrab, 7 November 2026.
 
 ## 9. Stage 2 results
 

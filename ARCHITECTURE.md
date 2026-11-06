@@ -38,8 +38,8 @@ SafeStep is one TypeScript web application with one safety engine.
 | **Web app** | Next.js + React | Screens and API routes in one project |
 | **Styling** | Tailwind CSS | Fast, mobile-first UI |
 | **Validation** | Zod | Validates API input and LLM output, and shares types |
-| **LLM** | OpenAI TypeScript SDK | Fact extraction |
-| **Default model** | `gpt-5.4-mini` | Chosen after a 50-case comparison, changed in one setting |
+| **LLM** | Gemini, through the OpenAI TypeScript SDK and Google's compatible endpoint | Fact extraction |
+| **Default model** | `gemini-3.5-flash-lite`, or `gpt-5.4-mini` with only an OpenAI key | Changed in one setting |
 | **Sessions** | In-memory `Map` | No database, and data clears at session end |
 | **Content** | JSON files | Approved text and guidance mapping |
 | **Unit tests** | Vitest | Rules, masking, consent and flows |
@@ -87,7 +87,7 @@ SafeStep is one TypeScript web application with one safety engine.
               LLM adapter      Signal adapter   Handoff adapter
                   │             (simulated)      (simulated)
                   ▼
-             OpenAI API
+             Gemini API
 ```
 
 ---
@@ -110,6 +110,7 @@ SafeStep is one TypeScript web application with one safety engine.
 │   ├── fact-validator.ts    # unquoted facts return to unknown
 │   ├── answer-reader.ts
 │   ├── case.ts              # facts plus answers
+│   ├── language.ts          # detects fi, en or sv from the message
 │   ├── situations.ts        # ordered action-equivalent situations
 │   ├── question-picker.ts
 │   ├── consent-gate.ts
@@ -125,6 +126,8 @@ SafeStep is one TypeScript web application with one safety engine.
 │   └── session-store.ts     # in-memory sessions
 ├── content/
 │   ├── approved-text.json   # stop, fallback and notice text
+│   ├── fact-lines.json      # confirmed facts in fi, en, sv
+│   ├── ui-text.json         # page labels in fi, en, sv
 │   ├── questions.json       # Decision Flip text in fi, en, sv
 │   ├── reasons.json
 │   ├── steps.json
@@ -262,13 +265,14 @@ The reply is untrusted until the Fact Validator has checked it. The keyword extr
 
 | Setting | Value |
 |---|---|
-| **SDK** | `openai` |
-| **Model** | `gpt-5.4-mini`, from `LLM_MODEL` |
+| **SDK** | `openai`, pointed at Gemini when `GEMINI_API_KEY` is set |
+| **Model** | `gemini-3.5-flash-lite`, from `LLM_MODEL` |
 | **Structured output** | Chat Completions strict JSON schema, generated from the `Facts` Zod schema |
 | **Effort** | `low`, because extraction is a simple task |
 | **Timeout** | 8 seconds in the app; use a longer limit for evaluator runs |
 | **Refusals** | A refusal or empty reply throws, and the backstop's facts are used |
-| **Key** | `OPENAI_API_KEY` or `open_ai_api_key`, server side only |
+| **Key** | `GEMINI_API_KEY`, then `OPENAI_API_KEY` or `open_ai_api_key`, server side only |
+| **Rate limit** | The free Gemini tier allows 15 requests a minute on this model. Above that, requests fall back to the keyword extractor |
 
 Scam content can trigger safety filters. A refusal must lead to safe fallback text, not a broken screen.
 
@@ -616,8 +620,10 @@ Fallback text must never say a situation is safe.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `OPENAI_API_KEY` | Server-side LLM access | Optional: without it, the keyword extractor runs alone |
-| `LLM_MODEL` | Extraction model | `gpt-5.4-mini` |
+| `GEMINI_API_KEY` | Server-side LLM access, used first | Optional |
+| `OPENAI_API_KEY` | Server-side LLM access | Optional: with no key at all, the keyword extractor runs alone |
+| `LLM_MODEL` | Extraction model | Depends on the key |
+| `EVAL_CONCURRENCY`, `EVAL_PACE_MS` | Slow evaluator runs for free tiers | `10`, `0` |
 | `LLM_TIMEOUT_MS` | App LLM timeout | `8000` |
 | `SIMSET_DIR` | Dataset location for evaluation | No default |
 | `SESSION_TTL_MINUTES` | Session expiry | `30` |
@@ -626,7 +632,7 @@ Fallback text must never say a situation is safe.
 
 ```bash
 npm install
-cp .env.example .env.local   # add OPENAI_API_KEY and SIMSET_DIR
+cp .env.example .env.local   # add GEMINI_API_KEY and SIMSET_DIR
 npm run dev                  # http://localhost:3000
 npm test
 npm run eval:dev             # keyword extractor, or USE_LLM=1 for the LLM

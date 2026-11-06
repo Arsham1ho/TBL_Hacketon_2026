@@ -7,6 +7,7 @@ import { assess, intake, type Assessment } from "@/engine/assess";
 import { questionText, reasonText } from "@/engine/composer";
 import { confidenceBand } from "@/engine/confidence";
 import { fallbackScreen, stopScreen } from "@/engine/fallback";
+import { detectLanguage } from "@/engine/language";
 import type { Case } from "@/engine/case";
 import { Audience, Language, Topic } from "@/engine/types";
 
@@ -16,7 +17,7 @@ const MAX_TEXT = 10_000;
 
 const Start = z.strictObject({
   audience: Audience,
-  language: Language,
+  language: z.union([Language, z.literal("auto")]),
   message: z.string().trim().min(1).max(MAX_TEXT),
   incident: z.string().max(MAX_TEXT).optional(),
 });
@@ -31,6 +32,7 @@ function present(sessionId: string, item: Case, result: Assessment, extractedBy:
   const { decision, outcome, composed, flip } = result;
   return {
     sessionId,
+    language,
     extractedBy,
     notice: approved.prototypeNotice[language],
     secretWarning: secretFound ? approved.secretWarning[language] : null,
@@ -76,7 +78,8 @@ export async function POST(request: Request) {
   const start = Start.safeParse(body);
   if (!start.success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
 
-  const { audience, language, message, incident } = start.data;
+  const { audience, message, incident } = start.data;
+  const language = start.data.language === "auto" ? detectLanguage(message) : start.data.language;
   const useLlm = llmAvailable();
   try {
     const { item, secretsFound, extractedBy } = await intake(
@@ -96,7 +99,7 @@ export async function POST(request: Request) {
     const sessionId = createSession({ item, asked: 0, extractedBy: label, secretFound });
     return NextResponse.json(present(sessionId, item, assess(item), label, secretFound));
   } catch {
-    return NextResponse.json({ fallback: fallbackScreen("service_unavailable", language) });
+    return NextResponse.json({ language, fallback: fallbackScreen("service_unavailable", language) });
   }
 }
 

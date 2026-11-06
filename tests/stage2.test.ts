@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import approved from "../content/approved-text.json";
+import lines from "../content/fact-lines.json";
 import questions from "../content/questions.json";
 import reasons from "../content/reasons.json";
 import steps from "../content/steps.json";
+import ui from "../content/ui-text.json";
 import { readAnswerOffline } from "../engine/answer-reader";
 import { assess, intake, withinContract, type CaseInput } from "../engine/assess";
 import { withAnswer, type Case } from "../engine/case";
@@ -11,6 +13,7 @@ import { reasonKeyFor } from "../engine/composer";
 import { confidenceBand } from "../engine/confidence";
 import { checkDecision } from "../engine/contract";
 import { mergeFacts, validateFacts } from "../engine/fact-validator";
+import { detectLanguage } from "../engine/language";
 import { offlineExtract } from "../engine/offline-extractor";
 import { decide, differs, pickFlip, worstCase } from "../engine/question-picker";
 import { SITUATIONS } from "../engine/situations";
@@ -350,6 +353,41 @@ describe("reading real sentences", () => {
 
   it("reads a QR code as something other than a security code", () => {
     expect(extract("Scan the QR code").asksFor).not.toContain("code");
+  });
+});
+
+describe("languages", () => {
+  it.each([
+    ["Sain tekstiviestin ja en tiedä mitä tehdä", "fi"],
+    ["apua", "fi"],
+    ["Jag fick ett sms och vet inte vad jag ska göra", "sv"],
+    ["hjälp", "sv"],
+    ["I got a text and I don't know what to do", "en"],
+    ["help", "en"],
+  ] as const)("detects the language of %s", (text, language) => {
+    expect(detectLanguage(text)).toBe(language);
+  });
+
+  it("uses the fallback when it can't tell", () => {
+    expect(detectLanguage("12345", "sv")).toBe("sv");
+  });
+
+  it.each(Language.options)("has every page label in %s", (language) => {
+    for (const entry of Object.values(ui)) expect(entry[language].length).toBeGreaterThan(0);
+  });
+
+  it.each(["fi", "sv"] as const)("writes confirmed facts in %s", (language) => {
+    const start = withAnswer(item({ userAlreadyDid: ["opened_link"], asksFor: ["money"] }, { language }), "card_details_entered", "no");
+    const [fact] = assess(start).confirmedFacts;
+    expect(fact.text).toBe(lines.topics.card_details_entered.no[language]);
+    expect(fact.text).not.toMatch(/\b(the|were|was|no)\b/i);
+  });
+
+  it.each(["fi", "sv"] as const)("keeps %s through the full reply", (language) => {
+    const start = withAnswer(item({ incidentType: "ransomware" }, { language }), "code_shared", "no");
+    const { composed, confirmedFacts } = assess(start);
+    const text = [composed.adviceText, ...composed.steps, ...confirmedFacts.map((fact) => fact.text)].join(" ");
+    expect(text).not.toMatch(/\b(the|your|and|do not)\b/i);
   });
 });
 

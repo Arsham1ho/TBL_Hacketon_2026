@@ -1,0 +1,124 @@
+{
+  "topics": {
+    "self_initiated": {
+      "yes": {
+        "en": "The user did this themselves.",
+        "fi": "Käyttäjä teki tämän itse.",
+        "sv": "Användaren gjorde detta själv."
+      },
+      "no": {
+        "en": "The user did not do this.",
+        "fi": "Käyttäjä ei tehnyt tätä.",
+        "sv": "Användaren gjorde inte detta."
+      }
+    },
+    "code_shared": {
+      "yes": {
+        "en": "A code was shared.",
+        "fi": "Koodi jaettiin.",
+        "sv": "En kod delades."
+      },
+      "no": {
+        "en": "No code was shared.",
+        "fi": "Koodia ei jaettu.",
+        "sv": "Ingen kod delades."
+      }
+    },
+    "card_details_entered": {
+      "yes": {
+        "en": "Card details were entered.",
+        "fi": "Korttitiedot syötettiin.",
+        "sv": "Kortuppgifter angavs."
+      },
+      "no": {
+        "en": "No card details were entered.",
+        "fi": "Korttitietoja ei syötetty.",
+        "sv": "Inga kortuppgifter angavs."
+      }
+    },
+    "credentials_entered": {
+      "yes": {
+        "en": "Login details were entered.",
+        "fi": "Kirjautumistiedot syötettiin.",
+        "sv": "Inloggningsuppgifter angavs."
+      },
+      "no": {
+        "en": "No login details were entered.",
+        "fi": "Kirjautumistietoja ei syötetty.",
+        "sv": "Inga inloggningsuppgifter angavs."
+      }
+    },
+    "payment_status": {
+      "yes": {
+        "en": "The payment was sent.",
+        "fi": "Maksu lähetettiin.",
+        "sv": "Betalningen skickades."
+      },
+      "no": {
+        "en": "The payment was not sent.",
+        "fi": "Maksua ei lähetetty.",
+        "sv": "Betalningen skickades inte."
+      }
+    },
+    "money_transferred": {
+      "yes": {
+        "en": "Money was moved.",
+        "fi": "Rahaa siirrettiin.",
+        "sv": "Pengar fördes över."
+      },
+      "no": {
+        "en": "No money was moved.",
+        "fi": "Rahaa ei siirretty.",
+        "sv": "Inga pengar fördes över."
+      }
+    },
+    "app_installed": {
+      "yes": {
+        "en": "Something was installed.",
+        "fi": "Jotain asennettiin.",
+        "sv": "Något installerades."
+      },
+      "no": {
+        "en": "Nothing was installed.",
+        "fi": "Mitään ei asennettu.",
+        "sv": "Inget installerades."
+      }
+    },
+    "remote_access_given": {
+      "yes": {
+        "en": "Remote access was given.",
+        "fi": "Etäyhteys annettiin.",
+        "sv": "Fjärråtkomst gavs."
+      },
+      "no": {
+        "en": "No remote access was given.",
+        "fi": "Etäyhteyttä ei annettu.",
+        "sv": "Ingen fjärråtkomst gavs."
+      }
+    },
+    "user_safety": {
+      "yes": {
+        "en": "The user says they are safe now.",
+        "fi": "Käyttäjä kertoo olevansa nyt turvassa.",
+        "sv": "Användaren säger sig vara trygg nu."
+      },
+      "no": {
+        "en": "The user says they are not safe now.",
+        "fi": "Käyttäjä kertoo, ettei ole nyt turvassa.",
+        "sv": "Användaren säger sig inte vara trygg nu."
+      }
+    }
+  },
+  "signals": {
+    "linkFlagged": {
+      "en": "The link check flagged this link.",
+      "fi": "Linkkitarkistus merkitsi tämän linkin.",
+      "sv": "Länkkontrollen flaggade länken."
+    },
+    "callWarned": {
+      "en": "The network warned about this call.",
+      "fi": "Verkko varoitti tästä puhelusta.",
+      "sv": "Nätet varnade för det här samtalet."
+    }
+  }
+}

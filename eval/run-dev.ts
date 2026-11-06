@@ -16,7 +16,9 @@ const all = readFileSync(join(simsetDir, casesFile), "utf8").split("\n").filter(
 // An even spread across scenarios, so a small run still covers every journey.
 const rows = limit ? all.filter((_, index) => index % Math.floor(all.length / Number(limit)) === 3).slice(0, Number(limit)) : all;
 
-const CONCURRENCY = 10;
+// Free API tiers allow only a few requests a minute, so runs can be paced.
+const CONCURRENCY = Number(process.env.EVAL_CONCURRENCY ?? 10);
+const PACE_MS = Number(process.env.EVAL_PACE_MS ?? 0);
 const answers: string[] = new Array(rows.length);
 let next = 0;
 let fellBack = 0;
@@ -28,6 +30,7 @@ await Promise.all(
       const index = next++;
       const { item, extractedBy } = await intake(toCaseInput(rows[index]), extract);
       if (extractedBy === "fallback") fellBack += 1;
+      if (PACE_MS > 0) await new Promise((resolve) => setTimeout(resolve, PACE_MS));
       answers[index] = JSON.stringify(toSubmission(rows[index], item, assess(item)));
     }
   }),

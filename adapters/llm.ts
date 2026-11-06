@@ -38,12 +38,14 @@ const SCHEMA = (() => {
   return schema;
 })();
 
-function apiKey(): string | undefined {
-  return process.env.OPENAI_API_KEY || process.env.open_ai_api_key;
-}
+// Gemini is used through Google's OpenAI-compatible endpoint, and wins if both keys are set.
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
-export const llmAvailable = () => Boolean(apiKey());
-export const llmModel = () => process.env.LLM_MODEL || "gpt-5.4-mini";
+const geminiKey = () => process.env.GEMINI_API_KEY;
+const openAiKey = () => process.env.OPENAI_API_KEY || process.env.open_ai_api_key;
+
+export const llmAvailable = () => Boolean(geminiKey() || openAiKey());
+export const llmModel = () => process.env.LLM_MODEL || (geminiKey() ? "gemini-3.5-flash-lite" : "gpt-5.4-mini");
 
 let client: OpenAI | null = null;
 
@@ -51,14 +53,18 @@ export type LlmOptions = { timeoutMs?: number; model?: string };
 
 // Throws on a timeout, a refusal or a bad reply. The caller falls back safely.
 export async function extractFacts(input: ExtractionInput, options: LlmOptions = {}): Promise<unknown> {
-  client ??= new OpenAI({ apiKey: apiKey(), maxRetries: 1 });
+  client ??= new OpenAI({
+    apiKey: geminiKey() || openAiKey(),
+    baseURL: geminiKey() ? GEMINI_BASE_URL : undefined,
+    maxRetries: 1,
+  });
   const model = options.model ?? llmModel();
   const timeout = options.timeoutMs ?? Number(process.env.LLM_TIMEOUT_MS ?? 8000);
 
   const response = await client.chat.completions.create(
     {
       model,
-      ...(model.startsWith("gpt-5") ? { reasoning_effort: "low" as const } : { temperature: 0 }),
+      ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {

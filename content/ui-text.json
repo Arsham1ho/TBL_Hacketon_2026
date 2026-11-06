@@ -1,0 +1,172 @@
+{
+  "banner": {
+    "en": "Synthetic prototype. Not a live DNA service. This is a temporary test page for Stages 1 and 2.",
+    "fi": "Synteettinen prototyyppi. Ei toimiva DNA:n palvelu. Tämä on väliaikainen testisivu vaiheille 1 ja 2.",
+    "sv": "Syntetisk prototyp. Inte en aktiv DNA-tjänst. Det här är en tillfällig testsida för steg 1 och 2."
+  },
+  "whatHappened": {
+    "en": "What happened?",
+    "fi": "Mitä tapahtui?",
+    "sv": "Vad hände?"
+  },
+  "received": {
+    "en": "Message you received (optional)",
+    "fi": "Saamasi viesti (valinnainen)",
+    "sv": "Meddelandet du fick (valfritt)"
+  },
+  "language": {
+    "en": "Language",
+    "fi": "Kieli",
+    "sv": "Språk"
+  },
+  "auto": {
+    "en": "Detect automatically",
+    "fi": "Tunnista automaattisesti",
+    "sv": "Identifiera automatiskt"
+  },
+  "user": {
+    "en": "User",
+    "fi": "Käyttäjä",
+    "sv": "Användare"
+  },
+  "consumer": {
+    "en": "Consumer",
+    "fi": "Kuluttaja",
+    "sv": "Konsument"
+  },
+  "smallBusiness": {
+    "en": "Small business",
+    "fi": "Pienyritys",
+    "sv": "Småföretag"
+  },
+  "check": {
+    "en": "Check this",
+    "fi": "Tarkista",
+    "sv": "Kontrollera"
+  },
+  "checking": {
+    "en": "Checking…",
+    "fi": "Tarkistetaan…",
+    "sv": "Kontrollerar…"
+  },
+  "failed": {
+    "en": "Something went wrong. Please try again, or talk to a person.",
+    "fi": "Jokin meni vikaan. Yritä uudelleen tai puhu ihmisen kanssa.",
+    "sv": "Något gick fel. Försök igen eller prata med en person."
+  },
+  "startAgain": {
+    "en": "Start again",
+    "fi": "Aloita alusta",
+    "sv": "Börja om"
+  },
+  "why": {
+    "en": "Why:",
+    "fi": "Miksi:",
+    "sv": "Varför:"
+  },
+  "yes": {
+    "en": "Yes",
+    "fi": "Kyllä",
+    "sv": "Ja"
+  },
+  "no": {
+    "en": "No",
+    "fi": "Ei",
+    "sv": "Nej"
+  },
+  "notSure": {
+    "en": "Not sure",
+    "fi": "En ole varma",
+    "sv": "Inte säker"
+  },
+  "howDecided": {
+    "en": "How the engine decided",
+    "fi": "Näin moottori päätti",
+    "sv": "Så beslutade motorn"
+  },
+  "factsReadBy": {
+    "en": "Facts read by",
+    "fi": "Faktojen lukija",
+    "sv": "Fakta lästes av"
+  },
+  "action": {
+    "en": "Action",
+    "fi": "Toimenpide",
+    "sv": "Åtgärd"
+  },
+  "riskUrgency": {
+    "en": "Risk / urgency",
+    "fi": "Riski / kiire",
+    "sv": "Risk / brådska"
+  },
+  "handoff": {
+    "en": "Handoff (simulated)",
+    "fi": "Siirto ihmiselle (simuloitu)",
+    "sv": "Överlämning (simulerad)"
+  },
+  "contacts": {
+    "en": "User contacts",
+    "fi": "Käyttäjä ottaa yhteyttä",
+    "sv": "Användaren kontaktar"
+  },
+  "unknown": {
+    "en": "Still unknown",
+    "fi": "Vielä epäselvää",
+    "sv": "Fortfarande okänt"
+  },
+  "nothingDecisive": {
+    "en": "nothing decisive",
+    "fi": "ei mitään ratkaisevaa",
+    "sv": "inget avgörande"
+  },
+  "none": {
+    "en": "none",
+    "fi": "ei mitään",
+    "sv": "inget"
+  },
+  "guidance": {
+    "en": "Synthetic guidance:",
+    "fi": "Synteettinen ohjeistus:",
+    "sv": "Syntetisk vägledning:"
+  },
+  "exLive": {
+    "en": "Live scam",
+    "fi": "Huijaus käynnissä",
+    "sv": "Pågående bedrägeri"
+  },
+  "exHarmless": {
+    "en": "Harmless",
+    "fi": "Harmiton",
+    "sv": "Ofarligt"
+  },
+  "exFlip": {
+    "en": "Decision Flip",
+    "fi": "Ratkaiseva kysymys",
+    "sv": "Avgörande fråga"
+  },
+  "exUnclear": {
+    "en": "Unclear",
+    "fi": "Epäselvä",
+    "sv": "Oklart"
+  },
+  "exLiveText": {
+    "en": "Someone from my bank is still on the phone and wants the code from my text message.",
+    "fi": "Pankista soittava on yhä linjalla ja haluaa tekstiviestini koodin.",
+    "sv": "Någon från min bank är kvar i luren och vill ha koden från mitt sms."
+  },
+  "exHarmlessText": {
+    "en": "My bank texted that I have a new message in its app. Is this a scam?",
+    "fi": "Pankkini ilmoitti tekstiviestillä, että sovelluksessa on uusi viesti. Onko tämä huijaus?",
+    "sv": "Min bank skickade sms om att jag har ett nytt meddelande i appen. Är det bedrägeri?"
+  },
+  "exFlipText": {
+    "en": "I opened a link in a parcel text and now I think it was a scam.",
+    "fi": "Avasin linkin pakettiviestistä ja nyt epäilen huijausta.",
+    "sv": "Jag öppnade en länk i ett paket-sms och tror nu att det var bedrägeri."
+  },
+  "exUnclearText": {
+    "en": "help",
+    "fi": "apua",
+    "sv": "hjälp"
+  }
+}
