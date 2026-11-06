@@ -1,6 +1,6 @@
 # SafeStep Team Plan
 
-This plan splits the remaining work between Arsham and Mehrab, so both can build at the same time without blocking each other.
+This plan splits the remaining work between Mehrab and Arsham, so both can build at the same time without blocking each other.
 
 See [strategy.md](strategy.md) for the product plan, [ARCHITECTURE.md](ARCHITECTURE.md) for the design and [DECISIONS.md](DECISIONS.md) for the safety contract.
 
@@ -21,7 +21,7 @@ See [strategy.md](strategy.md) for the product plan, [ARCHITECTURE.md](ARCHITECT
 
 ## Who owns what
 
-| | **Arsham: Engine and API** | **Mehrab: Product and UI** |
+| | **Mehrab: Engine and API** | **Arsham: Product and UI** |
 |---|---|---|
 | **Branch** | `track/engine` | `track/ui` |
 | **Owns** | `engine/`, `adapters/`, `app/api/`, `eval/`, `tests/` | `app/` except `app/api/`, `components/`, `mocks/`, `content/ui-text.json` |
@@ -34,20 +34,20 @@ See [strategy.md](strategy.md) for the product plan, [ARCHITECTURE.md](ARCHITECT
 `engine/screens.ts` is the contract. The API returns those types, and the UI only renders them.
 
 ```text
-Arsham: engine + API ────────┐
+Mehrab: engine + API ────────┐
                              ├── Join point 1: core journey works
-Mehrab: screens on mock data ┘
+Arsham: screens on mock data ┘
                              │
-Arsham: signals + handoff ───┐
+Mehrab: signals + handoff ───┐
                              ├── Join point 2: full journey works
-Mehrab: advanced screens ────┘
+Arsham: advanced screens ────┘
                              │
 Both: testing and review
 ```
 
-Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every screen type. Arsham builds real routes behind the same types. At each join point, Mehrab replaces mock data with the API, and nothing else should need to change.
+Arsham starts now with `mockResponse()` from `mocks/screens.ts`, which has every screen type. Mehrab builds real routes behind the same types. At each join point, Arsham replaces mock data with the API, and nothing else should need to change.
 
-## Arsham's tasks
+## Mehrab's tasks
 
 ### Phase 1: Safe core
 
@@ -60,7 +60,7 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 | A5 | **Output Guard** | A4 | Banned phrases, wrong language, secrets and unsafe text are blocked in fi, en and sv |
 | A6 | **`/api/sessions` routes** | A4 | Every route validates input and returns `ApiResponse` |
 
-**A6 completes Arsham's side of join point 1.**
+**A6 completes Mehrab's side of join point 1.**
 
 ### Phase 2: Consent, recovery and handoff
 
@@ -73,7 +73,7 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 | A11 | **Rescue steps** | A4 | Banking, credentials, device, SIM, personal safety and business paths each work in all three languages |
 | A12 | **Handoff adapter and summary** | A11 | The right destination is chosen, the summary has no secrets or guesses, and nothing is shared before approval |
 
-**A12 completes Arsham's side of join point 2.**
+**A12 completes Mehrab's side of join point 2.**
 
 ### Phase 3: Accuracy and hardening
 
@@ -86,7 +86,7 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 | A17 | **Selective Accuracy Gate, if needed** | A14 | Build it only if extraction errors are a real cause of failures, then compare score, speed and cost |
 | A18 | **Remove temporary API** | Join point 2 | `/api/assess` is deleted, with no references left |
 
-## Mehrab's tasks
+## Arsham's tasks
 
 ### Phase 1: Core screens on mock data
 
@@ -101,7 +101,7 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 | B7 | **Fallback and warning states** | B1 | Fallback, secret warning, loading and error states are short and safe |
 | B8 | **Replace the test page** | B2–B7 | `app/page.tsx` becomes the real product flow and still runs on mock data |
 
-**B8 completes Mehrab's side of join point 1.**
+**B8 completes Arsham's side of join point 1.**
 
 ### Phase 2: Advanced screens on mock data
 
@@ -114,7 +114,7 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 | B13 | **Agent View** | B12 | Clearly simulated view of what support would receive |
 | B14 | **Data Receipt** | B1 | Used, refused and not-accessed data are easy to understand |
 
-**B14 completes Mehrab's side of join point 2.**
+**B14 completes Arsham's side of join point 2.**
 
 ### Phase 3: Polish and usability
 
@@ -132,10 +132,10 @@ Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every
 |---:|---|---|---|
 | C1 | **Join point 1 check** | Both | Stop, Flip, Result and Fallback work through the real API |
 | C2 | **Join point 2 check** | Both | Consent, refusal, Rescue Mode, handoff and Data Receipt work as one journey |
-| C3 | **Finnish and Swedish review** | Mehrab | A capable speaker has checked approved text and the draft label is removed from `content/` |
-| C4 | **Human safety review** | Arsham | At least 50 answers are reviewed, including every critical type and all failure classes |
+| C3 | **Finnish and Swedish review** | Arsham | A capable speaker has checked approved text and the draft label is removed from `content/` |
+| C4 | **Human safety review** | Mehrab | At least 50 answers are reviewed, including every critical type and all failure classes |
 | C5 | **DNA questions** | Both | Answers are recorded in `DECISIONS.md` |
-| C6 | **Final docs update** | Arsham | README, architecture and decisions match what was built |
+| C6 | **Final docs update** | Mehrab | README, architecture and decisions match what was built |
 
 ### Questions for DNA
 
