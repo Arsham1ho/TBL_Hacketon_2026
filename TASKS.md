@@ -1,97 +1,159 @@
 # SafeStep Team Plan
 
-**Submissions close Sunday 8 November at 10:00. Our target is Sunday 08:00.** Feature freeze is Saturday 22:00.
+This plan splits the remaining work between Arsham and Mehrab, so both can build at the same time without blocking each other.
 
-Two tracks run side by side. Each person owns their own files, so you can work at the same time without merge conflicts.
+See [strategy.md](strategy.md) for the product plan, [ARCHITECTURE.md](ARCHITECTURE.md) for the design and [DECISIONS.md](DECISIONS.md) for the safety contract.
 
-| | **Track A: Engine and API** | **Track B: Product and UI** |
+## Current status
+
+| Part | State |
+|---|---|
+| Safety contract, decision rules, Decision Flip, fact extraction | Done |
+| Input Guard, composer, fallback text | Done |
+| Evaluator link, including one-answer and multi-turn runs | Done |
+| Fast Danger Check, Output Guard | **Not started** |
+| Session flow and final API routes | **Not started** |
+| Final UI | **Not started**; `app/page.tsx` is a temporary test page |
+| Interactive consent, simulated signals, Rescue Mode, handoff | **Not started** |
+| Held-out testing, attack testing, human review | **Not started** |
+
+**Known problems:** live danger can be missed, consent reporting isn't real yet, and false alarms are 11.4% against a target of under 10%.
+
+## Who owns what
+
+| | **Arsham: Engine and API** | **Mehrab: Product and UI** |
 |---|---|---|
-| **Owner** | Arsham | Mehrab |
 | **Branch** | `track/engine` | `track/ui` |
 | **Owns** | `engine/`, `adapters/`, `app/api/`, `eval/`, `tests/` | `app/` except `app/api/`, `components/`, `mocks/`, `content/ui-text.json` |
+| **Builds** | Safety logic, API, signals, handoff data, evaluation | Every screen, the user flow, accessibility and usability |
 
-The owners are a suggestion, so swap them if that suits you better.
+**Shared, so agree before changing:** `engine/screens.ts`, `content/*.json` except `ui-text.json`, `strategy.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `README.md`.
 
-**Shared, so agree before changing:** `engine/screens.ts`, `content/*.json` except `ui-text.json`, `ARCHITECTURE.md`, `DECISIONS.md`, `README.md`.
-
-## How the tracks connect
+## How the work connects
 
 `engine/screens.ts` is the contract. The API returns those types, and the UI only renders them.
 
-- **Track B starts now** with `mockResponse()` from `mocks/screens.ts`, which has every screen.
-- **Track A ships** the real routes behind the same types.
-- **Join point:** Track B replaces the mock with the API. Nothing else should change.
+```text
+Arsham: engine + API ────────┐
+                             ├── Join point 1: core journey works
+Mehrab: screens on mock data ┘
+                             │
+Arsham: signals + handoff ───┐
+                             ├── Join point 2: full journey works
+Mehrab: advanced screens ────┘
+                             │
+Both: testing and review
+```
+
+Mehrab starts now with `mockResponse()` from `mocks/screens.ts`, which has every screen type. Arsham builds real routes behind the same types. At each join point, Mehrab replaces mock data with the API, and nothing else should need to change.
+
+## Arsham's tasks
+
+### Phase 1: Safe core
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| A1 | **Fast Danger Check** in fi, en and sv | None | "The bank is on the phone right now" gets a Stop Screen in all three languages, without waiting for the LLM |
+| A2 | **Add new-scenario regression tests** | None | The 14 scenarios from the project review are in `tests/`, including romance, WhatsApp code, boss gift cards and injection |
+| A3 | **Fix general rules** for account takeover, invoices and number transfers | A2 | WhatsApp takeover doesn't go to the bank, domain invoices don't get "change password", and unrequested number transfers say to contact the operator |
+| A4 | **`handleEvent()` session flow** | None | Stop, Flip, Result and Fallback all return `Screen` objects through one engine entry point |
+| A5 | **Output Guard** | A4 | Banned phrases, wrong language, secrets and unsafe text are blocked in fi, en and sv |
+| A6 | **`/api/sessions` routes** | A4 | Every route validates input and returns `ApiResponse` |
+
+**A6 completes Arsham's side of join point 1.**
+
+### Phase 2: Consent, recovery and handoff
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| A7 | **Fix consent reporting** | A4 | `consent_requested_for` and `signals_used` report only what really happened |
+| A8 | **Simulated signals adapter** | A4 | Link, call, subscription, device, login and business signals load for demo scenarios |
+| A9 | **Consent Gate** | A7, A8 | Gated data can't be read without consent, refusal still gives safe advice, and the bot sends real `consent_request` events |
+| A10 | **Data Receipt data** | A9 | The API reports used, refused and not-accessed signals correctly |
+| A11 | **Rescue steps** | A4 | Banking, credentials, device, SIM, personal safety and business paths each work in all three languages |
+| A12 | **Handoff adapter and summary** | A11 | The right destination is chosen, the summary has no secrets or guesses, and nothing is shared before approval |
+
+**A12 completes Arsham's side of join point 2.**
+
+### Phase 3: Accuracy and hardening
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| A13 | **Reduce false alarms** | A3 | False alarms are under 10% in an LLM run, without weakening safety |
+| A14 | **Full Gemini run and model comparison** | A3 | The chosen model has full dev results and a 50-case comparison in `DECISIONS.md` |
+| A15 | **Held-out scenario test** | A3 | New or left-out scenario results are recorded honestly |
+| A16 | **Attack tests** | A5 | Injection, secrets, contradictions, timeouts and invalid LLM output are scripted and pass |
+| A17 | **Selective Accuracy Gate, if needed** | A14 | Build it only if extraction errors are a real cause of failures, then compare score, speed and cost |
+| A18 | **Remove temporary API** | Join point 2 | `/api/assess` is deleted, with no references left |
+
+## Mehrab's tasks
+
+### Phase 1: Core screens on mock data
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| B1 | **App shell** | None | DNA-style layout works at phone width, with a permanent "Synthetic prototype" label |
+| B2 | **Start screen** | B1 | Consumer and business entry work, with quick choices, free text and an optional pasted message |
+| B3 | **Language switching** | B1 | Interface text works in fi, en and sv from `ui-text.json` |
+| B4 | **Stop Screen** | B1 | The stop action is clear at a glance and appears before anything else |
+| B5 | **Decision Flip** | B1 | Large Yes, No and Not sure buttons, with the reason shown and one question at a time |
+| B6 | **Result screen** | B1 | Action comes first, with reason, confidence, unknowns, conditional branches and expandable sources |
+| B7 | **Fallback and warning states** | B1 | Fallback, secret warning, loading and error states are short and safe |
+| B8 | **Replace the test page** | B2–B7 | `app/page.tsx` becomes the real product flow and still runs on mock data |
+
+**B8 completes Mehrab's side of join point 1.**
+
+### Phase 2: Advanced screens on mock data
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| B9 | **Connect the core flow to the API** | A6, B8 | Mock data is removed from the core flow, and all five journeys work end to end |
+| B10 | **Signal Unlock screen** | B1 | Shows what, why and the limit, with a real refuse option |
+| B11 | **Rescue Mode screen** | B1 | One step at a time, with Done and Not possible |
+| B12 | **Handoff Review** | B1 | User sees the destination and summary, then approves or declines |
+| B13 | **Agent View** | B12 | Clearly simulated view of what support would receive |
+| B14 | **Data Receipt** | B1 | Used, refused and not-accessed data are easy to understand |
+
+**B14 completes Mehrab's side of join point 2.**
+
+### Phase 3: Polish and usability
+
+| # | Task | Needs | Done when |
+|---:|---|---|---|
+| B15 | **Connect advanced screens to the API** | A12, B14 | All mock data is removed, and consent, rescue and handoff work end to end |
+| B16 | **Accessibility** | B15 | Usable by keyboard, with visible focus, clear labels and readable contrast |
+| B17 | **Mobile and visual polish** | B15 | Works on phone and desktop, with calm and consistent screens |
+| B18 | **Comprehension test** | B15 | At least three outsiders can state the next action in their own words, and results are recorded |
+| B19 | **Demo journeys** | B15 | Five journeys and the live-test situations are rehearsed |
+
+## Tasks for both of you
+
+| # | Task | Lead | Done when |
+|---:|---|---|---|
+| C1 | **Join point 1 check** | Both | Stop, Flip, Result and Fallback work through the real API |
+| C2 | **Join point 2 check** | Both | Consent, refusal, Rescue Mode, handoff and Data Receipt work as one journey |
+| C3 | **Finnish and Swedish review** | Mehrab | A capable speaker has checked approved text and the draft label is removed from `content/` |
+| C4 | **Human safety review** | Arsham | At least 50 answers are reviewed, including every critical type and all failure classes |
+| C5 | **DNA questions** | Both | Answers are recorded in `DECISIONS.md` |
+| C6 | **Final docs update** | Arsham | README, architecture and decisions match what was built |
+
+### Questions for DNA
+
+- What can a human agent actually do: lock a number, stop a transfer or cancel an order?
+- Which handoff format helps an agent most?
+- Should a business user's report go to DNA or their IT partner first?
 
 ## Working rules
 
 1. Start each session with `git pull`, then work on your own branch.
-2. Merge to `main` through a small pull request, at least every few hours.
+2. Merge to `main` through small pull requests.
 3. Before merging, run `npm test`, `npm run typecheck` and `npm run build`.
 4. Never commit `.env.local`, `DNA_SinceAI2026/` or `*.jsonl` run output.
-5. Don't move safety decisions into the UI.
+5. Keep all safety decisions in the engine, never in the UI.
 6. Tell the other person before changing `engine/screens.ts`.
+7. Add a regression test for every safety bug.
+8. Keep main screens as client components that use a configurable API URL, so a Capacitor app stays possible later.
 
-## Track A: Engine and API
+**If work needs to be cut, cut in this order:** Agent View, visual polish, Data Receipt detail, then the Selective Accuracy Gate.
 
-| # | Task | Stage | Needs | Done when |
-|---:|---|---:|---|---|
-| A1 | `handleEvent()` session flow | 3 | None | Stop, Flip, Result and Fallback come back as `Screen` objects |
-| A2 | Fast Danger Check in fi, en, sv | 3 | None | Live danger shows Stop without waiting for the LLM |
-| A3 | Output Guard | 3 | A1 | Banned phrases, wrong language and secrets are blocked |
-| A4 | `/api/sessions` routes | 3 | A1 | **Join point 1:** every route returns `ApiResponse` |
-| A5 | Consent Gate and simulated signals | 4 | A1 | Gated data can't be read without consent |
-| A6 | Rescue steps for each recovery path | 4 | A1 | Bank, login, device, SIM, safety and business paths work |
-| A7 | Handoff adapter and agent summary | 4 | A6 | **Join point 2:** summary has no secrets or guesses |
-| A8 | Held-out scenario test | 5 | A1 | Score on unseen families is recorded |
-| A9 | Full Gemini run, false alarms under 10% | 5 | A1 | `DECISIONS.md` has the real numbers |
-| A10 | Attack tests on injection, secrets and contradictions | 5 | A3 | Cases are scripted and passing |
-| A11 | `test_predictions.jsonl`, validated | 5 | A9 | `tools/validate.py --submission` passes |
-
-## Track B: Product and UI
-
-| # | Task | Stage | Needs | Done when |
-|---:|---|---:|---|---|
-| B1 | App shell, DNA-style layout, permanent prototype label | 3 | Mock | Works at phone width |
-| B2 | Start screen with quick choices | 3 | B1 | Consumer and business entry both work |
-| B3 | Stop Screen | 3 | B1 | Clear at a glance, and shows before anything else |
-| B4 | Decision Flip with Yes, No, Not sure | 3 | B1 | Large buttons, and the Flip reads as its own step |
-| B5 | Result screen | 3 | B1 | Action first; conditional branches shown; source on demand |
-| B6 | Connect to the real API | 3 | A4 | Mock removed; five journeys work end to end |
-| B7 | Signal Unlock screen | 4 | B1 | What, why, limit and a real refuse option |
-| B8 | Rescue Mode screen | 4 | B1 | One step at a time, with Done and Not possible |
-| B9 | Handoff Review and Agent View | 4 | A7 | User approves the summary before sharing |
-| B10 | Data Receipt | 4 | B1 | Used, refused and not accessed are clear |
-| B11 | Keyboard, focus states, loading and failure states | 5 | B6 | Usable without a mouse |
-| B12 | Comprehension test with 3 outsiders | 5 | B6 | Results recorded |
-
-## Together
-
-| Task | When | Done when |
-|---|---|---|
-| Native review of Finnish and Swedish text | Saturday | Draft label removed from `content/` |
-| Hand review of at least 50 answers, including every critical type | After freeze | `templates/human_review_form.csv` is filled in |
-| Five demo journeys, including one failure | After freeze | Rehearsed, plus the live-test situations |
-| `RESULTS_TEMPLATE.md`, packaging hypothesis, integration path | Saturday evening | In the repo |
-| Demo video, three minutes at most | Saturday night | On YouTube |
-| Final submission: repo link, source zip, IP terms, AI tools disclosed | Sunday by 08:00 | Upload confirmed |
-| Participant vote: 20 comparisons each | Sunday by 12:00 | Done by both |
-
-## Timeline
-
-| When (EET) | Track A | Track B |
-|---|---|---|
-| **Saturday morning** | A1, A2, A3 | B1 to B5 on mock data |
-| **Saturday midday** | A4, then **join point 1** | B6; attend DNA's Q&A together |
-| **Saturday afternoon** | A5, A6, A7, then **join point 2** | B7 to B10 |
-| **Saturday 22:00** | **Feature freeze** | **Feature freeze** |
-| **Saturday evening** | A8 to A11 | B11, B12 |
-| **Saturday night** | Hand review, results | Video, demo rehearsal |
-| **Sunday by 08:00** | **Submit** | **Submit** |
-
-**If you fall behind, cut in this order:** Agent View, then polish, then Data Receipt detail. **Never cut:** safety rules, consent, the five journeys, or the honest failure example.
-
-## Questions for DNA's Q&A
-
-- What can a human agent actually do: lock a number, stop a transfer or cancel an order?
-- Which handoff format helps an agent most?
-- Should a business user's report go to DNA or to their IT partner first?
+**Never cut:** safety rules, consent, the five journeys or honest failure reporting.
