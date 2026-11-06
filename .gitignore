@@ -1,1 +1,11 @@
 .DS_Store
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.cache/
+.env*
+!.env.example
+answers.jsonl
+mt.jsonl
+DNA_SinceAI2026/

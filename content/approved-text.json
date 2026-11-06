@@ -1,0 +1,97 @@
+{
+  "_review": {
+    "en": "draft: needs team review",
+    "fi": "draft: needs native speaker review",
+    "sv": "draft: needs native speaker review"
+  },
+  "statusLabels": {
+    "safe": { "en": "Looks safe", "fi": "Vaikuttaa turvalliselta", "sv": "Ser säkert ut" },
+    "needs_verification": { "en": "Needs checking", "fi": "Tarkistettava", "sv": "Behöver kontrolleras" },
+    "threat_in_progress": { "en": "Threat in progress", "fi": "Uhka käynnissä", "sv": "Pågående hot" },
+    "incident_occurred": { "en": "Something may be affected", "fi": "Jokin on voinut vaarantua", "sv": "Något kan ha påverkats" }
+  },
+  "confidence": {
+    "low": { "en": "We don't know enough yet.", "fi": "Emme vielä tiedä tarpeeksi.", "sv": "Vi vet inte tillräckligt ännu." },
+    "medium": { "en": "This is our best reading of what we know so far.", "fi": "Tämä on paras arviomme tähänastisten tietojen perusteella.", "sv": "Det här är vår bästa bedömning utifrån det vi vet hittills." },
+    "high": { "en": "What you told us points clearly to this.", "fi": "Kertomasi viittaa selvästi tähän.", "sv": "Det du berättat pekar tydligt på detta." }
+  },
+  "stop": {
+    "personal_safety": {
+      "en": { "message": "If you are in danger right now, call 112.", "action": "Don't remove or change anything on your phone yet. That could alert anyone who may be monitoring it. We'll help you plan first." },
+      "fi": { "message": "Jos olet nyt vaarassa, soita 112.", "action": "Älä vielä poista tai muuta mitään puhelimestasi. Se voi varoittaa henkilöä, joka mahdollisesti seuraa puhelintasi. Suunnitellaan ensin yhdessä." },
+      "sv": { "message": "Om du är i fara just nu, ring 112.", "action": "Ta inte bort eller ändra något i telefonen ännu. Det kan varna någon som kanske övervakar telefonen. Vi hjälper dig att planera först." }
+    },
+    "remote_access": {
+      "en": { "message": "Stop. Don't give anyone remote access to your device.", "action": "End the call or session now." },
+      "fi": { "message": "Seis. Älä anna kenellekään etäyhteyttä laitteeseesi.", "action": "Lopeta puhelu tai yhteys nyt." },
+      "sv": { "message": "Stopp. Ge ingen fjärråtkomst till din enhet.", "action": "Avsluta samtalet eller sessionen nu." }
+    },
+    "app_install": {
+      "en": { "message": "Stop. Don't install anything they ask you to.", "action": "End the call or close the message now." },
+      "fi": { "message": "Seis. Älä asenna mitään, mitä sinua pyydetään asentamaan.", "action": "Lopeta puhelu tai sulje viesti nyt." },
+      "sv": { "message": "Stopp. Installera inget som de ber dig om.", "action": "Avsluta samtalet eller stäng meddelandet nu." }
+    },
+    "code": {
+      "en": { "message": "Stop. Don't read out or type any code.", "action": "End the call now. No bank, authority or operator will ask you to read out a code." },
+      "fi": { "message": "Seis. Älä lue ääneen tai kirjoita mitään koodia.", "action": "Lopeta puhelu nyt. Pankki, viranomainen tai operaattori ei koskaan pyydä sinua lukemaan koodia ääneen." },
+      "sv": { "message": "Stopp. Läs inte upp eller skriv in någon kod.", "action": "Avsluta samtalet nu. Ingen bank, myndighet eller operatör ber dig läsa upp en kod." }
+    },
+    "approval": {
+      "en": { "message": "Stop. Don't approve the login request.", "action": "Press Deny or ignore the request, even if it keeps coming." },
+      "fi": { "message": "Seis. Älä hyväksy kirjautumispyyntöä.", "action": "Hylkää pyyntö tai jätä se huomiotta, vaikka se toistuisi." },
+      "sv": { "message": "Stopp. Godkänn inte inloggningsbegäran.", "action": "Tryck Neka eller ignorera begäran, även om den kommer igen." }
+    },
+    "money": {
+      "en": { "message": "Stop. Don't send any money.", "action": "End the contact now, even if they say it is urgent." },
+      "fi": { "message": "Seis. Älä lähetä rahaa.", "action": "Lopeta yhteydenpito nyt, vaikka asiaa sanottaisiin kiireelliseksi." },
+      "sv": { "message": "Stopp. Skicka inga pengar.", "action": "Avbryt kontakten nu, även om de säger att det är bråttom." }
+    },
+    "card": {
+      "en": { "message": "Stop. Don't enter or read out your card details.", "action": "Close the page or end the call now." },
+      "fi": { "message": "Seis. Älä syötä tai lue ääneen korttisi tietoja.", "action": "Sulje sivu tai lopeta puhelu nyt." },
+      "sv": { "message": "Stopp. Ange eller läs inte upp dina kortuppgifter.", "action": "Stäng sidan eller avsluta samtalet nu." }
+    },
+    "login": {
+      "en": { "message": "Stop. Don't enter your login details.", "action": "Close the page or end the call now." },
+      "fi": { "message": "Seis. Älä syötä kirjautumistietojasi.", "action": "Sulje sivu tai lopeta puhelu nyt." },
+      "sv": { "message": "Stopp. Ange inte dina inloggningsuppgifter.", "action": "Stäng sidan eller avsluta samtalet nu." }
+    },
+    "bank_change": {
+      "en": { "message": "Stop. Don't pay or change the bank details yet.", "action": "Hold the payment until it is checked on a number you already know." },
+      "fi": { "message": "Seis. Älä maksa tai muuta tilitietoja vielä.", "action": "Pidä maksu odottamassa, kunnes asia on tarkistettu sinulle ennestään tutusta numerosta." },
+      "sv": { "message": "Stopp. Betala inte och ändra inte kontouppgifterna ännu.", "action": "Vänta med betalningen tills det är kontrollerat på ett nummer du redan känner till." }
+    },
+    "ransomware": {
+      "en": { "message": "Stop. Don't pay and don't contact the attackers.", "action": "Disconnect the computer from the network now, including Wi-Fi. Then leave it as it is." },
+      "fi": { "message": "Seis. Älä maksa äläkä ota yhteyttä hyökkääjiin.", "action": "Katkaise tietokoneen verkkoyhteys nyt, myös Wi-Fi. Jätä kone sitten sellaiseksi kuin se on." },
+      "sv": { "message": "Stopp. Betala inte och kontakta inte angriparna.", "action": "Koppla bort datorn från nätverket nu, även Wi-Fi. Låt den sedan vara som den är." }
+    }
+  },
+  "fallback": {
+    "analysis_failed": {
+      "en": { "message": "We couldn't check this properly, so we can't say whether it is safe.", "actions": ["If someone is asking you for money, a code or access right now, stop and end the contact.", "Check it through the service's own app or a number you already know.", "Talk to a person."] },
+      "fi": { "message": "Emme pystyneet tarkistamaan tätä kunnolla, joten emme voi sanoa, onko se turvallista.", "actions": ["Jos joku pyytää sinulta nyt rahaa, koodia tai pääsyä laitteeseen, lopeta yhteydenpito.", "Tarkista asia palvelun omasta sovelluksesta tai sinulle tutusta numerosta.", "Puhu ihmisen kanssa."] },
+      "sv": { "message": "Vi kunde inte kontrollera detta ordentligt, så vi kan inte säga om det är säkert.", "actions": ["Om någon ber dig om pengar, en kod eller åtkomst just nu, stoppa och avbryt kontakten.", "Kontrollera det i tjänstens egen app eller på ett nummer du redan känner till.", "Prata med en person."] }
+    },
+    "unclear_input": {
+      "en": { "message": "We don't understand enough yet to say whether this is safe.", "actions": ["If someone is asking you for money, a code or access right now, stop and end the contact.", "Tell us what happened in your own words, or choose a topic.", "Talk to a person."] },
+      "fi": { "message": "Emme vielä ymmärrä tarpeeksi sanoaksemme, onko tämä turvallista.", "actions": ["Jos joku pyytää sinulta nyt rahaa, koodia tai pääsyä laitteeseen, lopeta yhteydenpito.", "Kerro omin sanoin, mitä tapahtui, tai valitse aihe.", "Puhu ihmisen kanssa."] },
+      "sv": { "message": "Vi förstår inte tillräckligt ännu för att säga om detta är säkert.", "actions": ["Om någon ber dig om pengar, en kod eller åtkomst just nu, stoppa och avbryt kontakten.", "Berätta med egna ord vad som hände, eller välj ett ämne.", "Prata med en person."] }
+    },
+    "service_unavailable": {
+      "en": { "message": "Part of our service isn't working right now, so we can't check this.", "actions": ["If someone is asking you for money, a code or access right now, stop and end the contact.", "Don't use links or numbers from the message. Use the service's own app or a number you already know.", "Talk to a person."] },
+      "fi": { "message": "Osa palvelustamme ei juuri nyt toimi, joten emme voi tarkistaa tätä.", "actions": ["Jos joku pyytää sinulta nyt rahaa, koodia tai pääsyä laitteeseen, lopeta yhteydenpito.", "Älä käytä viestin linkkejä tai numeroita. Käytä palvelun omaa sovellusta tai sinulle tuttua numeroa.", "Puhu ihmisen kanssa."] },
+      "sv": { "message": "En del av vår tjänst fungerar inte just nu, så vi kan inte kontrollera detta.", "actions": ["Om någon ber dig om pengar, en kod eller åtkomst just nu, stoppa och avbryt kontakten.", "Använd inte länkar eller nummer från meddelandet. Använd tjänstens egen app eller ett nummer du redan känner till.", "Prata med en person."] }
+    }
+  },
+  "secretWarning": {
+    "en": "We hid what looked like a password, code or card number. We will never ask for these, so please don't share them here or with anyone else.",
+    "fi": "Piilotimme jotain, mikä näytti salasanalta, koodilta tai kortin numerolta. Emme koskaan kysy näitä, joten älä jaa niitä täällä tai kenellekään muulle.",
+    "sv": "Vi dolde något som såg ut som ett lösenord, en kod eller ett kortnummer. Vi frågar aldrig efter sådant, så dela det inte här eller med någon annan."
+  },
+  "prototypeNotice": {
+    "en": "Synthetic prototype. Not a live DNA service. Signals and actions are simulated, and the guidance is not official advice from DNA or any authority.",
+    "fi": "Synteettinen prototyyppi. Ei toimiva DNA:n palvelu. Signaalit ja toiminnot ovat simuloituja, eikä ohjeistus ole DNA:n tai viranomaisen virallista neuvontaa.",
+    "sv": "Syntetisk prototyp. Inte en aktiv DNA-tjänst. Signaler och åtgärder är simulerade, och vägledningen är inte officiella råd från DNA eller någon myndighet."
+  }
+}

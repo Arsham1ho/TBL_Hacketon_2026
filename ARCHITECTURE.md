@@ -135,6 +135,7 @@ SafeStep is one TypeScript web application with one safety engine.
 │   └── to-submission.ts     # engine result → evaluator answer format
 ├── tests/
 ├── ARCHITECTURE.md
+├── DECISIONS.md             # safety contract and decision log
 └── strategy.md
 ```
 
@@ -181,52 +182,15 @@ START → INTAKE → STOP? → DECIDE ─┬─ FLIP ──── answer ──�
 
 These are design sketches. `engine/types.ts` will be the source of truth.
 
-### Facts
+### Facts and incident state
 
-```ts
-const Facts = z.object({
-  language: z.enum(["fi", "en", "sv"]),
-  contactStartedBy: z.enum(["stranger", "user", "known_service"]).nullable(),
-  pretendsToBe: z.enum(["bank", "operator", "police", "family", "ceo",
-    "supplier", "support", "authority", "none"]).nullable(),
-  assetInvolved: z.array(z.enum(["money", "card", "login", "code", "device",
-    "sim", "email", "business_account", "payment"])),
-  asksFor: z.array(z.enum(["money", "code", "card", "login", "app_install",
-    "remote_access", "bank_change"])),
-  userAlreadyDid: z.array(z.enum(["nothing", "opened_link", "entered_card",
-    "entered_login", "shared_code", "paid", "installed_app",
-    "gave_remote_access"])),
-  selfInitiated: z.enum(["yes", "no"]).nullable(),
-  happeningNow: z.boolean().nullable(),
-  pressureOrSecrecy: z.boolean().nullable(),
-  personalSafetyRisk: z.boolean().nullable(),
-  asksToTracePerson: z.boolean(),
-  evidence: z.array(z.object({ fact: z.string(), quote: z.string() })),
-});
-```
+`engine/types.ts` defines both.
 
-`null` means unknown. It must never be treated as "no".
-
-### Incident state
-
-```ts
-type Status = "safe" | "needs_verification" | "threat_in_progress" | "incident_occurred";
-type Risk = "none" | "low" | "medium" | "high" | "critical";
-type Urgency = "none" | "routine" | "today" | "immediate";
-
-type IncidentState = {
-  status: Status;
-  risk: Risk;
-  urgency: Urgency;
-  primaryAction: PrimaryAction;   // supplied action vocabulary
-  destination: Destination | null;
-  confidence: number;             // evidence, not severity
-  confirmedFacts: ConfirmedFact[];
-  unknownFacts: Topic[];
-  consent: ConsentRecord[];
-  summary: string[];
-};
-```
+- `Facts` is strict, so an LLM reply containing a risk, action or destination fails validation.
+- `null` means unknown and must never be treated as "no".
+- `IncidentState` adds confidence, affected assets, confirmed facts, consent and the summary to the decision.
+- Risk level `critical` is separate from the four statuses.
+- `destination` is a person SafeStep can hand over to. `externalContacts` lists the bank, police or cyber authority, which the user contacts themselves.
 
 ### Screen response
 
@@ -360,7 +324,7 @@ The last rule must never return Safe.
 
 ### Action patterns
 
-`engine/rules/` uses the 14 action patterns from the strategy, not one rule for each dataset scenario. Rules may use general facts such as asset, exposure and request type. They must not use case IDs, family names or dataset answers.
+`engine/rules/` uses general action patterns, defined in Stage 2, not one rule for each dataset scenario. Rules may use general facts such as asset, exposure and request type. They must not use case IDs, family names or dataset answers.
 
 ### Status mapping
 
@@ -460,7 +424,7 @@ Safety text is data, not LLM output.
   "contact_bank_and_block_cards": {
     "steps": ["contact_bank_now", "block_card", "report_police"],
     "guidance": ["guidance_id_here"],
-    "destination": "bank"
+    "externalContacts": ["bank"]
   }
 }
 ```
@@ -707,4 +671,3 @@ Each step should leave something that runs.
 - [ ] Decide who owns the engine and who owns the product UI.
 - [ ] Choose who reviews Finnish and Swedish content.
 - [ ] Confirm local-only or online hosting.
-- [ ] Align the strategy file with this design. **This document uses four statuses, with critical as a risk level. The current strategy file lists five.**

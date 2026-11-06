@@ -64,7 +64,7 @@ Establish exactly what SafeStep is allowed to conclude, how it represents an inc
   - **Needs verification** — there is uncertainty, but no confirmed exposure or immediate harm.
   - **Threat in progress** — the user may still share money, codes, credentials, device control, or approval.
   - **Incident occurred** — an account, credential, card, device, SIM, payment, or business resource may already be affected.
-  - **Critical incident** — active takeover, money movement, compromised device, personal danger, or urgent business impact.
+- Treat **critical** as a risk level, not a status. It covers active takeover, money movement, compromised device, personal danger, or urgent business impact.
 - Define risk and urgency separately. Risk describes severity; urgency describes how quickly the user must act.
 - Define the minimum incident state SafeStep must maintain: confirmed facts, unknown decisive facts, affected asset, current status, risk, urgency, primary action, consent history, escalation target, and a short user summary.
 - Define the immediate-interruption conditions and approved interruption language.
