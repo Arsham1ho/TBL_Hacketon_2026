@@ -30,7 +30,7 @@ const REQUEST_PRIORITY: [Facts["asksFor"][number], InterruptionKind][] = [
 // action still carries the same "don't" advice. Something the user started or
 // already verified is not an attack, such as their own login or booked IT support.
 export function interruptionFor(facts: Facts): InterruptionKind | null {
-  if (facts.personalSafetyRisk === true) return "personal_safety";
+  if (facts.personalSafetyRisk === true || facts.incidentType === "partner_monitoring") return "personal_safety";
   if (facts.happeningNow !== true) return null;
   if (facts.selfInitiated === "yes" || facts.independentlyVerified === true) return null;
   if (facts.incidentType === "ransomware") return "ransomware";

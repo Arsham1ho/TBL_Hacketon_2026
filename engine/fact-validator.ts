@@ -24,23 +24,27 @@ const UNKNOWN_IF_UNSUPPORTED: Partial<Record<keyof Facts, unknown>> = {
 
 const squash = (text: string) => fold(text).toLowerCase().replace(/\s+/g, " ").trim();
 
-function isEmpty(value: unknown): boolean {
-  return value === null || value === false || (Array.isArray(value) && value.length === 0);
+// An unquoted false is a claim too, so only null and an empty list count as saying nothing.
+function isEmpty(field: keyof Facts, value: unknown): boolean {
+  if (field === "asksToTracePerson") return value === false;
+  return value === null || (Array.isArray(value) && value.length === 0);
 }
+
+const VAGUE_TYPES: Facts["incidentType"][] = [null, "other", "message_or_notice"];
 
 // The LLM reads better, but keyword rules catch some things it misses. Missing a danger
 // costs far more than one extra caution, so a danger fact from either source is kept.
+// The backstop only adds danger: keyword hits never reassure on the LLM's behalf.
 export function mergeFacts(primary: Facts, backstop: Facts): Facts {
   const did = [...new Set([...primary.userAlreadyDid, ...backstop.userAlreadyDid])];
   const asksNothing = primary.asksNothing ?? backstop.asksNothing;
   return {
     ...primary,
-    incidentType: primary.incidentType ?? backstop.incidentType,
+    incidentType: VAGUE_TYPES.includes(primary.incidentType) ? backstop.incidentType ?? primary.incidentType : primary.incidentType,
     // A vague "other" must not hide a specific match such as a claimed bank or operator.
     pretendsToBe: !primary.pretendsToBe || primary.pretendsToBe === "other" ? backstop.pretendsToBe ?? primary.pretendsToBe : primary.pretendsToBe,
     contactStartedBy: primary.contactStartedBy ?? backstop.contactStartedBy,
-    selfInitiated: primary.selfInitiated ?? backstop.selfInitiated,
-    independentlyVerified: primary.independentlyVerified ?? backstop.independentlyVerified,
+    selfInitiated: primary.selfInitiated ?? (backstop.selfInitiated === "no" ? "no" : null),
     passwordReused: primary.passwordReused ?? backstop.passwordReused,
     serviceLost: primary.serviceLost ?? backstop.serviceLost,
     pressureOrSecrecy: primary.pressureOrSecrecy ?? backstop.pressureOrSecrecy,
@@ -69,7 +73,7 @@ export function validateFacts(raw: unknown, sourceText: string): Facts | null {
   const facts: Facts = { ...parsed.data, evidence: parsed.data.evidence.filter(({ fact }) => supported.has(fact)) };
   for (const [field, unknown] of Object.entries(UNKNOWN_IF_UNSUPPORTED)) {
     const key = field as keyof Facts;
-    if (!isEmpty(facts[key]) && !supported.has(field)) {
+    if (!isEmpty(key, facts[key]) && !supported.has(field)) {
       (facts as Record<keyof Facts, unknown>)[key] = unknown;
     }
   }

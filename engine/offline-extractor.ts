@@ -15,13 +15,13 @@ export type ExtractionInput = {
 
 // Many users skip ä, ö and å, so patterns and text are both folded before matching.
 export const fold = (text: string) =>
-  text.replace(/[äÄåÅ]/gu, "a").replace(/[öÖ]/gu, "o");
+  text.replace(/[äÄåÅ]/gu, "a").replace(/[öÖ]/gu, "o").replace(/[’‘]/gu, "'");
 
 const re = (source: string) => new RegExp(fold(source), "iu");
 
 const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
-  ["partner_monitoring", re(String.raw`\b(my ex|ex-?partner|former partner|exäni|ex-?kumppan|ex-?mie|ex-?vaimo|entinen (puoliso|mies|vaimo|kumppani)|min ex|mitt ex|min före detta)\b`)],
-  ["ransomware", re(String.raw`ransom|lunnas|lösen(summa|pengar|krav)|bitcoin|\bbtc\b|won't open|encrypted|eivät aukea|ei aukea|salattu|salattiin|går inte att öppna|krypterad\w* filer|filerna .{0,20}krypter`)],
+  ["partner_monitoring", re(String.raw`(?<![\p{L}])(my ex(?![\p{L}-])|my ex-(partner|husband|wife|boyfriend|girlfriend)|ex-?partner|former partner|exäni|ex-?(kumppan|mie|vaimo|puoliso|poikaystäv|tyttöystäv)\p{L}*|entinen (puoliso|mies|vaimo|kumppani)|(min|mitt) ex(?![\p{L}-])|min före detta|före detta (man|fru|sambo|partner))`)],
+  ["ransomware", re(String.raw`ransom|lunnas|lösen(summa|pengar|krav)|(pay|maksa|betala|send|demands?)\b.{0,40}(bitcoin|btc)\b|(bitcoin|btc)\b.{0,30}(payment|ransom|demand)|won't open|encrypted|eivät aukea|ei aukea|salattu|salattiin|går inte att öppna|krypterad\w* filer|filerna .{0,20}krypter`)],
   ["mailbox_takeover", re(String.raw`forwarding rule|edelleenlähetyssään|vidarebefordringsregel|wrong account number|väärä tilinumero|väärällä tilinumerolla|fel kontonummer`)],
   ["former_staff_access", re(String.raw`(left|former|ex-?employee|lähti|lähtenyt|entinen|slutade|slutat|tidigare).{0,40}(employee|staff|logged in|työntekijä|kirjaut|anställd|inloggad)|(employee|työntekijä|anställd).{0,30}(left|lähti|lähtenyt|slutade|slutat)`)],
   ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number is being (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|(lost|no) signal|kenttä|ei kenttää|ingen täckning|tappade täckning`)],
@@ -35,7 +35,7 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["payment_request", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd:?n?|managing director)\b`)],
   ["ransomware", re(String.raw`(screen|näyttö|skärm).{0,30}(demand|vaati|kräv)`)],
   ["remote_session", re(String.raw`remote (support|access|session|program)|etäy|etätuki|etäyhteys|fjärr`)],
-  ["unwanted_app_or_profile", re(String.raw`\b(installed|asensin|installerade)\b|\.apk|profile|profiili|certificate|sertifikaat|certifikat`)],
+  ["unwanted_app_or_profile", re(String.raw`\b(installed|asensin|installerade)\b|\.apk|(configuration|security|root) (profile|certificate)|asetusprofiili|varmenne`)],
   ["missed_call", re(String.raw`missed call|one ring|rang once|rang only once|puuttuva puhelu|soi (vain )?kerran|missat samtal|ringde en gång`)],
   ["phone_call", re(String.raw`\b(called|call|caller|phone call|rang|ringde|samtal|soitti|soittaja|puhelu)\b|^\(call\)|^\(puhelu\)`)],
   ["link_or_site", re(String.raw`\b(clicked|opened the link|avasin linkin|klikkasin|klickade|öppnade länken)\b`)],
@@ -45,7 +45,7 @@ const POSES: [NonNullable<Facts["pretendsToBe"]>, RegExp][] = [
   ["police", re(String.raw`\b(police|poliisi\w*|polis\w*)\b`)],
   ["bank", re(String.raw`\b(bank|bank's|pankki\w*|pankin|pankista|bankid|verkkopank\w*|banken|banken?s)\b|[\p{L}]+pankki|[\p{L}]+pankin|verkkopank|bank identification|pankkitunnu`)],
   ["operator", re(String.raw`operator|operaattor|operatör|subscription|liittymä|abonnemang|sim upgrade|sim-|e-?sim`)],
-  ["family", re(String.raw`my (child|son|daughter|mother|mum|dad|grandchild|grandson|granddaughter)|claiming to be my|lapse|tyttäre|poika|äiti|isä|lapsenlaps|barn|dotter|mamma|pappa|barnbarn|new number|uusi numero|uudesta numerosta|nytt nummer`)],
+  ["family", re(String.raw`my (child|son|daughter|mother|mum|dad|grandchild|grandson|granddaughter)|claiming to be my|(?<![\p{L}])(lapse|tyttäre|poika|äiti|isä|lapsenlaps|barn|dotter|mamma|pappa)|new number|uusi numero|uudesta numerosta|nytt nummer`)],
   ["ceo", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd)\b`)],
   ["supplier", re(String.raw`supplier|toimittaja|leverantör`)],
   ["authority", re(String.raw`tax (office|refund)|vero|skatteverket|skatte|authority|viranomai|myndighet`)],
@@ -62,10 +62,22 @@ const ASKS: [Facts["asksFor"][number], RegExp][] = [
   ["bank_change", re(String.raw`(new|changed).{0,20}(bank account|account number)|tilinumero|bankkonto`)],
 ];
 
-const NOTHING_DONE = re(String.raw`hung up|i did(n't| not) (do|click|open|pay|give|type|enter)|haven't (done|clicked|opened|paid)|nothing yet|löin luurin|lopetin puhelun|en (tehnyt|klikannut|avannut|maksanut|antanut)|lade på|gjorde inget|har inte (klickat|öppnat|betalat)|inte klickat`);
+const NOTHING_DONE = re(String.raw`hung up|i did(n't| not) (do|click|open|pay|give|type|enter)|haven't (done|clicked|opened|paid)|nothing yet|löin luurin|lopetin puhelun|(?<![\p{L}])en (tehnyt|klikannut|avannut|maksanut|antanut)|lade på|gjorde inget|har inte (klickat|öppnat|betalat)|inte klickat`);
 
 // Covers "I didn't type it" and "they asked me to type it", which are not actions taken.
-const NEGATED = re(String.raw`\b(didn't|did not|haven't|have not|never|asked (me )?to|wants? me to|told me to|en |et |emme |inte |aldrig |pyysi|pyytää|bad mig)`);
+// "en" means "not" in Finnish but "a" in Swedish, so denial is checked per language.
+const DENIED_BEFORE: Record<Language, RegExp> = {
+  en: re(String.raw`didn't|did not|haven't|have not|hadn't|never|asked (me )?to|wants? me to|told me to`),
+  fi: re(String.raw`(?<![\p{L}])(en|et|emme)(?![\p{L}])|pyysi|pyytää|didn't|haven't`),
+  sv: re(String.raw`(?<![\p{L}])(inte|aldrig)(?![\p{L}])|bad mig|didn't|haven't`),
+};
+const DENIED_AFTER = re(String.raw`^\S*\s+(inte|aldrig)(?![\p{L}])`);
+const CLAUSE_BREAK = re(String.raw`[.,;:!?]|\s(ja|and|so|mutta|but|och|men)\s`);
+
+function isDenied(text: string, match: RegExpExecArray, language: Language): boolean {
+  const before = text.slice(Math.max(0, match.index - 60), match.index).split(CLAUSE_BREAK).at(-1) ?? "";
+  return DENIED_BEFORE[language].test(before) || DENIED_AFTER.test(text.slice(match.index + match[0].length - 1));
+}
 
 const ATTACHMENT = re(String.raw`attachment|\.zip|\.docm|liite|liitteen|bilaga`);
 
@@ -74,19 +86,20 @@ const DID: [Facts["userAlreadyDid"][number], RegExp][] = [
   ["installed_app", re(String.raw`i installed|i downloaded|asensin|latasin sovelluksen|installerade|laddade ner appen`)],
   ["opened_attachment", re(String.raw`opened (it|the attachment|the zip)|i opened .{0,30}(attachment|zip|file)|avasin (sen|liitteen|tiedoston)|öppnade (den|bilagan|filen)`)],
   ["entered_card", re(String.raw`(typed|entered|gave|put in|filled in).{0,30}card|card (details|number).{0,20}(typed|entered)|(syötin|annoin|kirjoitin|täytin).{0,30}kort|(skrev|angav|fyllde|lämnade).{0,30}kort`)],
-  ["paid", re(String.raw`emptied|stole|stolen|tyhjen|tyhjä|varastettiin|varastivat|tömd|tömde|stulit|i (already )?(paid|moved|transferred|sent)( the| it| money|\b)|already (moved|paid|sent)|payment (has )?(went|gone|was sent)|(maksoin|siirsin|lähetin rahat|lähetin rahaa)|olen (jo )?(maksanut|siirtänyt)|(betalade|flyttade|förde över|skickade pengar)|har (redan )?(betalat|flyttat)`)],
+  ["paid", re(String.raw`emptied (my|the|our)|(was|been) emptied|stole (my|our|\d)|stolen from|money (was|has been) (stolen|taken)|tyhjensi|tyhjennett|varastettiin|varastivat|tömd|tömde|stulit|i (already )?(paid|moved|transferred|sent)( the| it| money|\b)|already (moved|paid|sent)|payment (has )?(went|gone|was sent)|(maksoin|siirsin|lähetin rahat|lähetin rahaa)|olen (jo )?(maksanut|siirtänyt)|(betalade|flyttade|förde över|skickade pengar)|har (redan )?(betalat|flyttat)`)],
   ["shared_code", re(String.raw`(typed|gave|read out|entered|shared).{0,40}(code|pin)|code .{0,20}(typed|gave|read)|(annoin|luin|syötin|kirjoitin|kerroin).{0,50}(koodi|tunnuslu)|(gav|läste upp|skrev|angav).{0,30}(kod|pin)`)],
   ["entered_login", re(String.raw`(typed|entered|signed in|logged in|gave).{0,40}(password|credentials|work email|login|through a link)|logged in through|signed in with|(syötin|annoin|kirjoitin|kirjauduin).{0,40}(salasan|tunnuks|linkin|linkistä|sähköposti)|kirjauduin|(työntekijä\w*|employee).{0,20}(kirjautui|signed in)|(skrev|angav|loggade in).{0,40}(lösenord|inloggning|länk)|loggade in`)],
   ["opened_link", re(String.raw`(clicked|opened|tapped|followed).{0,40}link|link .{0,20}(clicked|opened)|(avasin|klikkasin|painoin|napautin).{0,40}(linkki|linkin)|linkin.{0,20}(avasin|klikkasin)|(klickade|öppnade|tryckte).{0,30}länk`)],
 ];
 
-const SELF_YES = re(String.raw`i('m| am) (logging|signing) in|right now on|new (laptop|computer)|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|uutta tietokonetta|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in|ny dator|i own|my own`);
-const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|log|logging|sign|order)|i'm not logging|en ole kirjautu|en pyytänyt|en ole pyytänyt|en tilannut|ei tilattu|har inte (bett|begärt|beställt)|bad inte|loggar inte in`);
-const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contract|known number|confirmed)|she confirmed|he confirmed|soitin.{0,50}(sopimuksen|tuttuun|vahvisti)|soittamalla.{0,50}tuttuun|vahvisti muutoksen|ringde.{0,50}(avtalet|bekräftade|känt)|genom att ringa|bekräftade ändringen|\((admin|pääkäyttäjä|administratör)\)`);
+const SELF_YES = re(String.raw`i('m| am) (logging|signing) in|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in`);
+const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|log|logging|sign|order)|i'm not logging|(?<![\p{L}])en (ole kirjautu|pyytänyt|ole pyytänyt|tilannut)|ei tilattu|har inte (bett|begärt|beställt)|bad inte|loggar inte in`);
+const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contract|known number|confirmed)|she confirmed|he confirmed|soitin.{0,50}(sopimuksen|tuttuun|vahvisti)|soittamalla.{0,50}tuttuun|vahvisti muutoksen|ringde.{0,50}(avtalet|bekräftade|känt)|genom att ringa|bekräftade ändringen`);
+const ORDER_PLACED_BY = re(String.raw`\((admin|pääkäyttäjä|administratör)\)`);
 
 const PRESSURE = re(String.raw`urgent|immediately|within \d+|today|keep it (confidential|secret)|confidential|suspended|expire|expiring|locked|overdue|kiire|välittömästi|heti|tunnin sisällä|luottamuksellis|lukittu|erääntyy|vanhenee|suljetaan|tänään|bråttom|omedelbart|inom \d+|hemlig|konfidentiell|spärrad|löper ut|stängs|i dag|virus|don't remember|en muista|minns inte|same thread|samma tråd|samassa ketjussa`);
 const LIVE = re(String.raw`still on the (phone|line)|on the (phone|line) (now|right now)|calling (me )?(right )?now|right now|juuri nyt|on (vielä )?linjalla|puhelu on käynnissä|just nu|fortfarande i (telefon|luren)|på linjen`);
-const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|scammer's (address|name)|expose|publish (their|his|her) name|kuka omistaa|selvittää kuka|selvitä kuka|paljasta|julkaista|etsi .{0,30}huijari|huijarin (osoite|nimi)|vem som äger|ta reda på vem|hitta bedragaren|bedragarens (adress|namn)|hänga ut|publicera`);
+const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|scammer's (address|name)|expose (him|her|them|this|the scammer)|publish (their|his|her) name|kuka omistaa|selvittää kuka|selvitä kuka|paljasta (hänet|huijari)|julkaista (hänen|huijarin)|etsi .{0,30}huijari|huijarin (osoite|nimi)|vem som äger|ta reda på vem|hitta bedragaren|bedragarens (adress|namn)|hänga ut|publicera (hans|hennes|namnet)`);
 
 const EMAIL_ONLY = re(String.raw`only my email|only (an |your )?email|names and email|no passwords|vain sähköposti|ei salasanoja|nimet ja sähköposti|endast e-post|bara (min )?e-post|inga lösenord`);
 const PASSWORD_LEAK = re(String.raw`passwords?|salasan|lösenord`);
@@ -102,6 +115,8 @@ function first(pattern: RegExp, text: string): string | null {
 
 // Genuine notices send you to your own app and ask for nothing here.
 const OWN_CHANNEL = re(String.raw`in the app|in your online|as usual|contains no links|no links|sovelluksessa|sovelluksesta|verkkopankkiin|verkkopalvelussa|oma-|omassa|i appen|i din|som vanligt|inga länkar|ei sisällä linkkejä|ei ole linkkiä|automaatti`);
+// A direct demand beats any reassuring phrase, because scammers can write those too.
+const DEMAND = re(String.raw`\bpay\b|enter your|send your|update your|confirm your|verify your|sign in|log in (here|now|at|via|through)|\bclick\b|\bmaksa\b|syötä|päivitä|vahvista|\banna\b|kirjaudu (tästä|täällä|linkistä)|klikkaa|\bbetala\b|\bange\b|uppdatera|bekräfta|skicka din|logga in (här|nu|via)|klicka`);
 const ASKED_NOTHING = re(String.raw`asked for nothing|asked for no details|no details|ei pyytänyt mitään|ei kysynyt mitään|ei pyytänyt tietoja|bad inte om något|bad inte om några`);
 
 export function offlineExtract(input: ExtractionInput): Facts {
@@ -141,10 +156,8 @@ export function offlineExtract(input: ExtractionInput): Facts {
   };
 
   const did = collect(DID, userText, "userAlreadyDid").filter((action) => {
-    // "I didn't type my card" must not read as "I typed my card".
-    const pattern = DID.find(([value]) => value === action)![1];
-    const start = pattern.exec(userText)?.index ?? 0;
-    return !NEGATED.test(userText.slice(Math.max(0, start - 16), start + 3));
+    const match = DID.find(([value]) => value === action)![1].exec(userText);
+    return match !== null && !isDenied(userText, match, language);
   });
   const nothing = first(NOTHING_DONE, userText);
   if (nothing && did.length === 0) {
@@ -170,8 +183,9 @@ export function offlineExtract(input: ExtractionInput): Facts {
   const callChannel = incidentChannel === "call" && specific !== "missed_call" && (specific === null || GENERAL_TYPES.includes(specific));
   const incidentType = callChannel ? "phone_call" : specific ?? fallbackType(incidentText, userText, quote);
   if (callChannel) quote("incidentType", (incidentText || userText).slice(0, 30));
-  const ownChannel = !hasRiskyLink && first(OWN_CHANNEL, all);
-  const askedNothing = first(ASKED_NOTHING, all);
+  const demanded = first(DEMAND, incidentText || userText);
+  const ownChannel = !hasRiskyLink && !demanded && first(OWN_CHANNEL, all);
+  const askedNothing = !demanded && first(ASKED_NOTHING, all);
   const dataExposed: Facts["dataExposed"] = [];
   const emailOnly = first(EMAIL_ONLY, all);
   const leaked = first(PASSWORD_LEAK, all);
@@ -201,7 +215,11 @@ export function offlineExtract(input: ExtractionInput): Facts {
     userAlreadyDid: did,
     dataExposed,
     selfInitiated,
-    independentlyVerified: flag(VERIFIED, all, "independentlyVerified"),
+    // Scam text can claim to be verified, so only the user's words count. The one
+    // exception is a named admin on an order, which rules still check for contradictions.
+    independentlyVerified:
+      flag(VERIFIED, userText, "independentlyVerified") ??
+      (incidentType === "unexpected_order_or_bill" ? flag(ORDER_PLACED_BY, incidentText, "independentlyVerified") : null),
     asksNothing: ownChannel || askedNothing ? flag(ownChannel ? OWN_CHANNEL : ASKED_NOTHING, all, "asksNothing") : null,
     passwordReused: flag(REUSED, userText, "passwordReused"),
     serviceLost: flag(SERVICE_LOST, userText, "serviceLost"),

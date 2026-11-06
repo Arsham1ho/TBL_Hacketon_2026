@@ -117,21 +117,6 @@ export const SITUATIONS: Situation[] = [
       ),
   },
   {
-    id: "trace_request",
-    when: (c) => c.facts.asksToTracePerson,
-    then: () =>
-      outcome(
-        "trace_request",
-        "decline_out_of_scope",
-        "needs_verification",
-        "medium",
-        "today",
-        ["decline_request", "report_police", "keep_evidence"],
-        ["guidance_out_of_scope", "guidance_report_to_police"],
-        { externalContacts: ["police", "bank"] },
-      ),
-  },
-  {
     id: "ransomware",
     when: (c) => is(c, "ransomware"),
     then: (c) =>
@@ -144,6 +129,21 @@ export const SITUATIONS: Situation[] = [
         ["disconnect_device", "dont_pay_or_transfer", "get_device_checked", "keep_evidence"],
         ["guidance_ransomware"],
         { destination: person(c, "security_specialist"), externalContacts: ["ncsc", "police"], rescue: true },
+      ),
+  },
+  {
+    id: "trace_request",
+    when: (c) => c.facts.asksToTracePerson,
+    then: () =>
+      outcome(
+        "trace_request",
+        "decline_out_of_scope",
+        "needs_verification",
+        "medium",
+        "today",
+        ["decline_request", "report_police", "keep_evidence"],
+        ["guidance_out_of_scope", "guidance_report_to_police"],
+        { externalContacts: ["police", "bank"] },
       ),
   },
   {
@@ -539,7 +539,11 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "payment_verified",
-    when: (c) => is(c, "payment_detail_change") && c.facts.independentlyVerified === true && c.facts.selfInitiated !== "no",
+    when: (c) =>
+      is(c, "payment_detail_change") &&
+      c.facts.independentlyVerified === true &&
+      c.facts.selfInitiated !== "no" &&
+      !asks(c, "money"),
     then: () => explainBenign("payment_verified", ["guidance_payment_verification", "guidance_invoice_fraud"], "low"),
   },
   {
@@ -782,7 +786,9 @@ export const SITUATIONS: Situation[] = [
     // Safe needs positive evidence. Finding nothing risky is not evidence of safety:
     // a clean link check or an unreadable message must fall through to unclear.
     id: "looks_genuine",
-    when: (c) => uncontradicted(c) && (c.facts.asksNothing === true || c.facts.selfInitiated === "yes"),
+    when: (c) =>
+      uncontradicted(c) &&
+      (c.facts.selfInitiated === "yes" || (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
     then: () => explainBenign("looks_genuine", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
   },
   {

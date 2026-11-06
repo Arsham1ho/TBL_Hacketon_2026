@@ -27,15 +27,19 @@ export type Intake = { item: Case; secretsFound: SecretKind[]; extractedBy: "pri
 
 const gated = (values: string[]) => values.filter((value): value is GatedSignal => GatedSignal.safeParse(value).success);
 
+const LINK = /https?:\/\/|www\.|(?<![\p{L}\p{N}@.-])[\p{L}\p{N}-]+\.(?:fi|se|com|net|org|io|eu|ly|example|test|invalid)(?![\p{L}\p{N}])/iu;
+
 export async function intake(input: CaseInput, extract: Extractor = offlineExtract): Promise<Intake> {
   const guarded = guardInput(input.openingMessage, input.incidentContent);
+  // Users paste scams into their own message, so links are looked for in everything.
+  const hasLink = input.signals.hasLink || LINK.test(`${input.openingMessage}\n${input.incidentContent ?? ""}`);
   const incidentText = guarded.incidentContent ?? "";
   const extraction = {
     userText: guarded.userText,
     incidentText,
     language: input.language,
     incidentChannel: input.incidentChannel,
-    hasRiskyLink: input.signals.hasLink && input.signals.linkVerdict !== "clean",
+    hasRiskyLink: hasLink && input.signals.linkVerdict !== "clean",
   };
   const source = `${guarded.userText}\n${incidentText}`;
   const primary = validateFacts(await attempt(extract, extraction), source);
@@ -50,7 +54,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       facts,
       answers: {},
       unsure: [],
-      signals: input.signals,
+      signals: { ...input.signals, hasLink },
       pregrantedSignals: gated(input.consent.preGranted),
       availableSignals: gated(input.consent.requires),
     },

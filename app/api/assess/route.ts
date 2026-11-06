@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         openingMessage: message,
         incidentContent: incident?.trim() ? incident : null,
         incidentChannel: null,
-        signals: { hasLink: /https?:\/\/|www\./iu.test(incident ?? ""), linkVerdict: null, callWarning: null, callerSpoofed: false },
+        signals: { hasLink: false, linkVerdict: null, callWarning: null, callerSpoofed: false },
         consent: { requires: [], preGranted: [] },
       },
       useLlm ? extractFacts : undefined,
