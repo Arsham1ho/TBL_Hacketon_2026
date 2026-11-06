@@ -9,3 +9,5 @@ next-env.d.ts
 answers.jsonl
 mt.jsonl
 DNA_SinceAI2026/
+answers-llm.jsonl
+mt-llm.jsonl

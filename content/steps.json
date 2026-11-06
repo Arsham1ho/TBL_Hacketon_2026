@@ -1,0 +1,192 @@
+{
+  "dont_open_link": {
+    "en": "Do not open the link.",
+    "fi": "Älä avaa linkkiä.",
+    "sv": "Öppna inte länken."
+  },
+  "dont_pay_or_transfer": {
+    "en": "Do not pay or transfer any money yet.",
+    "fi": "Älä maksa tai siirrä rahaa vielä.",
+    "sv": "Betala inte och för inte över pengar ännu."
+  },
+  "dont_reply": {
+    "en": "Do not reply to the message.",
+    "fi": "Älä vastaa viestiin.",
+    "sv": "Svara inte på meddelandet."
+  },
+  "delete_or_report_message": {
+    "en": "Delete the message or report it as a scam.",
+    "fi": "Poista viesti tai ilmoita se huijauksena.",
+    "sv": "Radera meddelandet eller rapportera det som bedrägeri."
+  },
+  "verify_official_channel": {
+    "en": "Check it in the service's own app or official website, opened yourself.",
+    "fi": "Tarkista asia palvelun omasta sovelluksesta tai verkkosivulta, jonka avaat itse.",
+    "sv": "Kontrollera det i tjänstens egen app eller officiella webbplats som du öppnar själv."
+  },
+  "verify_out_of_band": {
+    "en": "Call them on a number you already know, not one from the message.",
+    "fi": "Soita tuttuun numeroon, jonka tiedät jo, älä viestin numeroon.",
+    "sv": "Ring ett känt nummer som du redan har, inte numret i meddelandet."
+  },
+  "contact_bank_now": {
+    "en": "Contact your bank now on the number on your card or in its own app.",
+    "fi": "Ota nyt yhteyttä pankkiisi kortissa olevasta numerosta tai pankin omasta sovelluksesta.",
+    "sv": "Kontakta din bank nu på numret på kortet eller i bankens egen app."
+  },
+  "block_card": {
+    "en": "Ask the bank to block the card.",
+    "fi": "Pyydä pankkia sulkemaan kortti.",
+    "sv": "Be banken spärra kortet."
+  },
+  "change_password": {
+    "en": "Change the password from a device you trust.",
+    "fi": "Vaihda salasana luotettavalla laitteella.",
+    "sv": "Byt lösenordet på en enhet du litar på."
+  },
+  "enable_mfa": {
+    "en": "Turn on two-step login.",
+    "fi": "Ota käyttöön kaksivaiheinen tunnistautuminen.",
+    "sv": "Aktivera tvåstegsverifiering."
+  },
+  "use_trusted_device": {
+    "en": "Use a different device that you trust.",
+    "fi": "Käytä toista luotettavaa laitetta.",
+    "sv": "Använd en annan säker enhet."
+  },
+  "check_password_reuse": {
+    "en": "Change the same password anywhere else you use it.",
+    "fi": "Vaihda sama salasana myös muissa palveluissa.",
+    "sv": "Byt samma lösenord i andra tjänster också."
+  },
+  "review_sessions": {
+    "en": "Review recent logins and sign out of devices you don't know.",
+    "fi": "Tarkista viimeaikaiset kirjautumiset ja kirjaudu ulos tuntemattomista laitteista.",
+    "sv": "Granska senaste inloggningar och logga ut från okända enheter."
+  },
+  "dont_approve_prompts": {
+    "en": "Do not approve any login request you did not start.",
+    "fi": "Älä hyväksy kirjautumispyyntöä, jota et itse tehnyt.",
+    "sv": "Godkänn inte inloggningsbegäran som du inte själv startat."
+  },
+  "dont_share_codes": {
+    "en": "Never share codes or PINs with anyone.",
+    "fi": "Älä kerro koodeja tai tunnuslukuja kenellekään.",
+    "sv": "Dela aldrig koder eller PIN-koder med någon."
+  },
+  "disconnect_device": {
+    "en": "Disconnect the device from the network now, for example with flight mode.",
+    "fi": "Katkaise laitteen verkkoyhteys nyt, esimerkiksi lentotilalla.",
+    "sv": "Koppla bort enheten från nätet nu, till exempel med flygläge."
+  },
+  "remove_app_or_profile": {
+    "en": "Remove the app, profile or program you installed.",
+    "fi": "Poista asentamasi sovellus, profiili tai ohjelma.",
+    "sv": "Ta bort appen, profilen eller programmet som du installerade."
+  },
+  "get_device_checked": {
+    "en": "Get the device checked by a professional.",
+    "fi": "Tarkistuta laite tietoturvatarkistuksella ammattilaisella.",
+    "sv": "Låt en expert kontrollera enheten och skanna den."
+  },
+  "avoid_banking_on_device": {
+    "en": "Do not use online banking on this device until it is checked.",
+    "fi": "Älä käytä pankkipalveluita tällä laitteella ennen tarkistusta.",
+    "sv": "Använd inte internetbanken på den här enheten förrän den är kontrollerad."
+  },
+  "contact_operator": {
+    "en": "Contact your operator's support on its official number or in its app.",
+    "fi": "Ota yhteyttä operaattorin asiakaspalveluun virallisesta numerosta tai sovelluksesta.",
+    "sv": "Kontakta operatörens kundtjänst på det officiella numret eller i appen."
+  },
+  "lock_subscription": {
+    "en": "Ask them to lock your SIM, eSIM and number.",
+    "fi": "Pyydä heitä lukitsemaan SIM, eSIM ja numero.",
+    "sv": "Be dem spärra ditt SIM, eSIM och numret."
+  },
+  "report_police": {
+    "en": "Report it to the police.",
+    "fi": "Tee rikosilmoitus poliisille.",
+    "sv": "Gör en polisanmälan."
+  },
+  "report_cyber_authority": {
+    "en": "Report it to the National Cyber Security Centre.",
+    "fi": "Ilmoita asiasta Kyberturvallisuuskeskukselle.",
+    "sv": "Rapportera det till Cybersäkerhetscentret."
+  },
+  "keep_evidence": {
+    "en": "Keep the messages and screenshots as evidence.",
+    "fi": "Säilytä viestit ja kuvakaappaukset todisteina.",
+    "sv": "Spara meddelanden och skärmdumpar som bevis."
+  },
+  "hang_up_dont_call_back": {
+    "en": "Hang up and do not call back.",
+    "fi": "Lopeta puhelu äläkä soita takaisin.",
+    "sv": "Lägg på och ring inte tillbaka."
+  },
+  "two_person_approval": {
+    "en": "Have a second person approve any payment or new bank details.",
+    "fi": "Pyydä toinen henkilö hyväksymään maksu tai uudet tilitiedot.",
+    "sv": "Låt en annan person godkänna betalningen eller nya kontouppgifter."
+  },
+  "revoke_access": {
+    "en": "Remove access for anyone who should no longer have it.",
+    "fi": "Poista käyttöoikeudet niiltä, joilla niitä ei enää pitäisi olla.",
+    "sv": "Ta bort behörighet för den som inte längre ska ha den."
+  },
+  "check_forwarding_rules": {
+    "en": "Check the mailbox for forwarding rules you don't recognise.",
+    "fi": "Tarkista postilaatikon edelleenlähetyssäännöt.",
+    "sv": "Kontrollera vidarebefordringsregler i postlådan."
+  },
+  "inform_staff": {
+    "en": "Warn your staff and any affected customers.",
+    "fi": "Varoita henkilöstöä ja asiakkaita.",
+    "sv": "Varna personalen och berörda kunder."
+  },
+  "dont_open_attachment": {
+    "en": "Do not open the attachment or enable its content.",
+    "fi": "Älä avaa liitettä tai salli sen sisältöä.",
+    "sv": "Öppna inte bilagan och aktivera inte innehållet."
+  },
+  "secure_router": {
+    "en": "Change the router's admin password and update the router.",
+    "fi": "Vaihda reitittimen hallintasalasana ja päivitä reititin.",
+    "sv": "Byt routerns administratörslösenord och uppdatera routern."
+  },
+  "explain_benign": {
+    "en": "This looks like a normal, genuine event, so you don't need to do anything.",
+    "fi": "Tämä vaikuttaa aidolta ja tavalliselta tapahtumalta, joten sinun ei tarvitse tehdä mitään.",
+    "sv": "Det här verkar vara äkta och normalt, så du behöver inte göra något."
+  },
+  "seek_support_org": {
+    "en": "Talk to someone you trust or a victim-support service.",
+    "fi": "Puhu luotettavalle henkilölle tai Rikosuhripäivystykselle.",
+    "sv": "Prata med någon du litar på eller med Brottsofferjouren."
+  },
+  "plan_before_removing": {
+    "en": "Make a safety plan before you remove anything, because removing it can alert the other person.",
+    "fi": "Tee turvasuunnitelma ennen poistamista, koska poistaminen voi varoittaa toista henkilöä.",
+    "sv": "Gör en säkerhetsplan innan du tar bort något, eftersom det kan varna den andra personen."
+  },
+  "notify_data_protection": {
+    "en": "If personal data leaked, tell the Data Protection Ombudsman within 72 hours.",
+    "fi": "Jos henkilötietoja vuoti, ilmoita tietosuojavaltuutetulle 72 tunnin kuluessa.",
+    "sv": "Om personuppgifter läckte, meddela dataombudsmannen inom 72 timmar."
+  },
+  "decline_request": {
+    "en": "I can't find out who someone is or help expose them.",
+    "fi": "En voi selvittää kuka henkilö on tai auttaa paljastamaan häntä.",
+    "sv": "Jag kan inte hjälpa till att ta reda på vem någon är."
+  },
+  "check_statements": {
+    "en": "Check your bank transactions for anything you don't recognise.",
+    "fi": "Tarkista tilitapahtumat tuntemattomien veloitusten varalta.",
+    "sv": "Kontrollera kontoutdraget efter okända transaktioner."
+  },
+  "update_device": {
+    "en": "Update the device's software.",
+    "fi": "Päivitä laitteen ohjelmisto.",
+    "sv": "Uppdatera enhetens programvara."
+  }
+}

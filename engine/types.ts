@@ -88,6 +88,7 @@ export type GatedSignal = z.infer<typeof GatedSignal>;
 export const IncidentType = z.enum([
   "message_or_notice",
   "phone_call",
+  "missed_call",
   "payment_request",
   "payment_detail_change",
   "link_or_site",
@@ -155,6 +156,9 @@ export const Facts = z.strictObject({
   dataExposed: z.array(z.enum(["email_only", "password", "card", "bank_login", "identity"])),
   selfInitiated: z.enum(["yes", "no"]).nullable(),
   independentlyVerified: z.boolean().nullable(),
+  // True only when the content itself shows it wants nothing: it points to the
+  // service's own app, says it has no links, or the caller asked for nothing.
+  asksNothing: z.boolean().nullable(),
   passwordReused: z.boolean().nullable(),
   serviceLost: z.boolean().nullable(),
   happeningNow: z.boolean().nullable(),

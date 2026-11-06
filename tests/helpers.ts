@@ -11,6 +11,7 @@ export const blankFacts: Facts = {
   dataExposed: [],
   selfInitiated: null,
   independentlyVerified: null,
+  asksNothing: null,
   passwordReused: null,
   serviceLost: null,
   happeningNow: null,

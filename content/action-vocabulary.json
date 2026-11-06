@@ -1,0 +1,14 @@
+{
+  "intervention": {
+    "no_action_needed": 0,
+    "do_not_interact_and_delete": 1,
+    "verify_via_official_channel": 2,
+    "contact_operator_support": 3,
+    "change_password_and_enable_mfa": 3,
+    "isolate_device_and_scan": 4,
+    "contact_bank_and_block_cards": 4,
+    "report_to_authority": 3,
+    "escalate_to_human": 4,
+    "decline_out_of_scope": 1
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "personal_safety": {
+    "en": "If someone may be watching your phone, your safety comes first.",
+    "fi": "Jos joku saattaa seurata puhelintasi, turvallisuutesi on tärkeintä.",
+    "sv": "Om någon kanske övervakar din telefon går din säkerhet först."
+  },
+  "trace_request": {
+    "en": "Tracing people is a job for the police, and exposing someone could put you at risk.",
+    "fi": "Ihmisten jäljittäminen kuuluu poliisille, ja paljastaminen voi vaarantaa sinut.",
+    "sv": "Att spåra personer är polisens uppgift, och att avslöja någon kan utsätta dig för risk."
+  },
+  "ransomware": {
+    "en": "Files locked with a payment demand can spread to other devices on the same network.",
+    "fi": "Lukitut tiedostot ja maksuvaatimus voivat levitä muihin saman verkon laitteisiin.",
+    "sv": "Låsta filer med betalningskrav kan spridas till andra enheter i samma nätverk."
+  },
+  "account_takeover": {
+    "en": "Someone else may be able to use this account.",
+    "fi": "Joku muu saattaa päästä käyttämään tätä tiliä.",
+    "sv": "Någon annan kan kanske använda det här kontot."
+  },
+  "harmless": {
+    "en": "It asks for nothing risky and fits something normal.",
+    "fi": "Siinä ei pyydetä mitään riskialtista, ja se sopii tavalliseen tilanteeseen.",
+    "sv": "Det ber inte om något riskfyllt och stämmer med något normalt."
+  },
+  "own_change": {
+    "en": "You told us you did this yourself, so it fits a normal change.",
+    "fi": "Kerroit tehneesi tämän itse, joten se sopii tavalliseen muutokseen.",
+    "sv": "Du berättade att du gjorde detta själv, så det stämmer med en normal ändring."
+  },
+  "sim_takeover": {
+    "en": "Someone with your number could receive your bank and login codes.",
+    "fi": "Numerosi haltuunsa saanut voi vastaanottaa pankki- ja kirjautumiskoodisi.",
+    "sv": "Den som har ditt nummer kan ta emot dina bank- och inloggningskoder."
+  },
+  "code_refused": {
+    "en": "You kept the code, and no real company needs you to read one out.",
+    "fi": "Pidit koodin itselläsi, eikä oikea yritys tarvitse sitä luettuna ääneen.",
+    "sv": "Du behöll koden, och inget riktigt företag behöver att du läser upp den."
+  },
+  "order_check": {
+    "en": "An order you don't recognise can mean someone is using the account.",
+    "fi": "Tuntematon tilaus voi tarkoittaa, että joku käyttää tiliä.",
+    "sv": "En okänd beställning kan betyda att någon använder kontot."
+  },
+  "device_exposed": {
+    "en": "Someone may be able to control or read this device.",
+    "fi": "Joku saattaa pystyä ohjaamaan tai lukemaan tätä laitetta.",
+    "sv": "Någon kan kanske styra eller läsa den här enheten."
+  },
+  "attachment": {
+    "en": "Attachments like this can install harmful software if their content is enabled.",
+    "fi": "Tällaiset liitteet voivat asentaa haittaohjelman, jos sisältö sallitaan.",
+    "sv": "Sådana bilagor kan installera skadlig kod om innehållet aktiveras."
+  },
+  "money_or_card": {
+    "en": "The bank is the only one that can stop or reverse this, and speed matters.",
+    "fi": "Vain pankki voi pysäyttää tai perua tämän, ja nopeus ratkaisee.",
+    "sv": "Bara banken kan stoppa eller återkalla detta, och snabbhet är avgörande."
+  },
+  "password_exposed": {
+    "en": "Anyone with that password can try it on your other accounts too.",
+    "fi": "Salasanan saanut voi kokeilla sitä muillakin tileilläsi.",
+    "sv": "Den som har lösenordet kan prova det på dina andra konton också."
+  },
+  "link_only": {
+    "en": "Opening a link alone rarely causes harm if you entered nothing.",
+    "fi": "Pelkkä linkin avaaminen harvoin aiheuttaa haittaa, jos et syöttänyt mitään.",
+    "sv": "Att bara öppna en länk gör sällan skada om du inte angav något."
+  },
+  "approval_attack": {
+    "en": "Repeated requests usually mean someone has your password and hopes you will approve one.",
+    "fi": "Toistuvat pyynnöt tarkoittavat yleensä, että jollakulla on salasanasi ja hän toivoo hyväksyntääsi.",
+    "sv": "Upprepade begäranden betyder oftast att någon har ditt lösenord och hoppas att du godkänner."
+  },
+  "own_login": {
+    "en": "A login you recognise is normal, but it is still worth checking your session list.",
+    "fi": "Tunnistamasi kirjautuminen on tavallista, mutta istunnot kannattaa silti tarkistaa.",
+    "sv": "En inloggning du känner igen är normal, men kontrollera ändå sessionerna."
+  },
+  "breach_email": {
+    "en": "Only an email address was exposed, so your passwords were not part of it.",
+    "fi": "Vain sähköpostiosoite paljastui, joten salasanasi eivät olleet mukana.",
+    "sv": "Bara en e-postadress exponerades, så dina lösenord ingick inte."
+  },
+  "fake_notice": {
+    "en": "Real services don't rush you to log in through a link in a message.",
+    "fi": "Oikeat palvelut eivät kiirehdi kirjautumaan viestin linkin kautta.",
+    "sv": "Riktiga tjänster stressar dig inte att logga in via en länk i ett meddelande."
+  },
+  "breach_password": {
+    "en": "Leaked passwords get tried on other services quickly.",
+    "fi": "Vuotaneita salasanoja kokeillaan nopeasti muissa palveluissa.",
+    "sv": "Läckta lösenord provas snabbt på andra tjänster."
+  },
+  "reset": {
+    "en": "A reset email alone doesn't change your password, but its link could be fake.",
+    "fi": "Pelkkä palautusviesti ei vaihda salasanaa, mutta sen linkki voi olla väärennös.",
+    "sv": "Ett återställningsmejl ändrar inte lösenordet, men länken kan vara falsk."
+  },
+  "router": {
+    "en": "A factory password lets strangers change the router or watch traffic.",
+    "fi": "Tehdassalasanalla ulkopuolinen voi muuttaa reitittimen asetuksia.",
+    "sv": "Med ett fabrikslösenord kan utomstående ändra routerns inställningar."
+  },
+  "payment_verified": {
+    "en": "You checked this on a number you already trusted, which is the right safeguard.",
+    "fi": "Tarkistit asian luotettavasta numerosta, mikä on oikea varmistus.",
+    "sv": "Du kontrollerade detta på ett nummer du litar på, vilket är rätt skydd."
+  },
+  "payment_pressure": {
+    "en": "Urgent or secret payment requests are a common way to steal from companies.",
+    "fi": "Kiireelliset tai salaiset maksupyynnöt ovat yleinen tapa huijata yrityksiä.",
+    "sv": "Brådskande eller hemliga betalningskrav är ett vanligt sätt att lura företag."
+  },
+  "call_scam": {
+    "en": "A real bank or company won't ask for codes or remote access on a call.",
+    "fi": "Oikea pankki tai yritys ei pyydä koodeja tai etäyhteyttä puhelimessa.",
+    "sv": "En riktig bank eller ett riktigt företag ber inte om koder eller fjärråtkomst i telefon."
+  },
+  "call_ended": {
+    "en": "You ended the call before anything was shared, so nothing suggests harm.",
+    "fi": "Lopetit puhelun ennen kuin mitään jaettiin, joten mikään ei viittaa vahinkoon.",
+    "sv": "Du avslutade samtalet innan något delades, så inget tyder på skada."
+  },
+  "call_check": {
+    "en": "The caller's number can be faked, so check on a route you chose yourself.",
+    "fi": "Soittajan numero voidaan väärentää, joten tarkista itse valitsemaasi kautta.",
+    "sv": "Numret kan förfalskas, så kontrollera via en väg du själv väljer."
+  },
+  "family": {
+    "en": "Scammers pose as relatives on new numbers, so check before you send anything.",
+    "fi": "Huijarit esiintyvät sukulaisina uusista numeroista, joten varmista ennen rahan lähettämistä.",
+    "sv": "Bedragare låtsas vara släktingar på nya nummer, så kontrollera innan du skickar något."
+  },
+  "credential_lure": {
+    "en": "It tries to get your login or code through a link, which real services avoid.",
+    "fi": "Viesti yrittää saada tunnuksesi tai koodisi linkin kautta, mitä oikeat palvelut välttävät.",
+    "sv": "Det försöker få din inloggning eller kod via en länk, vilket riktiga tjänster undviker."
+  },
+  "payment_lure": {
+    "en": "It pressures you to pay or give card details through a link.",
+    "fi": "Viesti painostaa maksamaan tai antamaan korttitiedot linkin kautta.",
+    "sv": "Det pressar dig att betala eller lämna kortuppgifter via en länk."
+  },
+  "flagged_link": {
+    "en": "The link check flagged this link as risky.",
+    "fi": "Linkkitarkistus merkitsi linkin riskialttiiksi.",
+    "sv": "Länkkontrollen flaggade länken som riskfylld."
+  },
+  "unclear": {
+    "en": "We don't know enough yet to say whether this is safe.",
+    "fi": "Emme vielä tiedä tarpeeksi sanoaksemme, onko tämä turvallista.",
+    "sv": "Vi vet inte tillräckligt ännu för att säga om detta är säkert."
+  },
+  "missed_call": {
+    "en": "One-ring calls try to get you to call back an expensive number.",
+    "fi": "Yhden soiton puhelut houkuttelevat soittamaan takaisin kalliiseen numeroon.",
+    "sv": "Samtal med en signal försöker få dig att ringa tillbaka till ett dyrt nummer."
+  }
+}

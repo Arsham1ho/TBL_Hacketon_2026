@@ -82,7 +82,7 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 
 **Session data:** don't ask for identity details the app already has. Keep only what the active journey needs, delete it when the session ends, and leave unnecessary details out of handoffs.
 
-**LLM provider:** masked text and permitted facts are sent to an outside LLM API. The consent text and Data Receipt must say so.
+**LLM provider:** masked text and permitted facts are sent to the OpenAI API. The consent text and Data Receipt must say so.
 
 ## 6. Fallbacks
 
@@ -104,6 +104,12 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 | Needs verification allowed for worst-case actions | 84 twin answers need that advice before the deciding fact is known |
 | Stop Screen doesn't fire for self-started or verified events | Own logins and booked IT support are harmless cases in the dataset |
 | User-facing label "Looks safe", not "Safe" | Avoids claiming certainty the evidence can't support |
+| Safe needs positive evidence | "Nothing risky found" called a grandchild money call and an emptied account Safe |
+| Decision Flips are computed by running Yes and No through the rules | A question exists only if the answers lead to different responses |
+| Not sure gives conditional advice under Needs verification | Advice is safe for the worse answer without claiming it is true |
+| Don't advise blocking a card until exposure is known | The bank can decide, and unneeded blocking is unjustified alarm |
+| Facts need a quote that appears in the source text | A model can't narrow a case by inventing facts |
+| Offline extractor stays on beside the LLM | It catches facts the LLM misses, and it is the fallback when the LLM fails |
 | User-facing "Talk to a person" | "Rescue service" means the fire and rescue service in Finland |
 
 ## 8. Stage 1 exit gate
@@ -111,13 +117,64 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 | Gate | State | Evidence |
 |---|---|---|
 | Every action maps to status, urgency and escalation | Done | Table above; `npm run check:contract` found no breaches across 588 dev cases, including no-reply twin answers. The dataset has no status labels, so statuses are our design |
-| Team can explain status, risk, urgency, action and escalation | **Needs team** | Section 1 |
+| Team can explain status, risk, urgency, action and escalation | Done | Team agreed section 1 |
 | Immediate danger has a clear rule | Done | `engine/interruption.ts` and tests |
 | Uncertainty is represented | Done | `checkDecision()` and confidence tests |
 | Synthetic and official content are separated | Partly done | Notice exists in three languages; the Output Guard check comes later |
 | Injection can't override the contract | Partly done | Delimiter and strict schema tests; needs a real LLM attack test once extraction exists |
 | Secrets are masked everywhere | Partly done | Input Guard tested and run on 1,846 dataset texts; summaries and handoffs are tested once they exist |
 | Reviewed fallback exists | **Needs review** | Drafted in three languages; Finnish and Swedish need a native speaker |
-| Both teammates approve | **Needs team** | Sign below |
+| Both teammates approve | Done | Confirmed below |
 
-**Approved by:** ______________ and ______________
+**Approved by the team** on 7 November 2026, as confirmed by Arsham.
+
+## 9. Stage 2 results
+
+Run on 7 November 2026 on the 588 dev cases with `gpt-5.4-mini`. The rules were tuned on these same cases, so **these numbers show what the logic can reach, not expected accuracy on new cases**. Stage 5 tests held-out scenarios.
+
+| Metric | Baseline | Target | Keywords only | **LLM, one answer** | **LLM, multi-turn** |
+|---|---:|---:|---:|---:|---:|
+| Safe-action pass | 60.5% | 80%+ | 98.0% | **95.9%** | **95.9%** |
+| Reference-action match | 65.6% | 75%+ | 86.1% | **84.5%** | **90.6%** |
+| False alarms on harmless cases | 28.0% | Under 10% | 9.1% | **11.4%** | **11.4%** |
+| Escalation recall | 47.0% | 90%+ | 100% | **98.5%** | **99.0%** |
+| Asked decisive question | 70.0% | 90%+ | 100% | **95.0%** | **95.0%** |
+| Weighted proxy | 67.1 | 80+ | 96.6 | **95.7** | **95.5** |
+| Unsafe statements | 0% | 0% | 0% | **0%** | **0%** |
+| Called Safe when action was needed | n/a | 0 | not measured | **0** | not measured |
+
+The keyword column is higher because those rules were tuned on these exact sentences. The LLM column is the honest guide to the product, and it should cope better with new wording.
+
+**Target missed:** false alarms are 11.4% with the LLM, above the 10% target. These are mostly genuine notices and offers sent to a cautious check, and Stage 5 needs to bring this down.
+
+**Known false alarms:** genuine operator offers with a noisy link result, new-payee notices and some genuine bank notices.
+
+**Decisions from the LLM run:**
+
+- The LLM reads, and the keyword extractor stays on as a backstop. A danger fact from either is kept.
+- Reassuring facts need nothing against them, because a true quote can still support a wrong conclusion.
+- Rules, not the model, decide. A model reading an opened link as "self-started" must not produce Safe.
+
+## 10. Stage 2 exit gate
+
+| Gate | State | Evidence |
+|---|---:|---|
+| Every dev scenario has a valid route | Done | All 49 dev scenarios pass in most cases in both modes |
+| Twin scenarios have a Decision Flip | Done | Decisive question asked in 100% of required cases |
+| No question exists only to name a scam | Done | Questions are computed from differing responses |
+| Yes and No change the action | Done | Unit tests across nine flips |
+| Not sure never forces a conclusion | Done | Unit tests across nine flips |
+| Unseen cases fall back safely | Done for tested cases | Our own unseen cases are never called Safe, by keyword tests and a live LLM run. This can't prove every case |
+| Unsupported facts return to unknown | Done | Fact Validator tests and real LLM runs |
+| Every action has a short reason | Done | Test checks every outcome; text is a draft |
+| Zero to two questions | Done | Multi-turn with the LLM averages 0.20 questions, and no case needed more than 1 |
+
+**Live check:** 16 hard cases through the running app with the real LLM, including injection and pasted secrets. All behaved safely, and no secret or scam link appeared in any response. Replies took 1 to 4 seconds. A browser run of the Decision Flip showed the advice changing with the answer.
+
+**Known issues:**
+
+- A scam message with a payment link and no named sender can read as a colleague's payment demand. The advice is over-cautious but safe.
+- Some fake operator code calls get the wrong question when the LLM calls them a SIM problem.
+- The test page has no simulated link or call signals.
+
+**Not done yet:** Finnish and Swedish text is still drafted by Claude, so a native speaker should confirm it before the demo.

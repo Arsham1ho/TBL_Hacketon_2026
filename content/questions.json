@@ -1,0 +1,142 @@
+{
+  "self_initiated": {
+    "en": {
+      "question": "Did you do or order this yourself?",
+      "why": "If you did, this is normal. If not, someone else may have.",
+      "ifRisky": "If you did not do this yourself:",
+      "ifSafe": "If you did this yourself:"
+    },
+    "fi": {
+      "question": "Teitkö tai tilasitko tämän itse?",
+      "why": "Jos teit, tämä on tavallista. Jos et, joku muu on voinut tehdä sen.",
+      "ifRisky": "Jos et tehnyt tätä itse:",
+      "ifSafe": "Jos teit tämän itse:"
+    },
+    "sv": {
+      "question": "Gjorde eller beställde du detta själv?",
+      "why": "Om du gjorde det är detta normalt. Om inte kan någon annan ha gjort det.",
+      "ifRisky": "Om du inte gjorde detta själv:",
+      "ifSafe": "Om du gjorde detta själv:"
+    }
+  },
+  "code_shared": {
+    "en": {
+      "question": "Did you read out or type the code?",
+      "why": "A shared code can let someone act as you.",
+      "ifRisky": "If you gave the code to anyone:",
+      "ifSafe": "If you kept the code to yourself:"
+    },
+    "fi": {
+      "question": "Luitko tai kirjoititko koodin?",
+      "why": "Jaettu koodi voi antaa jollekulle pääsyn nimissäsi.",
+      "ifRisky": "Jos annoit koodin jollekulle:",
+      "ifSafe": "Jos pidit koodin itselläsi:"
+    },
+    "sv": {
+      "question": "Läste du upp eller skrev du in koden?",
+      "why": "En delad kod kan låta någon agera som du.",
+      "ifRisky": "Om du gav koden till någon:",
+      "ifSafe": "Om du behöll koden för dig själv:"
+    }
+  },
+  "card_details_entered": {
+    "en": {
+      "question": "Did you type your card details on that page?",
+      "why": "Card details change what you need to do next.",
+      "ifRisky": "If you typed your card details:",
+      "ifSafe": "If you entered nothing:"
+    },
+    "fi": {
+      "question": "Syötitkö korttisi tiedot sille sivulle?",
+      "why": "Korttitiedot muuttavat seuraavaa toimintaasi.",
+      "ifRisky": "Jos syötit korttitietosi:",
+      "ifSafe": "Jos et syöttänyt mitään:"
+    },
+    "sv": {
+      "question": "Skrev du in dina kortuppgifter på sidan?",
+      "why": "Kortuppgifter ändrar vad du behöver göra härnäst.",
+      "ifRisky": "Om du skrev in dina kortuppgifter:",
+      "ifSafe": "Om du inte angav något:"
+    }
+  },
+  "credentials_entered": {
+    "en": {
+      "question": "Did you log in to your online bank or any account during that session?",
+      "why": "Then those login details may be exposed too.",
+      "ifRisky": "If you logged in during that session:",
+      "ifSafe": "If you did not log in:"
+    },
+    "fi": {
+      "question": "Kirjauduitko verkkopankkiin tai tilille yhteyden aikana?",
+      "why": "Silloin myös ne tunnukset ovat voineet paljastua.",
+      "ifRisky": "Jos kirjauduit yhteyden aikana:",
+      "ifSafe": "Jos et kirjautunut:"
+    },
+    "sv": {
+      "question": "Loggade du in på banken eller ett konto under sessionen?",
+      "why": "Då kan även de inloggningsuppgifterna vara exponerade.",
+      "ifRisky": "Om du loggade in under sessionen:",
+      "ifSafe": "Om du inte loggade in:"
+    }
+  },
+  "payment_status": {
+    "en": {
+      "question": "Has the payment already been sent?",
+      "why": "A sent payment needs the bank right away.",
+      "ifRisky": "If the payment has gone:",
+      "ifSafe": "If the payment has not gone:"
+    },
+    "fi": {
+      "question": "Onko maksu jo lähetetty?",
+      "why": "Lähetetty maksu vaatii heti yhteyden pankkiin.",
+      "ifRisky": "Jos maksu on jo lähtenyt:",
+      "ifSafe": "Jos maksua ei ole lähetetty:"
+    },
+    "sv": {
+      "question": "Har betalningen redan skickats?",
+      "why": "En skickad betalning kräver att banken kontaktas direkt.",
+      "ifRisky": "Om betalningen har gått iväg:",
+      "ifSafe": "Om betalningen inte har gått iväg:"
+    }
+  },
+  "app_installed": {
+    "en": {
+      "question": "Did you install anything or enable content or macros?",
+      "why": "That is what lets harmful software run.",
+      "ifRisky": "If you installed anything or enabled content:",
+      "ifSafe": "If you did not install or enable anything:"
+    },
+    "fi": {
+      "question": "Asensitko jotain tai sallitko sisällön tai makrot?",
+      "why": "Niin haittaohjelma pääsee käynnistymään.",
+      "ifRisky": "Jos asensit jotain tai sallit sisällön:",
+      "ifSafe": "Jos et asentanut tai sallinut mitään:"
+    },
+    "sv": {
+      "question": "Installerade du något eller aktiverade innehåll eller makron?",
+      "why": "Det är så skadlig kod kan köras.",
+      "ifRisky": "Om du installerade något eller aktiverade innehåll:",
+      "ifSafe": "Om du inte installerade eller aktiverade något:"
+    }
+  },
+  "user_safety": {
+    "en": {
+      "question": "Are you safe right now?",
+      "why": "Your safety decides how fast we move.",
+      "ifRisky": "If you are not safe right now, call 112 first.",
+      "ifSafe": "If you are safe right now:"
+    },
+    "fi": {
+      "question": "Oletko nyt turvassa?",
+      "why": "Turvallisuutesi ratkaisee, kuinka nopeasti edetään.",
+      "ifRisky": "Jos et ole nyt turvassa, soita ensin 112.",
+      "ifSafe": "Jos olet nyt turvassa:"
+    },
+    "sv": {
+      "question": "Är du trygg just nu?",
+      "why": "Din säkerhet avgör hur snabbt vi går vidare.",
+      "ifRisky": "Om du inte är trygg just nu, ring 112 först.",
+      "ifSafe": "Om du är trygg just nu:"
+    }
+  }
+}

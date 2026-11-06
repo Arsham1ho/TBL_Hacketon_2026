@@ -38,8 +38,8 @@ SafeStep is one TypeScript web application with one safety engine.
 | **Web app** | Next.js + React | Screens and API routes in one project |
 | **Styling** | Tailwind CSS | Fast, mobile-first UI |
 | **Validation** | Zod | Validates API input and LLM output, and shares types |
-| **LLM** | Anthropic TypeScript SDK | Fact extraction and free-text answer reading |
-| **Default model** | `claude-opus-5-5` | Starting model, changed in one setting |
+| **LLM** | OpenAI TypeScript SDK | Fact extraction |
+| **Default model** | `gpt-5.4-mini` | Chosen after a 50-case comparison, changed in one setting |
 | **Sessions** | In-memory `Map` | No database, and data clears at session end |
 | **Content** | JSON files | Approved text and guidance mapping |
 | **Unit tests** | Vitest | Rules, masking, consent and flows |
@@ -87,7 +87,7 @@ SafeStep is one TypeScript web application with one safety engine.
               LLM adapter      Signal adapter   Handoff adapter
                   │             (simulated)      (simulated)
                   ▼
-             Anthropic API
+             OpenAI API
 ```
 
 ---
@@ -106,12 +106,16 @@ SafeStep is one TypeScript web application with one safety engine.
 │   ├── input-guard.ts
 │   ├── fast-danger.ts
 │   ├── extractor.ts
+│   ├── offline-extractor.ts # deterministic facts in fi, en and sv
+│   ├── fact-validator.ts    # unquoted facts return to unknown
 │   ├── answer-reader.ts
-│   ├── rules/               # ordered decision rules
+│   ├── case.ts              # facts plus answers
+│   ├── situations.ts        # ordered action-equivalent situations
 │   ├── question-picker.ts
 │   ├── consent-gate.ts
 │   ├── signal-reader.ts
 │   ├── composer.ts
+│   ├── summary.ts           # evidence-traced facts
 │   ├── output-guard.ts
 │   └── fallback.ts
 ├── adapters/
@@ -120,11 +124,10 @@ SafeStep is one TypeScript web application with one safety engine.
 │   ├── handoff.ts           # simulated human handoff
 │   └── session-store.ts     # in-memory sessions
 ├── content/
-│   ├── actions.json         # action → steps, destination, guidance
+│   ├── approved-text.json   # stop, fallback and notice text
 │   ├── questions.json       # Decision Flip text in fi, en, sv
-│   ├── steps.fi.json
-│   ├── steps.en.json
-│   ├── steps.sv.json
+│   ├── reasons.json
+│   ├── steps.json
 │   ├── danger-phrases.json
 │   ├── banned-phrases.json
 │   └── guidance/            # supplied passages and our Swedish text
@@ -250,23 +253,22 @@ All routes validate input with Zod and return the same response shape:
 All LLM calls go through `adapters/llm.ts`.
 
 ```ts
-interface LlmAdapter {
-  extractFacts(input: ExtractionInput): Promise<Facts>;
-  readAnswer(input: AnswerInput): Promise<"yes" | "no" | "unsure">;
-}
+extractFacts(input: ExtractionInput, options?: LlmOptions): Promise<unknown>
 ```
+
+The reply is untrusted until the Fact Validator has checked it. The keyword extractor runs on every request as a backstop, and `mergeFacts()` keeps any danger fact that either source found. Reassuring facts need nothing against them. If the LLM fails, the backstop's facts are used alone.
 
 ### Default configuration
 
 | Setting | Value |
 |---|---|
-| **SDK** | `@anthropic-ai/sdk` |
-| **Model** | `claude-opus-5-5`, from `LLM_MODEL` |
-| **Structured output** | `messages.parse()` with `zodOutputFormat()` |
-| **Effort** | `low` to start, because extraction is a simple task |
+| **SDK** | `openai` |
+| **Model** | `gpt-5.4-mini`, from `LLM_MODEL` |
+| **Structured output** | Chat Completions strict JSON schema, generated from the `Facts` Zod schema |
+| **Effort** | `low`, because extraction is a simple task |
 | **Timeout** | 8 seconds in the app; use a longer limit for evaluator runs |
-| **Refusals** | Check `stop_reason` before reading output |
-| **Fallback** | Enable `fallbacks: "default"` where the SDK method supports it, or retry once on a fallback model |
+| **Refusals** | A refusal or empty reply throws, and the backstop's facts are used |
+| **Key** | `OPENAI_API_KEY` or `open_ai_api_key`, server side only |
 
 Scam content can trigger safety filters. A refusal must lead to safe fallback text, not a broken screen.
 
@@ -280,34 +282,23 @@ Scam content can trigger safety filters. A refusal must lead to safe fallback te
 
 ### Model comparison
 
-Run each available model on the same 50 mixed-language development cases, then compare:
-
-- correct facts
-- valid structured output
-- response time
-- refusals
-- cost
-
-Keep the cheapest model that passes.
+We compared `gpt-4.1-mini`, `gpt-5.4-nano` and `gpt-5.4-mini` on the same 50 mixed-language development cases. `gpt-5.4-mini` gave the best safe-action pass and the only 100% escalation recall, with no refusals or invalid replies.
 
 ---
 
 ## 9. Decision Engine
 
-Rules are plain TypeScript functions, checked in priority order. The first match wins.
+Extraction sits behind one function type, so the LLM adapter can replace `offlineExtract` without touching the rules. The offline extractor also remains the fallback when the LLM fails.
+
+Situations are checked in priority order, and the first match wins. Each has a test, an optional list of facts worth asking about, and an outcome.
 
 ```ts
-type Rule = (ctx: DecisionContext) => Decision | null;
-
-const rules: Rule[] = [
-  personalSafetyRule,
-  outOfScopeRule,
-  liveDangerRule,
-  harmAlreadyHappenedRule,
-  scamAttemptRule,
-  safeEventRule,
-  unclearRule,
-];
+type Situation = {
+  id: string;
+  when: (item: Case) => boolean;
+  flips?: Topic[];
+  then: (item: Case) => Outcome;
+};
 ```
 
 | Priority | Rule | Example result |
@@ -320,11 +311,11 @@ const rules: Rule[] = [
 | 6 | Safe event | Looks genuine because… |
 | 7 | Unclear | Needs verification, offer a human |
 
-The last rule must never return Safe.
+The last rule must never return Safe. Safe also needs positive evidence: the content shows it wants nothing, or the user started it. Finding nothing risky isn't evidence.
 
 ### Action patterns
 
-`engine/rules/` uses general action patterns, defined in Stage 2, not one rule for each dataset scenario. Rules may use general facts such as asset, exposure and request type. They must not use case IDs, family names or dataset answers.
+`engine/situations.ts` uses general, action-equivalent situations, not one rule for each dataset scenario. Rules may use general facts such as asset, exposure and request type. They must not use case IDs, family names or dataset answers.
 
 ### Status mapping
 
@@ -353,26 +344,26 @@ Confidence comes from evidence:
 `question-picker.ts` runs after the Decision Engine.
 
 ```text
-Find remaining possible decisions
-        │
-        ├─ All need the same response ──► Stop asking
-        ▼
-For each unknown topic, compare Yes vs No
+Take the unknown facts this situation lists
         │
         ▼
-Ask the topic that changes the action, urgency or destination most
+Run the rules with Yes, then with No
+        │
+        ├─ Same response ──► Don't ask
+        ▼
+Ask the first fact that changes the action, urgency or destination
 ```
 
 - Use the supplied 18 question topics.
 - Keep question text in `content/questions.json` in all three languages.
 - Never ask more than one thing in a question.
-- Stop at two Decision Flips unless a third changes the action.
-- Not sure keeps the fact unknown and uses advice that is safe for the worse answer.
+- Stop at two Decision Flips.
+- Not sure keeps the fact unknown and uses advice that is safe for the worse answer, written as a condition. The status becomes Needs verification, and blocking a card is left to the bank.
 
 ### Answer reading
 
 - UI buttons map directly to `yes`, `no` or `unsure`.
-- The simulator returns natural text, so `readAnswer()` converts it.
+- The simulator returns natural text, so `readAnswerOffline()` converts it by language. Anything it can't read is `unsure`.
 - Only 41 of 323 English simulated answers start with yes or no, so regex alone is not enough.
 
 ### No-reply mode
@@ -490,7 +481,7 @@ If a check fails, use the approved template or fallback.
 - No user data is stored after the session.
 - Logs contain event types and timings, not user text.
 - Masked text and permitted facts are the only user data sent to the LLM.
-- `ANTHROPIC_API_KEY` stays on the server.
+- The API key stays on the server.
 - `.env*` files stay out of Git.
 
 ---
@@ -625,9 +616,8 @@ Fallback text must never say a situation is safe.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Server-side LLM access | Required unless an active SDK credential exists |
-| `LLM_MODEL` | Extraction model | `claude-opus-5-5` |
-| `LLM_EFFORT` | Extraction effort | `low` |
+| `OPENAI_API_KEY` | Server-side LLM access | Optional: without it, the keyword extractor runs alone |
+| `LLM_MODEL` | Extraction model | `gpt-5.4-mini` |
 | `LLM_TIMEOUT_MS` | App LLM timeout | `8000` |
 | `SIMSET_DIR` | Dataset location for evaluation | No default |
 | `SESSION_TTL_MINUTES` | Session expiry | `30` |
@@ -636,9 +626,10 @@ Fallback text must never say a situation is safe.
 
 ```bash
 npm install
-cp .env.example .env.local
-npm run dev
+cp .env.example .env.local   # add OPENAI_API_KEY and SIMSET_DIR
+npm run dev                  # http://localhost:3000
 npm test
+npm run eval:dev             # keyword extractor, or USE_LLM=1 for the LLM
 ```
 
 ### Hosting
@@ -667,7 +658,6 @@ Each step should leave something that runs.
 
 ## 20. Open decisions
 
-- [ ] Confirm the LLM after the 50-case comparison.
 - [ ] Decide who owns the engine and who owns the product UI.
 - [ ] Choose who reviews Finnish and Swedish content.
 - [ ] Confirm local-only or online hosting.
