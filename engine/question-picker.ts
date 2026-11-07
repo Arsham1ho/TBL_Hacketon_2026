@@ -1,6 +1,6 @@
 import text from "../content/action-vocabulary.json";
 import { topicValue, withAnswer, type Case } from "./case";
-import { matchSituation, type Outcome } from "./situations";
+import { matchSituation, safeIsBlocked, UNCLEAR, type Outcome } from "./situations";
 import type { Topic } from "./types";
 
 export const MAX_FLIPS = 2;
@@ -18,7 +18,8 @@ function severity(item: Outcome): number {
 }
 
 export function decide(item: Case): Outcome {
-  return matchSituation(item).then(item);
+  const outcome = matchSituation(item).then(item);
+  return outcome.status === "safe" && safeIsBlocked(item) ? UNCLEAR.then(item) : outcome;
 }
 
 export type Flip = { topic: Topic; ifYes: Outcome; ifNo: Outcome };
@@ -43,6 +44,7 @@ export function pickFlip(item: Case): Flip | null {
 // A "Not sure" answer that still changes the response.
 export function unresolvedFlip(item: Case): Flip | null {
   for (const topic of item.unsure) {
+    if (item.answers[topic]) continue;
     const flip = flipFor(item, topic);
     if (flip) return flip;
   }

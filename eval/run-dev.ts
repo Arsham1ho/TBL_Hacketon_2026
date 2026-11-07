@@ -14,7 +14,8 @@ const extract = process.env.USE_LLM === "1" ? cachedExtractor(model) : undefined
 
 const all = readFileSync(join(simsetDir, casesFile), "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line));
 // An even spread across scenarios, so a small run still covers every journey.
-const rows = limit ? all.filter((_, index) => index % Math.floor(all.length / Number(limit)) === 3).slice(0, Number(limit)) : all;
+const step = limit ? Math.max(1, Math.floor(all.length / Number(limit))) : 1;
+const rows = limit ? all.filter((_, index) => index % step === step - 1).slice(0, Number(limit)) : all;
 
 // Free API tiers allow only a few requests a minute, so runs can be paced.
 const CONCURRENCY = Number(process.env.EVAL_CONCURRENCY ?? 10);

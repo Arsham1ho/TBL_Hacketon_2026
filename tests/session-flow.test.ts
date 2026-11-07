@@ -62,8 +62,11 @@ describe("session flow", () => {
 
   it("uses a consented login finding to change the action path", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: { ...input("I logged in from my new laptop myself, but got an unknown login alert."), consent: { requires: ["operator_account.recent_logins"], preGranted: [] } }, demoScenario: "unknown_login", sentToLlm: false });
-    expect(started.response.screen.type).toBe("unlock");
-    const granted = await handleEvent("test", started.journey, { kind: "consent", signal: "operator_account.recent_logins", granted: true });
+    // A new laptop alone no longer proves the login was the user's own, so SafeStep asks first.
+    expect(started.response.screen.type).toBe("flip");
+    const answered = await handleEvent("test", started.journey, { kind: "answer", topic: "self_initiated", answer: "yes" });
+    expect(answered.response.screen.type).toBe("unlock");
+    const granted = await handleEvent("test", answered.journey, { kind: "consent", signal: "operator_account.recent_logins", granted: true });
     expect(granted.response.dataReceipt.used).toContain("operator_account.recent_logins");
     expect(granted.response.summary.some(line => line.includes("simulated account check"))).toBe(true);
     expect(granted.response.state.urgency).toBe("immediate");

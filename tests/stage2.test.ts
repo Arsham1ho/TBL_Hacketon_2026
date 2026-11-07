@@ -21,6 +21,8 @@ import type { Facts, Topic } from "../engine/types";
 import { Language } from "../engine/types";
 import { blankFacts } from "./helpers";
 
+const src = (userText: string) => ({ userText, maskedIncident: null });
+
 const item = (facts: Partial<Facts>, overrides: Partial<Case> = {}): Case => ({
   audience: "consumer",
   language: "en",
@@ -179,7 +181,7 @@ describe("Safe needs positive evidence", () => {
 
   it("replaces any decision outside the contract with the unclear path", () => {
     const unsafe = { ...decide(item({ incidentType: "ransomware" })), status: "safe" as const };
-    const result = withinContract(unsafe, []);
+    const result = withinContract(item({}), unsafe, []);
     expect(result.outcome.situation).toBe("unclear");
     expect(result.decision.status).toBe("needs_verification");
   });
@@ -231,26 +233,26 @@ describe("incident content", () => {
 
 describe("Fact Validator", () => {
   it("returns an unquoted fact to unknown", () => {
-    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], selfInitiated: "yes" }, "I got a text");
+    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], selfInitiated: "yes" }, src("I got a text"));
     expect(facts?.userAlreadyDid).toEqual([]);
     expect(facts?.selfInitiated).toBeNull();
   });
 
   it("rejects a quote the user never wrote", () => {
     const evidence = [{ fact: "userAlreadyDid", quote: "I paid the fee" }];
-    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], evidence }, "I got a text");
+    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], evidence }, src("I got a text"));
     expect(facts?.userAlreadyDid).toEqual([]);
     expect(facts?.evidence).toEqual([]);
   });
 
   it("keeps a quoted fact", () => {
     const evidence = [{ fact: "userAlreadyDid", quote: "I paid the fee" }];
-    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], evidence }, "Sorry, I paid the fee today");
+    const facts = validateFacts({ ...blankFacts, userAlreadyDid: ["paid"], evidence }, src("Sorry, I paid the fee today"));
     expect(facts?.userAlreadyDid).toEqual(["paid"]);
   });
 
   it("rejects output that adds its own risk", () => {
-    expect(validateFacts({ ...blankFacts, risk: "none" }, "anything")).toBeNull();
+    expect(validateFacts({ ...blankFacts, risk: "none" }, src("anything"))).toBeNull();
   });
 
   it("falls back when extraction returns nonsense", async () => {

@@ -56,7 +56,7 @@ const UNCLEAR_CEILING = 0.3;
 export function caseConfidence(item: Case, unknownDecisiveFacts: number, unclear: boolean): number {
   const supported = new Set(item.facts.evidence.map(({ fact }) => fact));
   const score = computeConfidence({
-    confirmedFacts: confirmedFacts(item).length + supported.size,
+    confirmedFacts: Object.keys(item.answers).length + supported.size,
     unknownDecisiveFacts,
     conflicts: 0,
   });

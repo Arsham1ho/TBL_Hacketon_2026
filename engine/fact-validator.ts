@@ -24,36 +24,37 @@ const UNKNOWN_IF_UNSUPPORTED: Partial<Record<keyof Facts, unknown>> = {
 
 const squash = (text: string) => fold(text).toLowerCase().replace(/\s+/g, " ").trim();
 
-function isEmpty(value: unknown): boolean {
-  return value === null || value === false || (Array.isArray(value) && value.length === 0);
+// An unquoted false is a claim too, so only null and an empty list count as saying nothing.
+function isEmpty(field: keyof Facts, value: unknown): boolean {
+  if (field === "asksToTracePerson") return value === false;
+  return value === null || (Array.isArray(value) && value.length === 0);
 }
+
+const VAGUE_TYPES: Facts["incidentType"][] = [null, "other", "message_or_notice"];
 
 // The LLM reads better, but keyword rules catch some things it misses. Missing a danger
 // costs far more than one extra caution, so a danger fact from either source is kept.
+// The backstop only adds danger: keyword hits never reassure on the LLM's behalf.
 export function mergeFacts(primary: Facts, backstop: Facts): Facts {
-  const did = [...new Set([...primary.userAlreadyDid, ...backstop.userAlreadyDid])];
+  const did = [...new Set([...primary.userAlreadyDid, ...backstop.userAlreadyDid.filter((action) => action !== "nothing")])];
   const asksFor = [...new Set([...primary.asksFor, ...backstop.asksFor])];
   // A model claiming that a message asks for nothing must never erase a
   // concrete request found by the deterministic safety backstop.
-  const asksNothing = asksFor.length > 0 ? false : primary.asksNothing ?? backstop.asksNothing;
-  const selfInitiated = primary.selfInitiated !== null && backstop.selfInitiated !== null
-    && primary.selfInitiated !== backstop.selfInitiated ? null : primary.selfInitiated ?? backstop.selfInitiated;
-  const independentlyVerified = primary.independentlyVerified !== null && backstop.independentlyVerified !== null
-    && primary.independentlyVerified !== backstop.independentlyVerified ? null : primary.independentlyVerified ?? backstop.independentlyVerified;
+  const asksNothing = asksFor.length > 0 ? false : primary.asksNothing;
   return {
     ...primary,
-    incidentType: primary.incidentType ?? backstop.incidentType,
+    incidentType: VAGUE_TYPES.includes(primary.incidentType) ? backstop.incidentType ?? primary.incidentType : primary.incidentType,
     // A vague "other" must not hide a specific match such as a claimed bank or operator.
     pretendsToBe: !primary.pretendsToBe || primary.pretendsToBe === "other" ? backstop.pretendsToBe ?? primary.pretendsToBe : primary.pretendsToBe,
     contactStartedBy: primary.contactStartedBy ?? backstop.contactStartedBy,
-    selfInitiated,
-    independentlyVerified,
+    // A denial from either source wins.
+    selfInitiated: backstop.selfInitiated === "no" ? "no" : primary.selfInitiated,
     passwordReused: primary.passwordReused ?? backstop.passwordReused,
     serviceLost: primary.serviceLost ?? backstop.serviceLost,
     pressureOrSecrecy: primary.pressureOrSecrecy ?? backstop.pressureOrSecrecy,
     asksNothing,
     userAlreadyDid: did.length > 1 ? did.filter((action) => action !== "nothing") : did,
-    dataExposed: [...new Set([...primary.dataExposed, ...backstop.dataExposed])],
+    dataExposed: [...new Set([...primary.dataExposed, ...backstop.dataExposed.filter((data) => data !== "email_only")])],
     asksFor,
     happeningNow: primary.happeningNow === true || backstop.happeningNow === true ? true : primary.happeningNow,
     personalSafetyRisk: primary.personalSafetyRisk === true || backstop.personalSafetyRisk === true ? true : primary.personalSafetyRisk,
@@ -62,21 +63,34 @@ export function mergeFacts(primary: Facts, backstop: Facts): Facts {
   };
 }
 
-export function validateFacts(raw: unknown, sourceText: string): Facts | null {
+// Short enough for "CEO", "kod" and "pin", long enough to refuse a stray letter.
+const MIN_QUOTE = 3;
+
+// What the user did or started can't be proven by the scam's own words.
+const USER_WORDS_ONLY = new Set<string>(["selfInitiated", "userAlreadyDid", "passwordReused"]);
+
+export type FactSources = { userText: string; maskedIncident: string | null };
+
+export function validateFacts(raw: unknown, sources: FactSources): Facts | null {
   const parsed = Facts.safeParse(raw);
   if (!parsed.success) return null;
 
-  const source = squash(sourceText);
-  const supported = new Set(
-    parsed.data.evidence
-      .filter(({ quote }) => quote.trim().length > 0 && source.includes(squash(quote)))
-      .map(({ fact }) => fact),
-  );
+  const userText = squash(sources.userText);
+  const everything = squash(`${sources.userText}\n${sources.maskedIncident ?? ""}`);
+  const isOrder = parsed.data.incidentType === "unexpected_order_or_bill";
+  const quoted = ({ fact, quote }: Facts["evidence"][number]) => {
+    const text = squash(quote);
+    if (text.length < MIN_QUOTE) return false;
+    const userOnly = USER_WORDS_ONLY.has(fact) || (fact === "independentlyVerified" && !isOrder);
+    return (userOnly ? userText : everything).includes(text);
+  };
 
-  const facts: Facts = { ...parsed.data, evidence: parsed.data.evidence.filter(({ fact }) => supported.has(fact)) };
+  const evidence = parsed.data.evidence.filter(quoted);
+  const supported = new Set(evidence.map(({ fact }) => fact));
+  const facts: Facts = { ...parsed.data, evidence };
   for (const [field, unknown] of Object.entries(UNKNOWN_IF_UNSUPPORTED)) {
     const key = field as keyof Facts;
-    if (!isEmpty(facts[key]) && !supported.has(field)) {
+    if (!isEmpty(key, facts[key]) && !supported.has(field)) {
       (facts as Record<keyof Facts, unknown>)[key] = unknown;
     }
   }

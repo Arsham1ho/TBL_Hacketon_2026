@@ -11,7 +11,8 @@ const CACHE_DIR = ".cache/facts";
 export function cachedExtractor(model = llmModel()): Extractor {
   mkdirSync(CACHE_DIR, { recursive: true });
   return async (input) => {
-    const key = createHash("sha256").update(JSON.stringify([PROMPT_VERSION, model, input])).digest("hex");
+    const sent = [input.language, input.incidentChannel, input.userText, input.incidentText];
+    const key = createHash("sha256").update(JSON.stringify([PROMPT_VERSION, model, sent])).digest("hex");
     const path = join(CACHE_DIR, `${key}.json`);
     if (existsSync(path)) return JSON.parse(readFileSync(path, "utf8"));
     const facts = await extractFacts(input, { model, timeoutMs: 60_000 });
