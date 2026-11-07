@@ -23,7 +23,7 @@ Subsequent events include `sessionId`:
 
 Send only the event that corresponds to the current screen. A Stop screen advances with `continue`; a Flip screen uses its returned `topic`; an Unlock screen uses its returned `signal`; a Rescue screen uses its returned `step.id`. A Handoff screen requires the user's explicit approval or refusal. `end` clears the session.
 
-After an approved handoff, `GET /api/sessions?sessionId=...` returns the simulated Agent View (`destination`, reviewed `summary`, and `omitted`). Before approval it returns `403`. A declined handoff never exposes this view.
+After an approved handoff, `GET /api/sessions?sessionId=...` returns the simulated Agent View (`destination`, reviewed `summary`, and `omitted`). The summary includes confirmed facts, current status/risk/urgency, reason for escalation, and recovery steps marked completed or not possible. Before approval it returns `403`. A declined handoff never exposes this view.
 
 The optional `demoScenario` on start can be `flagged_link`, `warned_call`, `sim_change`, `unknown_login`, `device_issue`, or `business_access`. These are synthetic. `demoSignals` can additionally list consent-gated paths from `engine/types.ts`. A missing or inconclusive signal never proves safety.
 Signal Unlock appears only when a simulated finding would change the action, urgency, or handoff. A granted check enters the case as `consented_signal`; refusal leaves that finding unknown. The demo findings are invented for the prototype and must be labeled as simulated in the UI.

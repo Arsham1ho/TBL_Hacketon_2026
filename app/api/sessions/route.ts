@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { extractFacts, llmAvailable } from "../../../adapters/llm";
-import { handleEvent, type Journey } from "../../../engine/handle-event";
+import { handleEvent, handoffSummary, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
 import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
@@ -66,5 +66,5 @@ export async function GET(request: Request) {
   if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403 });
   const result = assess(journey.item, journey.asked);
   if (!result.decision.destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
-  return NextResponse.json({ simulated: true, ...handoffPreview(result.decision.destination, result.confirmedFacts, journey.item.language) });
+  return NextResponse.json({ simulated: true, ...handoffPreview(result.decision.destination, result.confirmedFacts, journey.item.language), summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
 }
