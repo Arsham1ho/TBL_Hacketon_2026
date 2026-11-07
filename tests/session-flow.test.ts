@@ -141,6 +141,18 @@ describe("session flow", () => {
     expect(yes.response.state.status).toBe("incident_occurred");
   });
 
+  it("asks whether money was sent after a payment request", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("I got a message saying I need to pay someone 500 euros."), sentToLlm: false });
+    expect(started.response.screen).toMatchObject({ type: "flip", topic: "money_transferred" });
+    const no = await handleEvent("test", started.journey, { kind: "answer", topic: "money_transferred", answer: "no" });
+    expect(no.response.state.status).toBe("threat_in_progress");
+    const yes = await handleEvent("test", started.journey, { kind: "answer", topic: "money_transferred", answer: "yes" });
+    expect(yes.response.state.status).toBe("incident_occurred");
+    expect(yes.response.state.externalContacts).toContain("bank");
+    const unsure = await handleEvent("test", started.journey, { kind: "answer", topic: "money_transferred", answer: "unsure" });
+    expect(unsure.response.state.status).toBe("needs_verification");
+  });
+
   it("shows readable unknowns and sources, not internal ids", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text asking for card details."), sentToLlm: false });
     const done = await handleEvent("test", started.journey, { kind: "answer", topic: (started.response.screen as { topic: "card_details_entered" }).topic, answer: "unsure" });

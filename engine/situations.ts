@@ -411,7 +411,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "money_gone",
-    when: (c) => did(c, "paid"),
+    when: (c) => did(c, "paid") || yes(c, "money_transferred"),
     then: (c) => {
       const pressured = poses(c, "police") || poses(c, "authority");
       return {

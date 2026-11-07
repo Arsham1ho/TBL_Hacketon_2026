@@ -78,7 +78,7 @@ describe("Decision Flip", () => {
 
   it("asks nothing when every branch needs the same response", () => {
     expect(pickFlip(item({ incidentType: "ransomware" }))).toBeNull();
-    expect(pickFlip(item({ asksFor: ["money"] }))).toBeNull();
+    expect(pickFlip(item({ asksFor: ["money"] }))?.topic).toBe("money_transferred");
   });
 
   it("treats outcomes as different only if the response changes", () => {
