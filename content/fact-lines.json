@@ -107,6 +107,18 @@
         "fi": "Käyttäjä kertoo, ettei ole nyt turvassa.",
         "sv": "Användaren säger sig inte vara trygg nu."
       }
+    },
+    "time_of_event": {
+      "yes": {
+        "en": "Someone is still pressuring the user to act now.",
+        "fi": "Joku painostaa käyttäjää edelleen toimimaan juuri nyt.",
+        "sv": "Någon pressar fortfarande användaren att agera just nu."
+      },
+      "no": {
+        "en": "The immediate contact has ended.",
+        "fi": "Välitön yhteys on päättynyt.",
+        "sv": "Den omedelbara kontakten har avslutats."
+      }
     }
   },
   "signals": {

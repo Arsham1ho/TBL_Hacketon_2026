@@ -1,0 +1,386 @@
+{
+  "code_theft": {
+    "en": {
+      "attempted": "Someone tried to get a one-time code so they could act as you.",
+      "why": "Codes open accounts. Scammers contact many people and pretend to be someone you trust.",
+      "wanted": "A code that lets them sign in or approve a payment.",
+      "spot": "A real bank, operator or authority never asks you to read out a code.",
+      "prevent": [
+        "Never share a code, even with someone who sounds official.",
+        "If someone calls unexpectedly, hang up and call the official number yourself."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku yritti saada kertakäyttökoodin toimiakseen sinun nimissäsi.",
+      "why": "Koodit avaavat tilejä. Huijarit ottavat yhteyttä moniin ja esiintyvät jonain, johon luotat.",
+      "wanted": "Koodin, jolla he voivat kirjautua tai hyväksyä maksun.",
+      "spot": "Oikea pankki, operaattori tai viranomainen ei koskaan pyydä lukemaan koodia ääneen.",
+      "prevent": [
+        "Älä koskaan jaa koodia, vaikka pyytäjä kuulostaisi viralliselta.",
+        "Jos joku soittaa yllättäen, lopeta puhelu ja soita itse viralliseen numeroon."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon försökte få en engångskod för att kunna agera som du.",
+      "why": "Koder öppnar konton. Bedragare kontaktar många och låtsas vara någon du litar på.",
+      "wanted": "En kod som låter dem logga in eller godkänna en betalning.",
+      "spot": "En riktig bank, operatör eller myndighet ber dig aldrig läsa upp en kod.",
+      "prevent": [
+        "Dela aldrig en kod, även om personen låter officiell.",
+        "Om någon ringer oväntat, lägg på och ring det officiella numret själv."
+      ]
+    }
+  },
+  "payment_fraud": {
+    "en": {
+      "attempted": "Someone tried to make you pay or give card details under pressure.",
+      "why": "Small fees and urgent requests make people act before they check. Messages like this go to thousands of people.",
+      "wanted": "Your money or your card details.",
+      "spot": "Pressure, a deadline and an unexpected payment request are the warning signs.",
+      "prevent": [
+        "Check bills and deliveries in the service's own app, never through a link.",
+        "Pause before paying when someone says it is urgent."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku yritti saada sinut maksamaan tai antamaan korttitietosi painostamalla.",
+      "why": "Pienet maksut ja kiire saavat ihmiset toimimaan tarkistamatta. Tällaisia viestejä lähetetään tuhansille.",
+      "wanted": "Rahasi tai korttitietosi.",
+      "spot": "Painostus, määräaika ja odottamaton maksupyyntö ovat varoitusmerkkejä.",
+      "prevent": [
+        "Tarkista laskut ja toimitukset palvelun omasta sovelluksesta, ei linkin kautta.",
+        "Pysähdy ennen maksamista, jos joku sanoo asian olevan kiireellinen."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon försökte få dig att betala eller lämna kortuppgifter under press.",
+      "why": "Små avgifter och brådska får folk att agera utan att kontrollera. Sådana meddelanden skickas till tusentals personer.",
+      "wanted": "Dina pengar eller dina kortuppgifter.",
+      "spot": "Press, en tidsfrist och en oväntad betalningsbegäran är varningssignaler.",
+      "prevent": [
+        "Kontrollera räkningar och leveranser i tjänstens egen app, aldrig via en länk.",
+        "Stanna upp innan du betalar om någon säger att det är bråttom."
+      ]
+    }
+  },
+  "credential_phishing": {
+    "en": {
+      "attempted": "Someone tried to get your login details through a fake message or page.",
+      "why": "A working login can be sold or used to reach your other accounts.",
+      "wanted": "Your username and password.",
+      "spot": "A link that asks you to log in after an urgent message is the warning sign.",
+      "prevent": [
+        "Open services yourself instead of using links in messages.",
+        "Use a different password for each service and turn on two-step login."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku yritti saada kirjautumistietosi väärennetyllä viestillä tai sivulla.",
+      "why": "Toimiva tunnus voidaan myydä tai sillä voidaan päästä muille tileillesi.",
+      "wanted": "Käyttäjätunnuksesi ja salasanasi.",
+      "spot": "Varoitusmerkki on linkki, joka pyytää kirjautumaan kiireellisen viestin jälkeen.",
+      "prevent": [
+        "Avaa palvelut itse äläkä käytä viestien linkkejä.",
+        "Käytä jokaisessa palvelussa eri salasanaa ja ota kaksivaiheinen tunnistautuminen käyttöön."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon försökte få dina inloggningsuppgifter genom ett falskt meddelande eller en falsk sida.",
+      "why": "En fungerande inloggning kan säljas eller användas för att nå dina andra konton.",
+      "wanted": "Ditt användarnamn och lösenord.",
+      "spot": "En länk som ber dig logga in efter ett brådskande meddelande är varningssignalen.",
+      "prevent": [
+        "Öppna tjänster själv i stället för att använda länkar i meddelanden.",
+        "Använd olika lösenord för varje tjänst och aktivera tvåstegsverifiering."
+      ]
+    }
+  },
+  "remote_access": {
+    "en": {
+      "attempted": "Someone tried to get control of your device by pretending to offer help.",
+      "why": "Control of a device lets them see your screen, your banking and your codes.",
+      "wanted": "Remote access to your phone or computer.",
+      "spot": "Nobody genuine contacts you first and asks to control your device.",
+      "prevent": [
+        "Only allow remote access to support you contacted yourself.",
+        "Never open banking during a remote session."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku yritti saada laitteesi hallintaansa tarjoamalla muka apua.",
+      "why": "Laitteen hallinta antaa pääsyn näyttöösi, pankkiasiointiin ja koodeihin.",
+      "wanted": "Etäyhteyden puhelimeesi tai tietokoneeseesi.",
+      "spot": "Aito taho ei ota sinuun ensin yhteyttä ja pyydä ohjaamaan laitettasi.",
+      "prevent": [
+        "Salli etäyhteys vain tukeen, johon otit itse yhteyttä.",
+        "Älä koskaan avaa verkkopankkia etäyhteyden aikana."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon försökte få kontroll över din enhet genom att låtsas erbjuda hjälp.",
+      "why": "Kontroll över en enhet låter dem se din skärm, din bank och dina koder.",
+      "wanted": "Fjärråtkomst till din telefon eller dator.",
+      "spot": "Ingen äkta aktör kontaktar dig först och ber om att få styra din enhet.",
+      "prevent": [
+        "Tillåt bara fjärråtkomst för support du själv kontaktat.",
+        "Öppna aldrig banken under en fjärrsession."
+      ]
+    }
+  },
+  "device_compromise": {
+    "en": {
+      "attempted": "A harmful app, profile or file may have reached your device.",
+      "why": "Software on your device can read messages and codes without you noticing.",
+      "wanted": "Access to your device, messages and login codes.",
+      "spot": "Installing something from a message link is the warning sign.",
+      "prevent": [
+        "Install apps only from the official app store.",
+        "Keep your device updated and review app permissions."
+      ]
+    },
+    "fi": {
+      "attempted": "Haitallinen sovellus, profiili tai tiedosto on voinut päätyä laitteellesi.",
+      "why": "Laitteella oleva ohjelma voi lukea viestejä ja koodeja huomaamattasi.",
+      "wanted": "Pääsyn laitteeseesi, viesteihisi ja kirjautumiskoodeihin.",
+      "spot": "Varoitusmerkki on asentaminen viestin linkistä.",
+      "prevent": [
+        "Asenna sovelluksia vain virallisesta sovelluskaupasta.",
+        "Pidä laite päivitettynä ja tarkista sovellusten oikeudet."
+      ]
+    },
+    "sv": {
+      "attempted": "En skadlig app, profil eller fil kan ha nått din enhet.",
+      "why": "Program på enheten kan läsa meddelanden och koder utan att du märker det.",
+      "wanted": "Åtkomst till din enhet, dina meddelanden och inloggningskoder.",
+      "spot": "Att installera något från en länk i ett meddelande är varningssignalen.",
+      "prevent": [
+        "Installera appar bara från den officiella appbutiken.",
+        "Håll enheten uppdaterad och granska appbehörigheter."
+      ]
+    }
+  },
+  "sim_takeover": {
+    "en": {
+      "attempted": "Someone may be trying to move your number so they receive your calls and codes.",
+      "why": "Many banks and services send codes by text, so your number is a key to your accounts.",
+      "wanted": "Control of your phone number.",
+      "spot": "Losing signal or a transfer notice you didn't ask for are the warning signs.",
+      "prevent": [
+        "Never share transfer or confirmation codes from your operator.",
+        "Use an authenticator app for important accounts where you can."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku voi yrittää siirtää numeroasi saadakseen puhelusi ja koodisi.",
+      "why": "Monet pankit ja palvelut lähettävät koodit tekstiviestillä, joten numerosi on avain tileillesi.",
+      "wanted": "Puhelinnumerosi hallinnan.",
+      "spot": "Varoitusmerkkejä ovat kentän katoaminen ja siirtoilmoitus, jota et pyytänyt.",
+      "prevent": [
+        "Älä koskaan jaa operaattorin siirto- tai vahvistuskoodeja.",
+        "Käytä tärkeillä tileillä todennussovellusta, jos mahdollista."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon kan försöka flytta ditt nummer för att få dina samtal och koder.",
+      "why": "Många banker och tjänster skickar koder via sms, så ditt nummer är en nyckel till dina konton.",
+      "wanted": "Kontroll över ditt telefonnummer.",
+      "spot": "Förlorad täckning eller ett flyttmeddelande du inte bett om är varningssignaler.",
+      "prevent": [
+        "Dela aldrig flytt- eller bekräftelsekoder från operatören.",
+        "Använd en autentiseringsapp för viktiga konton när det går."
+      ]
+    }
+  },
+  "account_takeover": {
+    "en": {
+      "attempted": "Someone may have gained, or be trying to gain, access to your account.",
+      "why": "Accounts can be used to reach your contacts, reset other passwords or send scams in your name.",
+      "wanted": "Access to your account and the people connected to it.",
+      "spot": "Logins you don't recognise and being locked out are the warning signs.",
+      "prevent": [
+        "Turn on two-step login for important accounts.",
+        "Use a different password for each service."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku on voinut päästä tai yrittää päästä tilillesi.",
+      "why": "Tilin kautta voidaan tavoittaa yhteystietosi, vaihtaa muita salasanoja tai lähettää huijauksia nimissäsi.",
+      "wanted": "Pääsyn tilillesi ja siihen liittyviin ihmisiin.",
+      "spot": "Varoitusmerkkejä ovat tuntemattomat kirjautumiset ja se, ettet pääse tilillesi.",
+      "prevent": [
+        "Ota kaksivaiheinen tunnistautuminen käyttöön tärkeillä tileillä.",
+        "Käytä jokaisessa palvelussa eri salasanaa."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon kan ha fått, eller försöker få, åtkomst till ditt konto.",
+      "why": "Konton kan användas för att nå dina kontakter, återställa andra lösenord eller skicka bedrägerier i ditt namn.",
+      "wanted": "Åtkomst till ditt konto och personerna kopplade till det.",
+      "spot": "Okända inloggningar och att bli utelåst är varningssignaler.",
+      "prevent": [
+        "Aktivera tvåstegsverifiering för viktiga konton.",
+        "Använd olika lösenord för varje tjänst."
+      ]
+    }
+  },
+  "ransomware": {
+    "en": {
+      "attempted": "Your files appear to be locked to pressure you into paying.",
+      "why": "Small businesses are often targeted because downtime makes them more likely to pay.",
+      "wanted": "A ransom payment.",
+      "spot": "Files that won't open and a payment demand on screen are the signs.",
+      "prevent": [
+        "Keep regular backups that are not connected to your network.",
+        "Keep systems updated and limit who can install software."
+      ]
+    },
+    "fi": {
+      "attempted": "Tiedostosi näyttävät olevan lukittuina, jotta sinut saataisiin maksamaan.",
+      "why": "Pienyritykset ovat usein kohteena, koska käyttökatko saa ne todennäköisemmin maksamaan.",
+      "wanted": "Lunnasmaksun.",
+      "spot": "Merkkejä ovat tiedostot, jotka eivät aukea, ja maksuvaatimus näytöllä.",
+      "prevent": [
+        "Pidä säännöllisiä varmuuskopioita erillään verkosta.",
+        "Pidä järjestelmät päivitettyinä ja rajaa, kuka voi asentaa ohjelmia."
+      ]
+    },
+    "sv": {
+      "attempted": "Dina filer verkar vara låsta för att pressa dig att betala.",
+      "why": "Småföretag är ofta måltavlor eftersom driftstopp gör dem mer benägna att betala.",
+      "wanted": "En lösensumma.",
+      "spot": "Filer som inte går att öppna och ett betalningskrav på skärmen är tecknen.",
+      "prevent": [
+        "Ha regelbundna säkerhetskopior som inte är anslutna till nätverket.",
+        "Håll systemen uppdaterade och begränsa vem som kan installera program."
+      ]
+    }
+  },
+  "personal_safety": {
+    "en": {
+      "attempted": "Someone close to you may be watching your phone or location.",
+      "why": "This is about control, not money, so your safety comes before the technology.",
+      "wanted": "To know where you are and what you do.",
+      "spot": "Someone knowing things they shouldn't is the warning sign.",
+      "prevent": [
+        "Keep a safety plan with someone you trust.",
+        "Change passwords only from a device they have never used."
+      ]
+    },
+    "fi": {
+      "attempted": "Joku läheinen voi seurata puhelintasi tai sijaintiasi.",
+      "why": "Kyse on kontrollista eikä rahasta, joten turvallisuutesi tulee ennen tekniikkaa.",
+      "wanted": "Tietää missä olet ja mitä teet.",
+      "spot": "Varoitusmerkki on, että joku tietää asioita, joita hänen ei pitäisi tietää.",
+      "prevent": [
+        "Tee turvasuunnitelma jonkun luotettavan kanssa.",
+        "Vaihda salasanat vain laitteella, jota hän ei ole koskaan käyttänyt."
+      ]
+    },
+    "sv": {
+      "attempted": "Någon nära dig kan övervaka din telefon eller plats.",
+      "why": "Det handlar om kontroll, inte pengar, så din säkerhet går före tekniken.",
+      "wanted": "Att veta var du är och vad du gör.",
+      "spot": "Att någon vet saker den inte borde veta är varningssignalen.",
+      "prevent": [
+        "Gör en säkerhetsplan med någon du litar på.",
+        "Byt lösenord bara på en enhet personen aldrig har använt."
+      ]
+    }
+  },
+  "harmless": {
+    "en": {
+      "attempted": "This looks like a normal message or event, not an attack.",
+      "why": "Scammers copy normal messages like this one, so checking was a good habit.",
+      "wanted": "Nothing here asks for money, codes or login details.",
+      "spot": "Be careful if a similar message ever adds a link, a deadline or a payment.",
+      "prevent": [
+        "Keep checking in the service's own app when something feels off.",
+        "Never share codes or passwords, even when a message looks real."
+      ]
+    },
+    "fi": {
+      "attempted": "Tämä vaikuttaa tavalliselta viestiltä tai tapahtumalta, ei hyökkäykseltä.",
+      "why": "Huijarit kopioivat tällaisia tavallisia viestejä, joten tarkistaminen oli hyvä tapa.",
+      "wanted": "Tässä ei pyydetä rahaa, koodeja tai kirjautumistietoja.",
+      "spot": "Ole varovainen, jos vastaavassa viestissä on joskus linkki, määräaika tai maksu.",
+      "prevent": [
+        "Tarkista jatkossakin palvelun omasta sovelluksesta, jos jokin tuntuu oudolta.",
+        "Älä koskaan jaa koodeja tai salasanoja, vaikka viesti näyttäisi aidolta."
+      ]
+    },
+    "sv": {
+      "attempted": "Det här ser ut som ett vanligt meddelande eller en vanlig händelse, inte en attack.",
+      "why": "Bedragare kopierar vanliga meddelanden som det här, så det var en bra vana att kontrollera.",
+      "wanted": "Här efterfrågas inga pengar, koder eller inloggningsuppgifter.",
+      "spot": "Var försiktig om ett liknande meddelande någon gång har en länk, en tidsfrist eller en betalning.",
+      "prevent": [
+        "Fortsätt kontrollera i tjänstens egen app när något känns fel.",
+        "Dela aldrig koder eller lösenord, även om meddelandet ser äkta ut."
+      ]
+    }
+  },
+  "general": {
+    "en": {
+      "attempted": "We can't tell yet exactly what was happening.",
+      "why": "Scammers try many approaches, and most are sent to large numbers of people.",
+      "wanted": "Usually money, a code, or login details.",
+      "spot": "Pressure, secrecy and unexpected requests are the warning signs.",
+      "prevent": [
+        "Check things yourself through the official app or a number you already know.",
+        "Never share codes or passwords, even with someone who sounds official."
+      ]
+    },
+    "fi": {
+      "attempted": "Emme vielä tiedä tarkalleen, mitä tapahtui.",
+      "why": "Huijarit kokeilevat monia keinoja, ja useimmat lähetetään suurelle joukolle ihmisiä.",
+      "wanted": "Yleensä rahaa, koodin tai kirjautumistiedot.",
+      "spot": "Painostus, salailu ja odottamattomat pyynnöt ovat varoitusmerkkejä.",
+      "prevent": [
+        "Tarkista asiat itse virallisesta sovelluksesta tai tutusta numerosta.",
+        "Älä koskaan jaa koodeja tai salasanoja, vaikka pyytäjä kuulostaisi viralliselta."
+      ]
+    },
+    "sv": {
+      "attempted": "Vi kan ännu inte säga exakt vad som hände.",
+      "why": "Bedragare provar många sätt, och de flesta skickas till ett stort antal personer.",
+      "wanted": "Oftast pengar, en kod eller inloggningsuppgifter.",
+      "spot": "Press, hemlighetsmakeri och oväntade önskemål är varningssignaler.",
+      "prevent": [
+        "Kontrollera själv via den officiella appen eller ett nummer du redan känner.",
+        "Dela aldrig koder eller lösenord, även om personen låter officiell."
+      ]
+    }
+  },
+  "left_alone": {
+    "en": {
+      "attempted": "This looks like an attempt to make you click, pay or give your details.",
+      "why": "Scammers send the same message to many people and wait for someone to react.",
+      "wanted": "A click, a payment or your login or card details.",
+      "spot": "An unexpected message, a prize or a deadline, and a link or a request.",
+      "prevent": [
+        "Delete messages like this without opening their links.",
+        "Check things yourself in the service's own app."
+      ]
+    },
+    "fi": {
+      "attempted": "Tämä näyttää yritykseltä saada sinut klikkaamaan, maksamaan tai antamaan tietosi.",
+      "why": "Huijarit lähettävät saman viestin monille ja odottavat, että joku reagoi.",
+      "wanted": "Klikkauksen, maksun tai kirjautumis- tai korttitietosi.",
+      "spot": "Odottamaton viesti, palkinto tai määräaika sekä linkki tai pyyntö.",
+      "prevent": [
+        "Poista tällaiset viestit avaamatta niiden linkkejä.",
+        "Tarkista asiat itse palvelun omasta sovelluksesta."
+      ]
+    },
+    "sv": {
+      "attempted": "Det här ser ut som ett försök att få dig att klicka, betala eller lämna dina uppgifter.",
+      "why": "Bedragare skickar samma meddelande till många och väntar på att någon ska reagera.",
+      "wanted": "Ett klick, en betalning eller dina inloggnings- eller kortuppgifter.",
+      "spot": "Ett oväntat meddelande, en vinst eller en tidsgräns, och en länk eller en begäran.",
+      "prevent": [
+        "Radera sådana meddelanden utan att öppna länkarna.",
+        "Kontrollera saker själv i tjänstens egen app."
+      ]
+    }
+  }
+}

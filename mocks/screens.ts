@@ -44,6 +44,16 @@ const SCREENS: Record<Screen["type"], Screen> = {
     confidence: "What you told us points clearly to this.",
     unknowns: [],
     sources: [{ id: "guidance_link_opened_no_input", title: "A link was opened, but nothing was entered" }],
+    classification: null,
+    story: {
+      attempted: "Someone tried to make you pay or give card details under pressure.",
+      prevent: ["Check deliveries in the service's own app, never through a link."],
+      investigation: { why: "Messages like this go to thousands of people.", wanted: "Your card details.", spot: "Pressure and an unexpected payment request." },
+    },
+    completed: [],
+    stopped: false,
+    sharedWith: null,
+    supportRoutes: [],
   },
   rescue: {
     type: "rescue",
@@ -59,6 +69,7 @@ const SCREENS: Record<Screen["type"], Screen> = {
   handoff: {
     type: "handoff",
     destination: "operator_support_agent",
+    route: "operator_support_agent",
     summary: ["Your phone lost signal.", "You did not order the eSIM change."],
     omitted: ["Codes, passwords and card numbers"],
   },

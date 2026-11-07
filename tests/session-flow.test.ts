@@ -1,3 +1,4 @@
+import approved from "../content/approved-text.json";
 import { describe, expect, it } from "vitest";
 import { fastDanger } from "../engine/fast-danger";
 import { handleEvent } from "../engine/handle-event";
@@ -138,6 +139,86 @@ describe("session flow", () => {
     expect(screen.sources.map((source) => source.title).join(" ")).not.toMatch(/guidance_/);
   });
 
+  it("can leave a Stop raised only by the fast danger check", async () => {
+    const message = "Someone from my bank is on the line right now and is asking for the code from my text message.";
+    const started = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+    expect(started.response.screen.type).toBe("stop");
+    const next = await handleEvent("test", started.journey, { kind: "continue" });
+    expect(next.response.screen.type).not.toBe("stop");
+  });
+
+  describe("end of the journey", () => {
+    const finish = async (message: string, answers: Record<string, "yes" | "no"> = {}) => {
+      let { journey, response } = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+      for (let turn = 0; turn < 14; turn += 1) {
+        const { screen } = response;
+        if (screen.type === "result") break;
+        const event = screen.type === "stop" ? ({ kind: "continue" } as const)
+          : screen.type === "flip" ? ({ kind: "answer", topic: screen.topic, answer: answers[screen.topic] ?? "no" } as const)
+          : screen.type === "rescue" ? ({ kind: "rescue", stepId: screen.step.id, outcome: "done" } as const)
+          : ({ kind: "handoff", approved: true } as const);
+        ({ journey, response } = await handleEvent("test", journey, event));
+      }
+      return { journey, response, screen: response.screen as Extract<typeof response.screen, { type: "result" }> };
+    };
+
+    it("explains a safe case and offers a closer look", async () => {
+      const { screen, response } = await finish("My bank texted that I have a new message in my online bank. There is no link and it asks for nothing.");
+      expect(response.state.status).toBe("safe");
+      expect(screen.story.prevent.length).toBeGreaterThan(0);
+      expect(screen.story.investigation.spot).not.toBe("");
+    });
+
+    it("sums up an incident and points to the bank", async () => {
+      const { screen, response } = await finish("I clicked a parcel link and typed my card number on the page.", { card_details_entered: "yes" });
+      expect(response.state.status).toBe("incident_occurred");
+      expect(screen.supportRoutes[0]).toBe("bank");
+      expect(screen.completed.length).toBeGreaterThan(0);
+    });
+
+    it("routes a chosen contact to that support", async () => {
+      const { journey } = await finish("I clicked a parcel link and typed my card number on the page.", { card_details_entered: "yes" });
+      const asked = await handleEvent("test", journey, { kind: "talk_to_person", route: "bank" });
+      expect(asked.response.screen).toMatchObject({ type: "handoff", route: "bank" });
+    });
+
+    it("calls a message the user left alone safe, without questions", async () => {
+      for (const [message, language] of [
+        ["I got a text saying I won a prize, I deleted it and did not click anything.", "en"],
+        ["Sain viestin että voitin palkinnon, poistin sen enkä klikannut mitään.", "fi"],
+        ["Fick ett sms om att jag vunnit, jag raderade det och klickade inte på något.", "sv"],
+      ] as const) {
+        const { response } = await handleEvent("test", null, { kind: "start", input: input(message, language), sentToLlm: false });
+        expect(response.screen).toMatchObject({ type: "result", statusLabel: approved.statusLabels.safe[language] });
+      }
+    });
+
+    it("reads a Finnish click after the link is named", async () => {
+      const message = "Sain viestin että paketti on jumissa ja linkki, klikkasin sitä mutta en antanut mitään tietoja.";
+      const { response } = await handleEvent("test", null, { kind: "start", input: input(message, "fi"), sentToLlm: false });
+      expect(response.screen).toMatchObject({ type: "flip", topic: "card_details_entered" });
+    });
+
+    it("offers the bank first when a caller poses as the bank", async () => {
+      const { screen } = await finish("Someone from my bank called and is on the line now asking for my code", { code_shared: "no" });
+      expect(screen.supportRoutes[0]).toBe("bank");
+    });
+
+    it("offers a person when a step can't be done", async () => {
+      const started = await handleEvent("test", null, { kind: "start", input: input("I clicked a parcel link and typed my card number on the page."), sentToLlm: false });
+      let { journey, response } = started;
+      if (response.screen.type === "flip") ({ journey, response } = await handleEvent("test", journey, { kind: "answer", topic: response.screen.topic, answer: "yes" }));
+      const screen = response.screen as Extract<typeof response.screen, { type: "rescue" }>;
+      const next = await handleEvent("test", journey, { kind: "rescue", stepId: screen.step.id, outcome: "not_possible" });
+      expect(next.response.screen).toMatchObject({ type: "handoff", route: "bank" });
+    });
+
+    it("drops advice that doesn't fit the case", async () => {
+      const { screen } = await finish("The police called and told me to move my money to a safe account. I already moved 5000 euros.");
+      expect(screen.steps.join(" ")).not.toMatch(/block the card/i);
+    });
+  });
+
   describe("vague messages", () => {
     const answerAll = async (message: string, answers: ("yes" | "no" | "unsure")[]) => {
       let { journey, response } = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
@@ -153,7 +234,7 @@ describe("session flow", () => {
       return { journey, response, topics };
     };
 
-    it.each(["help", "I got a suspicious message", "my account was hacked"])("asks instead of guessing: %s", async (message) => {
+    it.each(["help", "I got a suspicious message", "something weird happened"])("asks instead of guessing: %s", async (message) => {
       const { response } = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
       expect(response.screen).toMatchObject({ type: "flip", topic: "time_of_event" });
       expect(response.state.risk).toBe("medium");

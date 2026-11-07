@@ -47,6 +47,7 @@ export function SafeStepApp() {
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [agent, setAgent] = useState<AgentPreview | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
   const log = useRef<HTMLDivElement>(null);
@@ -119,6 +120,7 @@ export function SafeStepApp() {
     setResponse(null);
     setAgent(null);
     setItems([]);
+    setClosed(false);
     setFailed(null);
     setMessage("");
     setIncident("");
@@ -244,7 +246,18 @@ export function SafeStepApp() {
     );
   }
 
-  const actions = { t, business: !consumer, reply, handoff: (recap: string, label: string, approved: boolean) => void handoff(recap, label, approved), restart: () => void restart() };
+  const actions = {
+    t,
+    business: !consumer,
+    reply,
+    handoff: (recap: string, label: string, approved: boolean) => void handoff(recap, label, approved),
+    restart: () => void restart(),
+    closed,
+    close: (recap: string, label: string) => {
+      record({ from: "safestep", text: recap }, { from: "user", text: label });
+      setClosed(true);
+    },
+  };
   const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
   const replies: Reply[] = failed
     ? [
@@ -304,7 +317,7 @@ export function SafeStepApp() {
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
           {replies.map((option) => (
-            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="flex-1">
+            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1">
               {option.label}
             </Btn>
           ))}

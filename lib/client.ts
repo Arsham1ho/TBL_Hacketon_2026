@@ -1,10 +1,10 @@
-import type { ApiRequest, ApiResponse } from "../engine/screens";
+import type { ApiRequest, ApiResponse, SupportRoute } from "../engine/screens";
 import type { Destination } from "../engine/types";
 
 // The UI's only connection to the engine. A configurable URL keeps a Capacitor app possible.
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export type AgentPreview = { destination: Destination; summary: string[]; omitted: string[] };
+export type AgentPreview = { destination: Destination; route: SupportRoute; summary: string[]; omitted: string[] };
 
 export type SafeStepClient = {
   send: (request: ApiRequest) => Promise<ApiResponse>;

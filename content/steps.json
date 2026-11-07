@@ -159,6 +159,11 @@
     "fi": "Tämä vaikuttaa aidolta ja tavalliselta tapahtumalta, joten sinun ei tarvitse tehdä mitään.",
     "sv": "Det här verkar vara äkta och normalt, så du behöver inte göra något."
   },
+  "left_alone_ok": {
+    "en": "You don't need to do anything else. Deleting it or leaving it was the right thing.",
+    "fi": "Sinun ei tarvitse tehdä muuta. Viestin poistaminen tai huomiotta jättäminen oli oikea ratkaisu.",
+    "sv": "Du behöver inte göra något mer. Det var rätt att radera det eller låta det vara."
+  },
   "seek_support_org": {
     "en": "Talk to someone you trust or a victim-support service.",
     "fi": "Puhu luotettavalle henkilölle tai Rikosuhripäivystykselle.",

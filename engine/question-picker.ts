@@ -1,5 +1,5 @@
 import text from "../content/action-vocabulary.json";
-import { topicValue, withAnswer, type Case } from "./case";
+import { didAction, topicValue, withAnswer, type Case } from "./case";
 import { matchSituation, safeIsBlocked, UNCLEAR, type Outcome } from "./situations";
 import type { Topic } from "./types";
 
@@ -19,9 +19,19 @@ function severity(item: Outcome): number {
   return INTERVENTION[item.primaryAction] * 100 + RISKS.indexOf(item.risk) * 10 + URGENCIES.indexOf(item.urgency);
 }
 
+// Advice must fit what happened: a phone call has no link, and a bank transfer has no card.
+function fitSteps(item: Case, outcome: Outcome): Outcome {
+  const steps = outcome.steps.filter((step) => {
+    if (step === "dont_open_link") return item.signals.hasLink || !["phone_call", "missed_call"].includes(item.facts.incidentType ?? "");
+    if (step === "block_card") return !didAction(item, "paid") || didAction(item, "entered_card");
+    return true;
+  });
+  return { ...outcome, steps };
+}
+
 export function decide(item: Case): Outcome {
   const outcome = matchSituation(item).then(item);
-  return outcome.status === "safe" && safeIsBlocked(item) ? UNCLEAR.then(item) : outcome;
+  return fitSteps(item, outcome.status === "safe" && safeIsBlocked(item) ? UNCLEAR.then(item) : outcome);
 }
 
 export type Flip = { topic: Topic; ifYes: Outcome; ifNo: Outcome };

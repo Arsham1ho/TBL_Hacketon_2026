@@ -3,6 +3,7 @@ import type { Screen } from "./screens";
 import type { Language } from "./types";
 import approved from "../content/approved-text.json";
 import { questionText } from "./composer";
+import { isApprovedIncidentCategory } from "./incident-category";
 import questions from "../content/questions.json";
 import reasons from "../content/reasons.json";
 import steps from "../content/steps.json";
@@ -36,7 +37,8 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
     const confidenceLines = Object.values(approved.confidence).map(entry => entry[language]);
     return statusLabels.includes(screen.statusLabel) && confidenceLines.includes(screen.confidence)
       && reasonLines.includes(screen.reason) && screen.steps.every(step => stepLines.includes(step))
-      && (screen.branches === null || branchesAreApproved(screen.branches));
+      && (screen.branches === null || branchesAreApproved(screen.branches))
+      && (screen.classification === null || isApprovedIncidentCategory(screen.classification, language));
   }
   if (screen.type === "rescue") return stepLines.includes(screen.step.detail);
   return true;

@@ -15,7 +15,8 @@ const End = z.strictObject({ kind: z.literal("end"), sessionId: z.string().uuid(
 const Continue = z.strictObject({ kind: z.literal("continue"), sessionId: z.string().uuid() });
 const Consent = z.strictObject({ kind: z.literal("consent"), sessionId: z.string().uuid(), signal: GatedSignal, granted: z.boolean() });
 const Rescue = z.strictObject({ kind: z.literal("rescue"), sessionId: z.string().uuid(), stepId: z.string(), outcome: z.enum(["done", "not_possible"]) });
-const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.string().uuid() });
+const Route = z.enum(["bank", "police", "operator_support_agent", "security_specialist", "business_security_support", "human_advisor"]);
+const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.string().uuid(), route: Route.optional() });
 const Handoff = z.strictObject({ kind: z.literal("handoff"), sessionId: z.string().uuid(), approved: z.boolean() });
 
 export async function POST(request: Request) {
@@ -68,5 +69,5 @@ export async function GET(request: Request) {
   const result = assess(journey.item, journey.asked);
   const destination = journeyDestination(journey);
   if (!destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
-  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
+  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
 }

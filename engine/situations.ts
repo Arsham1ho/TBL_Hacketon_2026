@@ -501,16 +501,27 @@ export const SITUATIONS: Situation[] = [
     then: (c) =>
       selfStarted(c) === "yes"
         ? explainBenign("own_approval_prompt", ["guidance_mfa_fatigue", "guidance_proportionate_advice"])
-        : outcome(
-            "approval_prompt_attack",
-            "change_password_and_enable_mfa",
-            "threat_in_progress",
-            "critical",
-            "immediate",
-            ["dont_approve_prompts", "change_password", "review_sessions"],
-            ["guidance_mfa_fatigue"],
-            { rescue: true },
-          ),
+        : poses(c, "bank")
+          ? outcome(
+              "approval_prompt_attack",
+              "contact_bank_and_block_cards",
+              "threat_in_progress",
+              "critical",
+              "immediate",
+              ["dont_approve_prompts", "contact_bank_now", "check_statements"],
+              ["guidance_mfa_fatigue", "guidance_bank_verification"],
+              { externalContacts: ["bank"], rescue: true },
+            )
+          : outcome(
+              "approval_prompt_attack",
+              "change_password_and_enable_mfa",
+              "threat_in_progress",
+              "critical",
+              "immediate",
+              ["dont_approve_prompts", "change_password", "review_sessions"],
+              ["guidance_mfa_fatigue"],
+              { rescue: true },
+            ),
   },
   {
     id: "signaled_unknown_login",
@@ -870,6 +881,12 @@ export const SITUATIONS: Situation[] = [
       uncontradicted(c) &&
       (selfStarted(c) === "yes" || (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
     then: () => explainBenign("looks_genuine", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
+  },
+  {
+    // A message the user left alone needs no triage, so they get a clear answer straight away.
+    id: "left_alone",
+    when: (c) => (is(c, "message_or_notice") || is(c, "link_or_site")) && c.facts.userAlreadyDid.includes("nothing") && !safeIsBlocked(c),
+    then: () => outcome("left_alone", "no_action_needed", "safe", "none", "none", ["left_alone_ok"], ["guidance_proportionate_advice"]),
   },
   {
     id: "unclear",

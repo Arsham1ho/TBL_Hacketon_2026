@@ -8,13 +8,15 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check:contract": "tsx --env-file-if-exists=.env.local eval/check-contract.ts",
     "eval:dev": "tsx --env-file-if-exists=.env.local eval/run-dev.ts",
-    "eval:holdout": "tsx eval/run-holdout.ts"
+    "eval:holdout": "tsx eval/run-holdout.ts",
+    "eval:scenarios": "tsx eval/run-scenarios.ts",
+    "eval:frozen": "SCENARIO_FILE=eval/scenarios/frozen.json tsx eval/run-scenarios.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

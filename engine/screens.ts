@@ -1,7 +1,11 @@
+import type { IncidentCategory, IncidentStory } from "./incident-category";
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
 
 // The contract between the engine and the UI. The API returns these and the UI only
 // renders them, so the UI holds no safety logic. Change this file together, not alone.
+
+// Who can actually help. The bank and police are contacts, and the rest are people at DNA.
+export type SupportRoute = Destination | "bank" | "police";
 
 export type Branch = { condition: string; steps: string[] };
 
@@ -26,9 +30,16 @@ export type Screen =
       confidence: string;
       unknowns: string[];
       sources: { id: string; title: string }[];
+      classification: IncidentCategory | null;
+      story: IncidentStory;
+      // Steps the user finished in Rescue Mode, so they aren't repeated as to-dos.
+      completed: string[];
+      stopped: boolean;
+      sharedWith: SupportRoute | null;
+      supportRoutes: SupportRoute[];
     }
   | { type: "rescue"; step: RescueStep; position: number; total: number }
-  | { type: "handoff"; destination: Destination; summary: string[]; omitted: string[] }
+  | { type: "handoff"; destination: Destination; route: SupportRoute; summary: string[]; omitted: string[] }
   | { type: "fallback"; message: string; actions: string[] }
   | { type: "end"; message: string };
 
@@ -60,7 +71,7 @@ export type ApiResponse = {
 export type ApiRequest =
   | { kind: "start"; audience: "consumer" | "small_business"; language: Language | "auto"; message: string; incident?: string; demoScenario?: string }
   | { kind: "continue" }
-  | { kind: "talk_to_person" }
+  | { kind: "talk_to_person"; route?: SupportRoute }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }

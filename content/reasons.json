@@ -163,5 +163,10 @@
     "en": "Someone pushing you to act right now is a common sign of a scam.",
     "fi": "Painostus toimimaan heti on yleinen huijauksen merkki.",
     "sv": "Att någon pressar dig att agera direkt är ett vanligt tecken på bedrägeri."
+  },
+  "left_alone": {
+    "en": "You left it alone, so nothing was given away.",
+    "fi": "Et reagoinut viestiin, joten mitään ei päässyt ulkopuolisille.",
+    "sv": "Du lät det vara, så inget har lämnats ut."
   }
 }

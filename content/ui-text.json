@@ -488,5 +488,95 @@
     "en": "Details",
     "fi": "Lisätiedot",
     "sv": "Detaljer"
+  },
+  "bank": {
+    "en": "Your bank",
+    "fi": "Pankkisi",
+    "sv": "Din bank"
+  },
+  "police": {
+    "en": "The police",
+    "fi": "Poliisi",
+    "sv": "Polisen"
+  },
+  "contactRoute": {
+    "en": "Contact: {name}",
+    "fi": "Ota yhteyttä: {name}",
+    "sv": "Kontakta: {name}"
+  },
+  "storyAttempted": {
+    "en": "What was happening",
+    "fi": "Mitä tapahtui",
+    "sv": "Vad som hände"
+  },
+  "storySummary": {
+    "en": "What we know",
+    "fi": "Mitä tiedämme",
+    "sv": "Det här vet vi"
+  },
+  "storyDo": {
+    "en": "Do this now",
+    "fi": "Tee nyt näin",
+    "sv": "Gör så här nu"
+  },
+  "storyClear": {
+    "en": "How to clear the risk",
+    "fi": "Näin poistat riskin",
+    "sv": "Så tar du bort risken"
+  },
+  "storyDone": {
+    "en": "What has been done",
+    "fi": "Mitä on tehty",
+    "sv": "Det här är gjort"
+  },
+  "storyPrevent": {
+    "en": "How to stay safe",
+    "fi": "Näin pysyt turvassa",
+    "sv": "Så håller du dig säker"
+  },
+  "investigate": {
+    "en": "Look closer: why this happened",
+    "fi": "Tutki tarkemmin: miksi näin kävi",
+    "sv": "Titta närmare: varför det hände"
+  },
+  "investigateWhy": {
+    "en": "Why they approached you",
+    "fi": "Miksi sinua lähestyttiin",
+    "sv": "Varför de kontaktade dig"
+  },
+  "investigateWanted": {
+    "en": "What they wanted",
+    "fi": "Mitä he halusivat",
+    "sv": "Vad de ville ha"
+  },
+  "investigateSpot": {
+    "en": "How to spot it next time",
+    "fi": "Näin tunnistat sen ensi kerralla",
+    "sv": "Så känner du igen det nästa gång"
+  },
+  "didStop": {
+    "en": "You were warned to stop the contact.",
+    "fi": "Sinua varoitettiin lopettamaan yhteydenpito.",
+    "sv": "Du varnades att avbryta kontakten."
+  },
+  "didShare": {
+    "en": "Your approved summary was shared with: {name} (simulated).",
+    "fi": "Hyväksymäsi yhteenveto jaettiin: {name} (simuloitu).",
+    "sv": "Din godkända sammanfattning delades med: {name} (simulerat)."
+  },
+  "isStopped": {
+    "en": "It has stopped",
+    "fi": "Se on loppunut",
+    "sv": "Det har upphört"
+  },
+  "stillHappening": {
+    "en": "Still happening",
+    "fi": "Jatkuu yhä",
+    "sv": "Pågår fortfarande"
+  },
+  "stoppedThanks": {
+    "en": "Good. Keep the steps above in mind, and start again if anything changes.",
+    "fi": "Hyvä. Pidä yllä olevat ohjeet mielessä ja aloita uudelleen, jos jokin muuttuu.",
+    "sv": "Bra. Håll stegen ovan i minnet och börja om om något förändras."
   }
 }

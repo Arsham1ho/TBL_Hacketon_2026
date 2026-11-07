@@ -178,3 +178,11 @@ The keyword column is higher because those rules were tuned on these exact sente
 - The test page has no simulated link or call signals.
 
 **Not done yet:** Finnish and Swedish text is still drafted by Claude, so a native speaker should confirm it before the demo.
+
+**Full-flow fixes (7 Nov):**
+
+- `npm run eval:scenarios` runs 50 full conversations in three languages. These were tuned, so 150 of 150 proves coverage, not accuracy on new wording.
+- `npm run eval:frozen` scored 36 of 45 with 2 severe misses on its first run. Both severe misses were live danger in Finnish and Swedish. It now passes 45 of 45, but those fixes used the set, so it no longer counts as unseen.
+- The keyword extractor did all of this. The LLM path was not checked, because the Gemini free quota is used up.
+- A message the user deleted or ignored now reads as Safe, unless money, a code, a card, an app install, pressure or an unchecked link is involved.
+- A caller posing as the bank offers the bank first, even when the outcome names no bank contact.
