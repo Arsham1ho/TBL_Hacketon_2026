@@ -9,6 +9,7 @@ import { isApprovedIncidentCategory } from "./incident-category";
 import questions from "../content/questions.json";
 import reasons from "../content/reasons.json";
 import steps from "../content/steps.json";
+import { isApprovedManipulationReason } from "./manipulation";
 
 const banned = /(?:guaranteed safe|definitely safe|100% safe|täysin turvallinen|helt säker|ei voi olla huijaus|kan inte vara bedrägeri)/iu;
 
@@ -40,7 +41,7 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
     const reasonLines = Object.values(reasons).map(entry => entry[language]);
     const confidenceLines = Object.values(approved.confidence).map(entry => entry[language]);
     return statusLabels.includes(screen.statusLabel) && confidenceLines.includes(screen.confidence)
-      && reasonLines.includes(screen.reason) && screen.steps.every(step => stepLines.includes(step))
+      && (reasonLines.includes(screen.reason) || isApprovedManipulationReason(screen.reason, reasonLines, language)) && screen.steps.every(step => stepLines.includes(step))
       && (screen.branches === null || branchesAreApproved(screen.branches))
       && (screen.classification === null || isApprovedIncidentCategory(screen.classification, language))
       && (!screen.likelyType || isApprovedIncidentCategory(screen.likelyType, language));

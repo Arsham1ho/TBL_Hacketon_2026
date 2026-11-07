@@ -19,6 +19,8 @@ Built for the DNA challenge at the Since AI Hackathon 2026.
 
 If a user answers "Not sure", the fact stays unknown and the advice covers both answers. Something is only called safe with positive evidence, so finding nothing risky is never enough.
 
+**Scam Radar** checks each report in the background against four ranked synthetic patterns. When supported facts resemble one, the result shows the match with a clear prototype label. There is no separate Radar control. Radar does not read DNA reports or change risk, status, urgency, recovery steps, or the chosen action. Its mock feed lives in `engine/scam-radar.ts` and can later be replaced with an approved trend source.
+
 See [TASKS.md](TASKS.md) for the team plan, [ARCHITECTURE.md](ARCHITECTURE.md) for the design, [DECISIONS.md](DECISIONS.md) for the safety contract and results, and [strategy.md](strategy.md) for the product plan.
 
 ## Setup
