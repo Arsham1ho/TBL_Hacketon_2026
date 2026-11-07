@@ -48,7 +48,10 @@ export function fastDanger(text: string): InterruptionKind | null {
   }
 
   // 2. Self-initiated or verified actions do not trigger immediate stop interruption
-  if (SELF_INITIATED.some((rx) => rx.test(folded))) {
+  // A legitimate booking does not authorise a separate live request for secrets,
+  // money or access. Do not suppress those requests merely because both appear.
+  const separateRequest = re(String.raw`\b(asking|asks|asked|wants|tells|telling|demands|insists|pyytää|pyysi|vaatii|ber|kräver)\b.{0,80}\b(code|pin|password|money|transfer|approve|koodi|salasana|raha|kod|lösenord|pengar)\w*`).test(folded);
+  if (SELF_INITIATED.some((rx) => rx.test(folded)) && !separateRequest) {
     return null;
   }
 

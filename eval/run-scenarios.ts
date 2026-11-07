@@ -59,7 +59,8 @@ async function converse(scenario: Scenario, language: Language) {
       event = { kind: "answer", topic: screen.topic, answer: scenario.answers[screen.topic] ?? "unsure" };
     } else if (screen.type === "unlock") event = { kind: "consent", signal: screen.signal, granted: true };
     else if (screen.type === "rescue") event = { kind: "rescue", stepId: screen.step.id, outcome: "done" };
-    else event = { kind: "handoff", approved: true };
+    else if (screen.type === "handoff") event = { kind: "handoff", approved: true };
+    else break; // This simulator has no scripted answer for an open description.
     ({ journey, response } = await handleEvent("test", journey, event));
     seen.push(response);
   }
@@ -78,6 +79,7 @@ function judge(scenario: Scenario, language: Language, run: Awaited<ReturnType<t
   const steps = final.outcome.steps;
 
   if (response.screen.type === "fallback") problems.push("ended in fallback");
+  if (response.screen.type === "describe" || response.screen.type === "ask") problems.push(`simulator cannot answer ${response.screen.type}`);
   if (expect.actions && !expect.actions.includes(action)) problems.push(`action ${action}`);
   if (expect.status && !expect.status.includes(status)) problems.push(`status ${status}`);
   if (!expect.harmless && status === "safe") problems.push("SCAM CALLED SAFE");

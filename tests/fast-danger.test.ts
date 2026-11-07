@@ -41,6 +41,9 @@ describe("Fast Danger Check (fi, en, sv)", () => {
   });
 
   describe("live danger requests in English", () => {
+    it("does not let a booked session hide a separate live code request", () => {
+      expect(fastDanger("I booked support, and the caller is on the line asking for my code now.")).toBe("code");
+    });
     it("detects remote access while on the phone", () => {
       expect(fastDanger("He is on the phone asking me to install AnyDesk")).toBe("remote_access");
       expect(fastDanger("Someone is calling right now asking for TeamViewer remote access")).toBe("remote_access");

@@ -58,7 +58,7 @@ export function caseConfidence(item: Case, unknownDecisiveFacts: number, unclear
   const score = computeConfidence({
     confirmedFacts: Object.keys(item.answers).length + supported.size,
     unknownDecisiveFacts,
-    conflicts: 0,
+    conflicts: (item.conflicts ?? []).filter(topic => !item.answers[topic]).length,
   });
   return unclear ? Math.min(score, UNCLEAR_CEILING) : score;
 }

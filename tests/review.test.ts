@@ -302,8 +302,8 @@ describe("second review", () => {
     expect(item.facts.asksFor).toContain("code");
   });
 
-  it("lets a denial beat an LLM yes", () => {
-    expect(mergeFacts({ ...blankFacts, selfInitiated: "yes" }, { ...blankFacts, selfInitiated: "no" }).selfInitiated).toBe("no");
+  it("leaves conflicting initiation claims unknown", () => {
+    expect(mergeFacts({ ...blankFacts, selfInitiated: "yes" }, { ...blankFacts, selfInitiated: "no" }).selfInitiated).toBeNull();
   });
 });
 

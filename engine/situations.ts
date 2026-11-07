@@ -111,7 +111,10 @@ function explainBenign(id: string, guidance: string[], risk: Risk = "none"): Out
 }
 
 function bankIncident(id: string, item: Case, guidance: string[], police: boolean, steps: string[] = []): Outcome {
-  const bankStep = item.audience === "small_business" ? "contact_bank_business_fraud" : "contact_bank_now";
+  const bankStep = item.audience === "small_business" ? "contact_bank_business_fraud"
+    : id === "card_exposed" && (did(item, "entered_card") || yes(item, "card_details_entered")) ? "contact_bank_card_exposure"
+    : id === "money_gone" && (did(item, "paid") || yes(item, "money_transferred")) ? "contact_bank_transfer"
+    : "contact_bank_now";
   return outcome(
     id,
     "contact_bank_and_block_cards",
@@ -304,41 +307,25 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "order_confirmed",
-    when: (c) => is(c, "unexpected_order_or_bill") && c.facts.independentlyVerified === true && uncontradicted(c),
+    when: (c) => is(c, "unexpected_order_or_bill") && !anyHarmDone(c) && c.facts.independentlyVerified === true && uncontradicted(c),
     then: () => explainBenign("order_confirmed", ["guidance_order_confirmations", "guidance_proportionate_advice"]),
   },
   {
     id: "unexpected_order",
-    when: (c) => is(c, "unexpected_order_or_bill"),
+    when: (c) => is(c, "unexpected_order_or_bill") && !anyHarmDone(c),
     flips: ["self_initiated"],
     then: (c) =>
       selfStarted(c) === "yes"
         ? explainBenign("own_order", ["guidance_order_confirmations", "guidance_proportionate_advice"])
-        : yes(c, "self_initiated")
-        ? outcome(
-            "colleague_order",
-            "contact_operator_support",
-            "needs_verification",
-            "low",
-            "routine",
-            ["contact_operator"],
-            ["guidance_order_confirmations"],
-            { wantsSignals: ["subscription.recent_events", "operator_account.recent_logins"] },
-          )
         : outcome(
             "unauthorised_order",
-            "contact_operator_support",
-            "incident_occurred",
-            "critical",
-            "immediate",
-            ["contact_operator", "change_password", "lock_subscription", "review_sessions"],
+            "verify_via_official_channel",
+            "needs_verification",
+            "medium",
+            "today",
+            ["check_unexpected_order", "avoid_order_links", "contact_merchant_order", "check_order_charges", "secure_order_account"],
             ["guidance_order_confirmations", "guidance_shared_accounts"],
-            {
-              destination: person(c, "operator_support_agent"),
-              externalContacts: ["police"],
-              rescue: true,
-              wantsSignals: ["subscription.recent_events", "operator_account.recent_logins"],
-            },
+            { rescue: true },
           ),
   },
   {
@@ -688,8 +675,10 @@ export const SITUATIONS: Situation[] = [
   {
     id: "payment_detail_change",
     when: (c) => is(c, "payment_detail_change"),
-    then: () =>
-      outcome(
+    flips: ["payment_status"],
+    then: (c) => yes(c, "payment_status")
+      ? bankIncident("payment_sent", c, ["guidance_invoice_fraud", "guidance_payment_verification"], true, ["verify_out_of_band", "report_police"])
+      : outcome(
         "payment_detail_change",
         "verify_via_official_channel",
         "threat_in_progress",

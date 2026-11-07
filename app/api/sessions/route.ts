@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     try {
       const { sessionId, ...payload } = event.data;
       const llm = llmAvailable();
-      const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
+      const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
       if (journey && payload.kind === "ai_answer" && llm && (payload.answer === "yes" || payload.answer === "no")) {
         const last = journey.interview?.at(-1);
@@ -145,7 +145,9 @@ async function personalise(journey: Journey | null, response: ApiResponse): Prom
   if (!(screen.topic in journey.phrased)) {
     const masked = guardInput(journey.input.openingMessage, journey.input.incidentContent);
     const story = [masked.userText, masked.maskedIncident].filter(Boolean).join("\n");
-    journey.phrased[screen.topic] = (await phraseQuestion({ story, question: screen.question, language: journey.item.language, topic: screen.topic })) ?? screen.question;
+    const mask = (value: string) => guardInput(value).userText;
+    const history = [...(journey.flipHistory ?? []), ...(journey.interview ?? [])].map(({ question, answer }) => ({ question: mask(question), answer: mask(answer) }));
+    journey.phrased[screen.topic] = (await phraseQuestion({ story, question: screen.question, language: journey.item.language, topic: screen.topic, why: screen.why, branches: screen.branches, history })) ?? screen.question;
   }
   return { ...response, screen: { ...screen, question: journey.phrased[screen.topic]! } };
 }

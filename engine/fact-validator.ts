@@ -1,5 +1,5 @@
 import { fold } from "./offline-extractor";
-import { Facts } from "./types";
+import { Facts, type Topic } from "./types";
 
 // A fact survives only if its quote really appears in the masked source text.
 // Everything else returns to unknown, so a model can't narrow a case by inventing.
@@ -32,6 +32,18 @@ function isEmpty(field: keyof Facts, value: unknown): boolean {
 
 const VAGUE_TYPES: Facts["incidentType"][] = [null, "other", "message_or_notice"];
 
+// Only compare explicit opposing values. Absence is unknown, not disagreement.
+export function conflictingTopics(primary: Facts, backstop: Facts): Topic[] {
+  const topics: Topic[] = [];
+  if (primary.selfInitiated !== null && backstop.selfInitiated !== null && primary.selfInitiated !== backstop.selfInitiated) topics.push("self_initiated");
+  if (primary.passwordReused !== null && backstop.passwordReused !== null && primary.passwordReused !== backstop.passwordReused) topics.push("password_reused");
+  if (primary.serviceLost !== null && backstop.serviceLost !== null && primary.serviceLost !== backstop.serviceLost) topics.push("signal_lost");
+  return topics;
+}
+
+const reconcile = <T>(primary: T | null, backstop: T | null): T | null =>
+  primary !== null && backstop !== null && primary !== backstop ? null : primary ?? backstop;
+
 // The LLM reads better, but keyword rules catch some things it misses. Missing a danger
 // costs far more than one extra caution, so a danger fact from either source is kept.
 // The backstop only adds danger: keyword hits never reassure on the LLM's behalf.
@@ -47,10 +59,12 @@ export function mergeFacts(primary: Facts, backstop: Facts): Facts {
     // A vague "other" must not hide a specific match such as a claimed bank or operator.
     pretendsToBe: !primary.pretendsToBe || primary.pretendsToBe === "other" ? backstop.pretendsToBe ?? primary.pretendsToBe : primary.pretendsToBe,
     contactStartedBy: primary.contactStartedBy ?? backstop.contactStartedBy,
-    // A denial from either source wins.
-    selfInitiated: backstop.selfInitiated === "no" ? "no" : primary.selfInitiated,
-    passwordReused: primary.passwordReused ?? backstop.passwordReused,
-    serviceLost: primary.serviceLost ?? backstop.serviceLost,
+    // A backstop may add a denial, but may not reassure on its own. Explicit
+    // disagreement remains unknown so a decisive question can resolve it.
+    selfInitiated: primary.selfInitiated !== null && backstop.selfInitiated !== null && primary.selfInitiated !== backstop.selfInitiated
+      ? null : backstop.selfInitiated === "no" ? "no" : primary.selfInitiated,
+    passwordReused: reconcile(primary.passwordReused, backstop.passwordReused),
+    serviceLost: reconcile(primary.serviceLost, backstop.serviceLost),
     pressureOrSecrecy: primary.pressureOrSecrecy ?? backstop.pressureOrSecrecy,
     asksNothing,
     userAlreadyDid: did.length > 1 ? did.filter((action) => action !== "nothing") : did,
@@ -81,12 +95,12 @@ export function validateFacts(raw: unknown, sources: FactSources): Facts | null 
   const quoted = ({ fact, quote }: Facts["evidence"][number]) => {
     const text = squash(quote);
     if (text.length < MIN_QUOTE) return false;
-    const userOnly = USER_WORDS_ONLY.has(fact) || (fact === "independentlyVerified" && !isOrder);
+    const userOnly = USER_WORDS_ONLY.has(fact.split(":")[0]!) || (fact === "independentlyVerified" && !isOrder);
     return (userOnly ? userText : everything).includes(text);
   };
 
   const evidence = parsed.data.evidence.filter(quoted);
-  const supported = new Set(evidence.map(({ fact }) => fact));
+  const supported = new Set(evidence.map(({ fact }) => fact.split(":")[0]!));
   const facts: Facts = { ...parsed.data, evidence };
   for (const [field, unknown] of Object.entries(UNKNOWN_IF_UNSUPPORTED)) {
     const key = field as keyof Facts;
@@ -94,5 +108,22 @@ export function validateFacts(raw: unknown, sources: FactSources): Facts | null 
       (facts as Record<keyof Facts, unknown>)[key] = unknown;
     }
   }
+  // List-valued actions must be supported individually. Legacy unlabelled
+  // evidence is accepted only for a single action; it cannot prove a second one.
+  const actionEvidence = evidence.filter(({ fact }) => fact === "userAlreadyDid" || fact.startsWith("userAlreadyDid:"));
+  facts.userAlreadyDid = facts.userAlreadyDid.filter(action => actionEvidence.some(({ fact, quote }) => {
+    if (fact !== `userAlreadyDid:${action}` && !(fact === "userAlreadyDid" && facts.userAlreadyDid.length === 1)) return false;
+    // A substring quote may omit a preceding denial or request. Inspect the
+    // surrounding clause rather than treating the quote's existence as proof.
+    const needle = squash(quote);
+    let index = userText.indexOf(needle);
+    while (index >= 0) {
+      const prefix = userText.slice(Math.max(0, index - 70), index).split(/[,.!?;\n]|\b(?:but|so|and then)\b/u).at(-1) ?? "";
+      const clause = `${prefix} ${needle}`;
+      if (!/\b(?:did not|didn't|didnt|never|have not|haven't|havent|asked me to|told me to|wanted me to)\b/u.test(clause)) return true;
+      index = userText.indexOf(needle, index + 1);
+    }
+    return false;
+  }));
   return facts;
 }

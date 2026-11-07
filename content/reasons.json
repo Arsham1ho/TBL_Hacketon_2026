@@ -1,4 +1,24 @@
 {
+  "card_entered_reason": {
+    "en": "You said you entered card details. The page or recipient may have captured them even if no charge has appeared.",
+    "fi": "Kerroit syöttäneesi korttitietoja. Sivusto tai vastaanottaja on voinut saada ne, vaikka veloitusta ei vielä näy.",
+    "sv": "Du berättade att du angav kortuppgifter. Sidan eller mottagaren kan ha fått dem även om ingen debitering syns än."
+  },
+  "money_sent_reason": {
+    "en": "You said money was sent. Your bank can check whether it can stop or recover the payment, so contact it promptly.",
+    "fi": "Kerroit lähettäneesi rahaa. Pankki voi selvittää, voiko maksun pysäyttää tai palauttaa, joten ota siihen nopeasti yhteyttä.",
+    "sv": "Du berättade att pengar skickades. Banken kan undersöka om betalningen kan stoppas eller återföras, så kontakta den snarast."
+  },
+  "code_shared_reason": {
+    "en": "You said a code was shared. It may have been used to access or approve something, but that is not yet confirmed.",
+    "fi": "Kerroit jakaneesi koodin. Sitä on voitu käyttää kirjautumiseen tai hyväksyntään, mutta tätä ei ole vielä vahvistettu.",
+    "sv": "Du berättade att en kod delades. Den kan ha använts för åtkomst eller godkännande, men det är ännu inte bekräftat."
+  },
+  "remote_granted_reason": {
+    "en": "You said the person had remote access, so they may have been able to view or control the device.",
+    "fi": "Kerroit antaneesi henkilölle etäyhteyden, joten hän on voinut nähdä laitteen sisällön tai hallita sitä.",
+    "sv": "Du berättade att personen fick fjärråtkomst och kan därför ha sett eller styrt enheten."
+  },
   "personal_safety": {
     "en": "If someone may be watching your phone, your safety comes first.",
     "fi": "Jos joku saattaa seurata puhelintasi, turvallisuutesi on tärkeintä.",
@@ -40,7 +60,7 @@
     "sv": "Du behöll koden, och inget riktigt företag behöver att du läser upp den."
   },
   "order_check": {
-    "en": "An order you don't recognise can mean someone is using the account.",
+    "en": "An unexpected confirmation could be a fake message, a mistake, or an unauthorised order. Check with the retailer before drawing a conclusion.",
     "fi": "Tuntematon tilaus voi tarkoittaa, että joku käyttää tiliä.",
     "sv": "En okänd beställning kan betyda att någon använder kontot."
   },

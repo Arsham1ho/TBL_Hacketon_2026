@@ -5,6 +5,7 @@ import steps from "../content/steps.json";
 import type { Flip } from "./question-picker";
 import type { Outcome } from "./situations";
 import type { Audience, Language, Topic } from "./types";
+import { didAction, topicValue, type Case } from "./case";
 
 export type ReasonKey = keyof typeof reasons;
 
@@ -85,8 +86,13 @@ const REASON_OF: Record<string, ReasonKey> = {
 
 export const reasonKeyFor = (situation: string): ReasonKey | undefined => REASON_OF[situation];
 
-export function reasonText(outcome: Outcome, language: Language, audience?: Audience): string {
-  const key = REASON_OF[outcome.situation];
+export function reasonText(outcome: Outcome, language: Language, audience?: Audience, item?: Case): string {
+  const confirmed = (action: Case["facts"]["userAlreadyDid"][number], topic: Topic) => item && (didAction(item, action) || topicValue(item, topic) === "yes");
+  const key = outcome.situation === "card_exposed" && confirmed("entered_card", "card_details_entered") ? "card_entered_reason"
+    : outcome.situation === "money_gone" && confirmed("paid", "money_transferred") ? "money_sent_reason"
+    : ["code_given", "non_bank_code_given", "bank_code_given"].includes(outcome.situation) && confirmed("shared_code", "code_shared") ? "code_shared_reason"
+    : outcome.situation === "remote_device_exposed" && confirmed("gave_remote_access", "remote_access_given") ? "remote_granted_reason"
+    : REASON_OF[outcome.situation];
   const resolvedKey = audience === "small_business" ? (BUSINESS_REASON_OF[key] ?? key) : key;
   return reasons[resolvedKey][language];
 }
@@ -110,7 +116,7 @@ export type Composed = {
 
 // Action first, then the reason. Under an unknown fact the steps are conditional,
 // so the advice never states that the worse branch is true.
-export function compose(outcome: Outcome, language: Language, flip: Flip | null, unknownTopic: Topic | null, audience?: Audience): Composed {
+export function compose(outcome: Outcome, language: Language, flip: Flip | null, unknownTopic: Topic | null, audience?: Audience, item?: Case): Composed {
   const texts = stepTexts(outcome, language);
   const asked = flip ? questionText(flip.topic, language) : null;
   const wording = unknownTopic ? questionText(unknownTopic, language) : null;
@@ -119,7 +125,7 @@ export function compose(outcome: Outcome, language: Language, flip: Flip | null,
   const lead = texts.slice(0, 3).join(" ");
   const parts = [wording ? `${wording.ifRisky} ${lead}` : lead];
   if (wording && otherSteps.length > 0) parts.push(`${wording.ifSafe} ${otherSteps.slice(0, 2).join(" ")}`);
-  parts.push(reasonText(outcome, language, audience));
+  parts.push(reasonText(outcome, language, audience, item));
   if (asked) parts.push(asked.question);
   if (outcome.destination) parts.push(approved.handoff[language]);
   else if (outcome.status === "needs_verification") parts.push(approved.humanOffer[language]);

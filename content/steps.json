@@ -1,4 +1,39 @@
 {
+  "contact_bank_card_exposure": {
+    "en": "Contact your bank using the number on your card or its official app. Tell them you entered your card details and ask whether the card needs to be blocked.",
+    "fi": "Ota yhteyttä pankkiisi kortin numerosta tai pankin virallisessa sovelluksessa. Kerro syöttäneesi korttitietosi ja kysy, pitääkö kortti sulkea.",
+    "sv": "Kontakta banken via numret på kortet eller dess officiella app. Berätta att du angav kortuppgifter och fråga om kortet behöver spärras."
+  },
+  "contact_bank_transfer": {
+    "en": "Contact your bank using its official app or a trusted number. Tell them about the transfer and ask whether it can be stopped or recovered.",
+    "fi": "Ota yhteyttä pankkiisi sen virallisessa sovelluksessa tai luotetusta numerosta. Kerro tilisiirrosta ja kysy, voiko sen pysäyttää tai palauttaa.",
+    "sv": "Kontakta banken via dess officiella app eller ett betrott nummer. Berätta om överföringen och fråga om den kan stoppas eller återföras."
+  },
+  "check_unexpected_order": {
+    "en": "Open the retailer's app or website yourself and check whether the order appears in your account.",
+    "fi": "Avaa kaupan sovellus tai verkkosivusto itse ja tarkista, näkyykö tilaus tililläsi.",
+    "sv": "Öppna butikens app eller webbplats själv och kontrollera om beställningen finns på ditt konto."
+  },
+  "avoid_order_links": {
+    "en": "Do not use links or phone numbers in the confirmation until you have verified it.",
+    "fi": "Älä käytä vahvistuksen linkkejä tai puhelinnumeroita ennen kuin olet varmistanut viestin.",
+    "sv": "Använd inte länkar eller telefonnummer i bekräftelsen innan du har kontrollerat den."
+  },
+  "contact_merchant_order": {
+    "en": "If the order is real and you did not place it, contact the retailer through its official support and ask them to stop it.",
+    "fi": "Jos tilaus on todellinen etkä tehnyt sitä, ota yhteyttä kaupan viralliseen asiakaspalveluun ja pyydä pysäyttämään tilaus.",
+    "sv": "Om beställningen är riktig och du inte gjorde den, kontakta butikens officiella kundtjänst och be dem stoppa den."
+  },
+  "check_order_charges": {
+    "en": "Check your bank or card activity in your bank's app. If you see an unauthorised charge, contact your bank promptly using its official contact details.",
+    "fi": "Tarkista pankki- tai korttitapahtumasi pankin sovelluksessa. Jos näet luvattoman veloituksen, ota pian yhteyttä pankkiisi sen virallisten yhteystietojen kautta.",
+    "sv": "Kontrollera bank- eller korttransaktionerna i bankens app. Om du ser en obehörig debitering, kontakta banken snarast via dess officiella kontaktuppgifter."
+  },
+  "secure_order_account": {
+    "en": "If an unauthorised order appears in your account, change that account's password and turn on two-step login.",
+    "fi": "Jos tililläsi näkyy luvaton tilaus, vaihda tilin salasana ja ota käyttöön kaksivaiheinen tunnistautuminen.",
+    "sv": "Om en obehörig beställning finns på ditt konto, byt kontots lösenord och aktivera tvåstegsverifiering."
+  },
   "dont_open_link": {
     "en": "Do not open the link.",
     "fi": "Älä avaa linkkiä.",

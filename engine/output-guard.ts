@@ -4,6 +4,7 @@ import { linkContextCopy } from "./link-context";
 import type { Language } from "./types";
 import approved from "../content/approved-text.json";
 import { questionText } from "./composer";
+import { approvedContextualQuestion } from "./contextual-question";
 import { isApprovedIncidentCategory } from "./incident-category";
 import questions from "../content/questions.json";
 import reasons from "../content/reasons.json";
@@ -32,7 +33,7 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
   if (screen.type === "flip") {
     const copy = questionText(screen.topic, language);
     const contextLines = Object.values(approved.understood).map(entry => entry[language]);
-    return screen.question === copy.question && screen.why === copy.why && statusLabels.includes(screen.statusLabel)
+    return approvedContextualQuestion(screen.topic, language, screen.question) && screen.why === copy.why && statusLabels.includes(screen.statusLabel)
       && branchesAreApproved(screen.branches) && (screen.context ?? []).every(line => contextLines.includes(line));
   }
   if (screen.type === "result") {
