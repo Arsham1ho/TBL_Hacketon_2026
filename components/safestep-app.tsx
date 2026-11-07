@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
+import { readAnswerOffline } from "@/engine/answer-reader";
 import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
@@ -136,6 +137,7 @@ export function SafeStepApp() {
       kind: "start",
       audience,
       language: choice,
+      fallbackLanguage: browserLanguage,
       message: message.trim(),
       ...(incident.trim() ? { incident } : {}),
       ...(demo !== "none" ? { demoScenario: demo } : {}),
@@ -336,6 +338,7 @@ export function SafeStepApp() {
                 kind: "start",
                 audience,
                 language: choice,
+                fallbackLanguage: browserLanguage,
                 message: nextMessage,
                 ...(incident.trim() ? { incident } : {}),
                 ...(demo !== "none" ? { demoScenario: demo } : {}),
@@ -344,6 +347,33 @@ export function SafeStepApp() {
           />
         </div>
       )}
+
+      {response?.screen.type === "flip" && (() => {
+        const flipScreen = response.screen;
+        return (
+          <div className={WIDTH}>
+            <DescriptionComposer
+              question=""
+              sample={t("typeAnswerOrDetails")}
+              sendLabel={t("send")}
+              text={followUp}
+              disabled={busy}
+              onChange={setFollowUp}
+              onSend={() => {
+                if (!followUp.trim()) return;
+                const text = followUp.trim();
+                setFollowUp("");
+                const answer = readAnswerOffline(text, shown, flipScreen.topic);
+                reply(flipScreen.question, text, {
+                  kind: "answer",
+                  topic: flipScreen.topic,
+                  answer,
+                });
+              }}
+            />
+          </div>
+        );
+      })()}
 
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>

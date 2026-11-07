@@ -389,6 +389,11 @@
     "fi": "Kysy kysymys tai kerro lisää...",
     "sv": "Ställ en fråga eller berätta mer..."
   },
+  "typeAnswerOrDetails": {
+    "en": "Type your answer or add details...",
+    "fi": "Kirjoita vastauksesi tai kerro lisää...",
+    "sv": "Skriv ditt svar eller berätta mer..."
+  },
   "subscription.recent_events": {
     "en": "Recent SIM and subscription changes",
     "fi": "Viimeisimmät SIM- ja liittymämuutokset",

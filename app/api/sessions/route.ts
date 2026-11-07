@@ -9,7 +9,7 @@ import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
 import { handoffPreview } from "../../../adapters/handoff";
 import { assess } from "../../../engine/assess";
 
-const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, language: z.union([Language, z.literal("auto")]), message: z.string().trim().min(1).max(10000), incident: z.string().max(10000).optional(), demoSignals: z.array(GatedSignal).max(7).optional(), demoScenario: z.enum(DEMO_SCENARIOS).optional() });
+const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, language: z.union([Language, z.literal("auto")]), fallbackLanguage: Language.optional(), message: z.string().trim().min(1).max(10000), incident: z.string().max(10000).optional(), demoSignals: z.array(GatedSignal).max(7).optional(), demoScenario: z.enum(DEMO_SCENARIOS).optional() });
 const Answer = z.strictObject({ kind: z.literal("answer"), sessionId: z.string().uuid(), topic: Topic, answer: z.enum(["yes", "no", "unsure"]) });
 const End = z.strictObject({ kind: z.literal("end"), sessionId: z.string().uuid() });
 const Continue = z.strictObject({ kind: z.literal("continue"), sessionId: z.string().uuid() });
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const start = Start.safeParse(body);
   if (start.success) {
     const { audience, message, incident } = start.data;
-    const language = start.data.language === "auto" ? detectLanguage(message) : start.data.language;
+    const language = start.data.language === "auto" ? detectLanguage(message, start.data.fallbackLanguage ?? "fi") : start.data.language;
     try {
       const llm = llmAvailable();
       const demo = demoSignalsFor(start.data.demoScenario ?? "none");
