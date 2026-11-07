@@ -9,6 +9,7 @@ import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderCho
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
 import { ProviderLogo } from "./select-menu";
+import { ScamRadarMatch } from "./scam-radar";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
 export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
@@ -869,6 +870,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
                 </ul>
               )}
             </div>
+            {response.radar && <ScamRadarMatch language={response.language} radar={response.radar} />}
           </section>
         ),
       });

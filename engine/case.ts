@@ -1,5 +1,6 @@
 import type { Mention } from "./mentions";
 import type { Audience, Facts, GatedSignal, Language, Topic } from "./types";
+import type { ManipulationCue } from "./manipulation";
 
 export type Answer = "yes" | "no";
 export type Answers = Partial<Record<Topic, Answer>>;
@@ -16,6 +17,7 @@ export type Case = {
   audience: Audience;
   language: Language;
   facts: Facts;
+  manipulationCues?: ManipulationCue[];
   answers: Answers;
   unsure: Topic[];
   signals: VisibleSignals;

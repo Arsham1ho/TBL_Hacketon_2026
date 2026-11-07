@@ -11,6 +11,7 @@ import { journeyDestination, supportRoutes } from "./handle-event";
 import { likelyCategory } from "./incident-category";
 import { UNCLEAR_CEILING } from "./summary";
 import type { ConfirmedFact, Decision, GatedSignal, Language, Topic } from "./types";
+import type { ManipulationCue } from "./manipulation";
 
 // The full decision report a user can download when a chat ends: what the AI read, what the
 // rules decided, and how sure it was. Everything comes from the engine's own state, so the
@@ -46,6 +47,7 @@ export type DecisionReport = {
   // How strong the main action is, on the dataset's 0 to 4 intervention scale.
   intervention: { level: number; max: number };
   evidence: { fact: string; quote: string }[];
+  manipulationCues: ManipulationCue[];
   confirmedFacts: ConfirmedFact[];
   questions: { question: string; answer: string; kind: "decisive" | "follow_up" }[];
   data: { used: { id: GatedSignal; label: string }[]; refused: { id: GatedSignal; label: string }[]; notAccessed: { id: GatedSignal; label: string }[]; sentToLlm: boolean };
@@ -124,6 +126,7 @@ export function buildReport(journey: Journey): DecisionReport {
     intervention: { level: (actionVocabulary.intervention as Record<string, number>)[decision.primaryAction] ?? 0, max: Math.max(...Object.values(actionVocabulary.intervention)) },
     // The LLM and keyword readers can both quote the same words, so each pair is listed once.
     evidence: [...new Map(item.facts.evidence.map((entry) => [`${entry.fact}\u0000${entry.quote}`, entry])).values()],
+    manipulationCues: item.manipulationCues ?? [],
     confirmedFacts: result.confirmedFacts,
     questions: [
       ...(journey.flipHistory ?? []).map((entry) => ({ question: entry.question, answer: entry.answer, kind: "decisive" as const })),
