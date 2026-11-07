@@ -37,7 +37,10 @@ const VAGUE_TYPES: Facts["incidentType"][] = [null, "other", "message_or_notice"
 // The backstop only adds danger: keyword hits never reassure on the LLM's behalf.
 export function mergeFacts(primary: Facts, backstop: Facts): Facts {
   const did = [...new Set([...primary.userAlreadyDid, ...backstop.userAlreadyDid.filter((action) => action !== "nothing")])];
-  const asksNothing = primary.asksNothing;
+  const asksFor = [...new Set([...primary.asksFor, ...backstop.asksFor])];
+  // A model claiming that a message asks for nothing must never erase a
+  // concrete request found by the deterministic safety backstop.
+  const asksNothing = asksFor.length > 0 ? false : primary.asksNothing;
   return {
     ...primary,
     incidentType: VAGUE_TYPES.includes(primary.incidentType) ? backstop.incidentType ?? primary.incidentType : primary.incidentType,
@@ -52,7 +55,7 @@ export function mergeFacts(primary: Facts, backstop: Facts): Facts {
     asksNothing,
     userAlreadyDid: did.length > 1 ? did.filter((action) => action !== "nothing") : did,
     dataExposed: [...new Set([...primary.dataExposed, ...backstop.dataExposed.filter((data) => data !== "email_only")])],
-    asksFor: asksNothing === true ? primary.asksFor : [...new Set([...primary.asksFor, ...backstop.asksFor])],
+    asksFor,
     happeningNow: primary.happeningNow === true || backstop.happeningNow === true ? true : primary.happeningNow,
     personalSafetyRisk: primary.personalSafetyRisk === true || backstop.personalSafetyRisk === true ? true : primary.personalSafetyRisk,
     asksToTracePerson: primary.asksToTracePerson || backstop.asksToTracePerson,

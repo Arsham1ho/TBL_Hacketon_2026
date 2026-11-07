@@ -303,9 +303,11 @@ describe("merging the LLM with the keyword backstop", () => {
     expect(mergeFacts(facts({}), facts({ asksToTracePerson: true })).asksToTracePerson).toBe(true);
   });
 
-  it("adds backstop requests unless the content wants nothing", () => {
+  it("keeps concrete backstop requests even if the model claims the content wants nothing", () => {
     expect(mergeFacts(facts({}), facts({ asksFor: ["money"] })).asksFor).toEqual(["money"]);
-    expect(mergeFacts(facts({ asksNothing: true }), facts({ asksFor: ["code"] })).asksFor).toEqual([]);
+    const contradicted = mergeFacts(facts({ asksNothing: true }), facts({ asksFor: ["code"] }));
+    expect(contradicted.asksFor).toEqual(["code"]);
+    expect(contradicted.asksNothing).toBe(false);
   });
 
   it("doesn't let a vague party hide a specific one", () => {

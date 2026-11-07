@@ -11,3 +11,5 @@ mt.jsonl
 DNA_SinceAI2026/
 answers-llm.jsonl
 mt-llm.jsonl
+gemini-*.jsonl
+AGENTS.md

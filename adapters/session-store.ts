@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Case } from "../engine/case";
+import type { Journey } from "../engine/handle-event";
 
 // In-memory sessions: nothing is written to disk, and data is gone when a session ends.
-type Session = { item: Case; asked: number; touched: number; extractedBy: string; secretFound: boolean };
+type Session = { item: Case; asked: number; touched: number; extractedBy: string; secretFound: boolean; journey?: Journey | null };
 
 const MAX_SESSIONS = 1_000;
 const ttlMinutes = Number(process.env.SESSION_TTL_MINUTES);
@@ -40,4 +41,12 @@ export function getSession(id: string): Session | null {
 
 export function endSession(id: string): void {
   sessions.delete(id);
+}
+
+export function createJourneySession(journey: Journey): string {
+  const now = Date.now();
+  sweep(now);
+  const id = randomUUID();
+  sessions.set(id, { item: journey.item, asked: journey.asked, extractedBy: "", secretFound: journey.secretFound, journey, touched: now });
+  return id;
 }

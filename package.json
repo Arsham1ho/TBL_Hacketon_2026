@@ -13,7 +13,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "check:contract": "tsx --env-file-if-exists=.env.local eval/check-contract.ts",
-    "eval:dev": "tsx --env-file-if-exists=.env.local eval/run-dev.ts"
+    "eval:dev": "tsx --env-file-if-exists=.env.local eval/run-dev.ts",
+    "eval:holdout": "tsx eval/run-holdout.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
