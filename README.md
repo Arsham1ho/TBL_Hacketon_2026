@@ -147,7 +147,7 @@ The LLM run on 7 November (`gpt-5.4-mini`, older evaluator) is in [DECISIONS.md]
 - Swedish source titles fall back to English, because the supplied guidance has no Swedish titles.
 - The frozen new-wording test scored 7 of 12 with the keyword extractor on its first, unseen run. Later rule changes raised it to 10 of 12, but only the first run counts as unseen.
 - **Known regression:** full-conversation scenarios pass 101 of 150 (150 of 150 on 7 November), with no severe failures. Most money-request messages now get "contact bank and block cards" even when nothing was paid. See [eval/RESULTS.md](eval/RESULTS.md).
-- No manual safety review or comprehension check is recorded yet. The sheets are in [review/](review/README.md).
+- An AI-assisted first pass of the safety review scored 18 of 20 answers safe, 2 incomplete and 0 unsafe ([eval/RESULTS.md](eval/RESULTS.md)). The human safety review and the comprehension check with real people are still to do; the sheets are in [review/](review/README.md).
 
 ## Licence
 
