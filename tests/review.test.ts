@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readAnswerOffline } from "../engine/answer-reader";
 import { assess, intake, type CaseInput } from "../engine/assess";
-import { applyAnswer } from "../engine/case";
+import { applyAnswer, withAnswer } from "../engine/case";
 import { mergeFacts, validateFacts } from "../engine/fact-validator";
 import { guardInput, maskSecrets } from "../engine/input-guard";
 import { interruptionFor } from "../engine/interruption";
@@ -326,6 +326,21 @@ describe("after the second review", () => {
   it("lets the user's own yes settle an urgent notice", async () => {
     const { item } = await intake(input("My eSIM moved to a new phone", { incidentContent: "eSIM activated. If this wasn't you, contact us immediately." }));
     expect(decide(applyAnswer(item, "self_initiated", "yes")).status).toBe("safe");
+  });
+});
+
+describe("central Safe gate", () => {
+  const flagged = { hasLink: true, linkVerdict: "suspicious", callWarning: null, callerSpoofed: false } as const;
+
+  it("blocks Safe when the link check flags the link", async () => {
+    const result = await run("I ordered this yesterday and opened the tracking link", { signals: flagged, incidentContent: "Track your order here" });
+    expect(result.decision.status).not.toBe("safe");
+  });
+
+  it("settles a Not sure even if the fact was answered directly", async () => {
+    const { item } = await intake(input("I got an attachment and opened it"));
+    const settled = withAnswer(applyAnswer(item, "app_installed", "unsure"), "app_installed", "no");
+    expect(assess(settled).unknownTopics).toEqual([]);
   });
 });
 
