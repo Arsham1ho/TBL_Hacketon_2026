@@ -8,9 +8,9 @@ export type Mention = (typeof MENTIONS)[number];
 
 const start = String.raw`(?<![\p{L}\p{N}])`;
 const PATTERNS: Record<Mention, RegExp> = {
-  account: new RegExp(fold(start + String.raw`(account|bank|log ?in|password|tili|pank|tunnu|salasan|verkkopank|konto|banken|inlogg|lösenord)`), "iu"),
-  money: new RegExp(fold(start + String.raw`(money|paid|pay|payment|transfer|euros?|raha|maks|siirs|siirto|pengar|betal|överför)|\d\s?€|€\s?\d`), "iu"),
-  device: new RegExp(fold(start + String.raw`(hacked|virus|malware|remote|anydesk|teamviewer|my (phone|computer|laptop|device)|tietokone|kone(eni|ttani)|puhelime|etä|hakkero|dator|min telefon|fjärr|hackad)`), "iu"),
+  account: new RegExp(fold(start + String.raw`(account|bank|log ?in|password|instagram|facebook|tiktok|snapchat|social media|tili|pank|tunnu|salasan|verkkopank|konto|banken|inlogg|lösenord)`), "iu"),
+  money: new RegExp(fold(start + String.raw`(money|paid|pay|payment|transfer|euros?|wallet|drain|crypto|bitcoin|seed phrase|recovery phrase|charges?|transactions?|withdraw|gift ?cards?|lahjakort|presentkort|swish|mobilepay|revolut|paypal|klarna|invoice|lasku|faktura|loan|laina|lån|raha|maks|siirs|siirto|lompako|lompakk|krypto|veloitu|pengar|betal|överför|plånbok)|\d\s?€|€\s?\d`), "iu"),
+  device: new RegExp(fold(start + String.raw`(hacked|virus|malware|remote|anydesk|teamviewer|my (phone|computer|laptop|device)|wi-?fi|wlan|webcam|camera|kamera|airtag|tracker|router|reititin|tietokone|kone(eni|ttani)|puhelime|etä|hakkero|dator|min telefon|fjärr|hackad)`), "iu"),
   call: new RegExp(fold(start + String.raw`(call(ed|ing|s)?|rang|phoned|soitt|puhelu|ringde|ringer|samtal)`), "iu"),
   sms: new RegExp(fold(start + String.raw`(sms|text message|texted|a text|whatsapp|tekstivie|tekstari|viesti|textmeddelande|meddelande)`), "iu"),
   email: new RegExp(fold(start + String.raw`(e-?mail|mail|sähköpost|meili|e-post|mejl)`), "iu"),
@@ -39,7 +39,7 @@ export function orderByMentions(flips: Topic[], mentions: Mention[] = [], priori
 }
 
 // Words that show the user is worried about something, even with no detail yet.
-const CONCERN = new RegExp(fold(start + String.raw`(what (should|do|can) (i|we) do|what to do|look at this|check this|(is|with|about|of) this|trust|bother|worr|not sure|unsure|on behalf|mitä (minun |meidän )?(pitäisi|kannattaa|teen|teemme|tehdä)|tämä|tämän|tälle|tässä|katso|tarkista|luotettav|mietity|huolestutt|hätä|en ole varma|en tiedä|puolesta|vad ska (jag|vi)|det här|den här|titta|kolla|pålitlig|oroar|inte säker|vet inte|räkning|help|worried|scared|afraid|wrong|strange|weird|odd|suspicious|scam|fraud|hack|phish|leak|breach|stolen|steal|virus|spam|fake|threat|blackmail|lost|locked|someone|somebody|apu|auta|huolissa|pelotta|outo|oudo|epäily|huijau|huijari|hakker|murto|vuoto|vuoti|varast|kirist|feik|joku|hjälp|orolig|rädd|konstig|misstänk|bedr|hack|läck|stul|stöld|utpress|falsk|någon)`), "iu");
+const CONCERN = new RegExp(fold(start + String.raw`(what (should|do|can) (i|we) do|what to do|look at this|check this|(is|with|about|of) this|trust|bother|worr|not sure|unsure|on behalf|mitä (minun |meidän )?(pitäisi|kannattaa|teen|teemme|tehdä)|tämä|tämän|tälle|tässä|katso|tarkista|luotettav|mietity|huolestutt|hätä|en ole varma|en tiedä|puolesta|vad ska (jag|vi)|det här|den här|titta|kolla|pålitlig|oroar|inte säker|vet inte|räkning|help|worried|scared|afraid|wrong|strange|weird|odd|suspicious|scam|fraud|hack|phish|leak|breach|stolen|steal|drain|missing|disappear|unauthori|blackmail|extort|threaten|nude|kirist|uhka|alaston|utpress|hota|naken|track|stalk|spy|vakoil|seuraa minua|seuraa sijainti|spårar|förföl|never arrived|ei tullut|kom aldrig|in my name|nimissäni|mitt namn|identity|henkilöllisyy|identitet|unknown devices|recogni|kadon|hävin|katos|tuntemat|försvunn|försvann|okänd|virus|spam|fake|threat|blackmail|lost|locked|someone|somebody|apu|auta|huolissa|pelotta|outo|oudo|epäily|huijau|huijari|hakker|murto|vuoto|vuoti|varast|kirist|feik|joku|hjälp|orolig|rädd|konstig|misstänk|bedr|hack|läck|stul|stöld|utpress|falsk|någon)`), "iu");
 // What the keyword reader fills in for any sentence, which says nothing about relevance.
 const DEFAULT_TYPES: (Facts["incidentType"])[] = [null, "message_or_notice", "other"];
 

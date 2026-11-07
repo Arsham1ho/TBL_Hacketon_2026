@@ -83,7 +83,9 @@ const MIN_QUOTE = 3;
 // What the user did or started can't be proven by the scam's own words.
 const USER_WORDS_ONLY = new Set<string>(["selfInitiated", "userAlreadyDid", "passwordReused"]);
 
-export type FactSources = { userText: string; maskedIncident: string | null };
+const DISOWNED_CHARGE = /\b(?:charges?|transactions?|payments?|withdrawals?|purchases?)\b.{0,40}\b(?:i|we) (?:did not|didn't|didnt|never) (?:make|made|do|authori[sz]e|recogni[sz]e)\b/gu;
+
+export type FactSources ={ userText: string; maskedIncident: string | null };
 
 export function validateFacts(raw: unknown, sources: FactSources): Facts | null {
   const parsed = Facts.safeParse(raw);
@@ -119,7 +121,9 @@ export function validateFacts(raw: unknown, sources: FactSources): Facts | null 
     let index = userText.indexOf(needle);
     while (index >= 0) {
       const prefix = userText.slice(Math.max(0, index - 70), index).split(/[,.!?;\n]|\b(?:but|so|and then)\b/u).at(-1) ?? "";
-      const clause = `${prefix} ${needle}`;
+      // "Charges I didn't make" disowns the charge, which means money is already gone:
+      // that "didn't" is the loss, not a denial of it.
+      const clause = `${prefix} ${needle.replace(DISOWNED_CHARGE, "")}`;
       if (!/\b(?:did not|didn't|didnt|never|have not|haven't|havent|asked me to|told me to|wanted me to)\b/u.test(clause)) return true;
       index = userText.indexOf(needle, index + 1);
     }

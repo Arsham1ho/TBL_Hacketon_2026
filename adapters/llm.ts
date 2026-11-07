@@ -50,22 +50,58 @@ const openAiKey = () => process.env.OPENAI_API_KEY || process.env.open_ai_api_ke
 export const llmAvailable = () => Boolean(geminiKey() || openAiKey());
 export const llmModel = () => process.env.LLM_MODEL || (geminiKey() ? "gemini-3.5-flash-lite" : "gpt-5.4-mini");
 
-let client: OpenAI | null = null;
+type Provider = { name: "gemini" | "openai"; client: OpenAI; model: string };
+let providerList: Provider[] | null = null;
+// A provider that ran out of quota is skipped for a minute instead of failing every call.
+const downUntil: Partial<Record<Provider["name"], number>> = {};
+
+function providers(): Provider[] {
+  if (providerList) return providerList;
+  const list: Provider[] = [];
+  const gemini = geminiKey();
+  const openai = openAiKey();
+  if (gemini) list.push({ name: "gemini", client: new OpenAI({ apiKey: gemini, baseURL: GEMINI_BASE_URL, maxRetries: 0 }), model: process.env.LLM_MODEL || "gemini-3.5-flash-lite" });
+  if (openai) list.push({ name: "openai", client: new OpenAI({ apiKey: openai, maxRetries: 0 }), model: (gemini ? process.env.OPENAI_MODEL : process.env.LLM_MODEL) || "gpt-5.4-mini" });
+  return (providerList = list);
+}
+
+type CreateParams = Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, "model"> & { model?: string };
+
+// Every LLM call goes through here. If the first provider fails (quota, outage, timeout),
+// the same request is sent to the next one, so a dead key doesn't silently leave the app
+// on keyword rules only. Callers still treat a final failure as "no LLM".
+async function create(params: CreateParams, options: { timeout: number }): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+  const list = providers();
+  let lastError: unknown = new Error("no LLM configured");
+  for (const [index, provider] of list.entries()) {
+    const isLast = index === list.length - 1;
+    if ((downUntil[provider.name] ?? 0) > Date.now() && !isLast) continue;
+    // An explicit model belongs to the first provider; a fallback uses its own default.
+    const model = index === 0 && params.model ? params.model : provider.model;
+    const { temperature: _t, reasoning_effort: _r, model: _m, ...rest } = params;
+    try {
+      return await provider.client.chat.completions.create({ ...rest, model, ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }) }, options);
+    } catch (error) {
+      lastError = error;
+      const status = (error as { status?: number }).status;
+      if (status === 429 || status === 401 || status === 403) {
+        downUntil[provider.name] = Date.now() + 60_000;
+        if (!isLast) console.warn(`LLM_FALLBACK ${provider.name} returned ${status}, trying ${list[index + 1]!.name}`);
+      }
+    }
+  }
+  throw lastError;
+}
 
 export type LlmOptions = { timeoutMs?: number; model?: string };
 
 // Throws on a timeout, a refusal or a bad reply. The caller falls back safely.
 export async function extractFacts(input: ExtractionInput, options: LlmOptions = {}): Promise<unknown> {
-  client ??= new OpenAI({
-    apiKey: geminiKey() || openAiKey(),
-    baseURL: geminiKey() ? GEMINI_BASE_URL : undefined,
-    maxRetries: 0,
-  });
   const model = options.model ?? llmModel();
   const configured = Number(process.env.LLM_TIMEOUT_MS);
   const timeout = options.timeoutMs ?? (configured > 0 ? configured : 8000);
 
-  const response = await client.chat.completions.create(
+  const response = await create(
     {
       model,
       ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
@@ -157,10 +193,9 @@ export function questionGrounded(question: string, story: string): boolean {
 
 export async function phraseQuestion(input: { story: string; question: string; language: string; topic?: string; why?: string; branches?: { condition: string; steps: string[] }[]; history?: { question: string; answer: string }[] }, options: LlmOptions = {}): Promise<string | null> {
   if (!llmAvailable()) return null;
-  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   const model = options.model ?? llmModel();
   try {
-    const response = await client.chat.completions.create(
+    const response = await create(
       {
         model,
         ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
@@ -187,10 +222,9 @@ const RANK_PROMPT = `A person reported a possible scam or security problem, but 
 // Orders the triage questions for a vague report. The rules still decide what each answer means.
 export async function rankQuestions(story: string, options: { id: string; question: string }[], llm: LlmOptions = {}): Promise<string[] | null> {
   if (!llmAvailable() || options.length < 2) return null;
-  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   const model = llm.model ?? llmModel();
   try {
-    const response = await client.chat.completions.create(
+    const response = await create(
       {
         model,
         ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
@@ -213,6 +247,11 @@ export async function rankQuestions(story: string, options: { id: string; questi
 const INTERVIEW_PROMPT = `You interview a person in Finland who reported a possible scam or security problem. Their report is still unclear.
 Keep asking, one question at a time, until you have a clear picture of everything needed to help them: what happened, who contacted them and who they claimed to be, the channel, what was asked for, what the person already did, whether it is still happening, and what is at risk (money, card, bank login, codes, passwords, device, phone number, personal safety).
 Write the ONE yes/no question whose answer would most change what they should do next. Good subjects: whether it is happening right now, who contacted them and who they claimed to be, how (call, text, email, site, app), what was asked for, and what the person already did (paid, read out a code, typed card details or a password, installed an app, gave remote access, opened a link or attachment).
+Fit the question to what they lost or what is at risk, not a generic checklist:
+- A drained or emptied wallet: first make sure which kind it is, because the steps differ (a crypto wallet, a mobile payment or bank app wallet, or a physical wallet with cards). For crypto, ask whether they shared or typed their recovery phrase (seed phrase) anywhere, connected the wallet to a site or approved a transaction, or installed a wallet app or browser extension recently. For a physical wallet, ask whether bank cards or ID were in it.
+- Money missing or charges they don't recognise: ask whether their card is still in their possession, whether they entered card details on a site recently, or whether someone else has access to the account.
+- A stolen or taken-over social media, email or other account: ask whether they can still log in, whether the email or phone number on the account was changed, and whether they use the same password elsewhere.
+- If their words could mean two different things, use your first question to tell them apart.
 Rules:
 - Build on their report and earlier answers: refer to concrete details they gave. Never ask anything already asked or already answered.
 - It must be answerable with Yes, No or Not sure. Never ask what, why, how, when, who or which, and never offer two options ("... or did you ...").
@@ -238,9 +277,8 @@ export function safeInterviewInterpretation(question: string, topic: string, lan
 }
 export async function interpretInterviewAnswer(question: string, answer: string, language: string, options: LlmOptions = {}): Promise<{ topic: typeof ANSWER_TOPICS[number]; answer: "yes" | "no" } | null> {
   if (!llmAvailable()) return null;
-  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   try {
-    const response = await client.chat.completions.create({
+    const response = await create({
       model: options.model ?? llmModel(),
       messages: [{ role: "system", content: ANSWER_PROMPT }, { role: "user", content: JSON.stringify({ language, question, answer, topics: ANSWER_TOPICS }) }],
       response_format: { type: "json_schema", json_schema: { name: "interpret_answer", strict: true, schema: { type: "object", properties: { topic: { type: "string", enum: ["", ...ANSWER_TOPICS] }, answer: { type: "string", enum: ["yes", "no", "unsure"] } }, required: ["topic", "answer"], additionalProperties: false } } },
@@ -254,13 +292,12 @@ export async function interpretInterviewAnswer(question: string, answer: string,
 // "done" means the AI has a clear picture. null means this attempt failed, so try next turn.
 export async function nextQuestion(input: { story: string; asked: { question: string; answer: string }[]; language: string; audience?: string; facts?: unknown; answers?: unknown; unsure?: string[]; unknowns?: string[]; summaryGaps?: string[] }, options: LlmOptions = {}): Promise<string | "done" | null> {
   if (!llmAvailable()) return null;
-  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   const model = options.model ?? llmModel();
   const history = input.asked.map((item) => `Q: ${item.question}\nA: ${item.answer}`).join("\n");
   try {
     let feedback = "";
     for (let attempt = 0; attempt < 2; attempt++) {
-    const response = await client.chat.completions.create(
+    const response = await create(
       {
         model,
         ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
