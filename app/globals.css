@@ -29,7 +29,7 @@
 
 :root {
   --radius: 1rem;
-  --background: oklch(0.97 0 0);
+  --background: oklch(1 0 0);
   --foreground: oklch(0.22 0 0);
   --card: oklch(1 0 0);
   --primary: oklch(0.3 0 0);

@@ -1,5 +1,5 @@
-import { SafeStepApp } from "@/components/safestep-app";
+import { LegacyChatApp } from "@/components/legacy-chat-app";
 
 export default function Home() {
-  return <SafeStepApp />;
+  return <LegacyChatApp />;
 }
