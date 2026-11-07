@@ -3,14 +3,14 @@ import type { ApiRequest, ApiResponse, DataReceipt, SupportRoute } from "@/engin
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
-export type Reply = { label: string; primary?: boolean; run: () => void };
+export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
 export type Turn = { body: ReactNode; recap: string; replies: Reply[] };
 
 type Actions = {
@@ -118,6 +118,41 @@ const STEP_ICON: Record<StepKind, typeof Zap> = {
   delete: Trash, password: KeyRound, device: WifiOff, check: Eye, other: Zap,
 };
 
+// Buttons that let the user act on a step straight away.
+function quickButtons(step: string, t: Translate, providers: ProviderChoice): ReactNode[] {
+  const kind = stepKind(step);
+  const bank = providerById("bank", providers.bank);
+  const operator = providerById("operator", providers.operator);
+  return [
+    ...(kind === "card" ? [<LinkButton key="block" href={`tel:${CARD_BLOCKING.tel}`}>{t("call")} {CARD_BLOCKING.display}</LinkButton>] : []),
+    ...((kind === "card" || kind === "bank") && bank ? [<LinkButton key="bank" href={bank.website}>{bank.name}</LinkButton>] : []),
+    ...(kind === "police" ? [<LinkButton key="police" href={POLICE.website}>{t("policeReport")}</LinkButton>] : []),
+    ...(kind === "operator" && operator ? [<LinkButton key="operator" href={operator.website}>{operator.name}</LinkButton>] : []),
+  ];
+}
+
+const answerButtons = (ask: (answer: "yes" | "no" | "unsure", label: string) => Reply, t: Translate): Reply[] => [
+  { ...ask("yes", t("yes")), icon: <Check className="size-4" aria-hidden /> },
+  { ...ask("no", t("no")), icon: <X className="size-4" aria-hidden /> },
+  { ...ask("unsure", t("notSure")), icon: <CircleQuestionMark className="size-4" aria-hidden /> },
+];
+
+// A question in its own card, like every other step of the chat.
+function QuestionCard({ question, hint, context }: { question: string; hint?: string; context?: string[] }) {
+  return (
+    <section className="grid gap-3 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      {context && context.length > 0 && <p className="text-sm text-muted-foreground">{context.join(" ")}</p>}
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-background" aria-hidden>
+          <MessageCircleQuestionMark className="size-5" />
+        </span>
+        <h1 tabIndex={-1} className="pt-1.5 text-lg leading-snug font-semibold text-balance focus:outline-none">{question}</h1>
+      </div>
+      {hint && <p className="pl-13 text-sm text-muted-foreground">{hint}</p>}
+    </section>
+  );
+}
+
 // One action at a time: a big icon, the step, quick buttons to act on it, and progress dots.
 function ActionStep({ title, step, index, total, urgent, quick }: { title: string; step: string; index: number; total: number; urgent: boolean; quick: ReactNode[] }) {
   const Icon = STEP_ICON[stepKind(step)];
@@ -155,7 +190,7 @@ function ActionStep({ title, step, index, total, urgent, quick }: { title: strin
         <span
           className={cn(
             "flex size-14 shrink-0 items-center justify-center rounded-2xl",
-            urgent ? "bg-destructive text-primary-foreground" : "bg-accent text-foreground",
+            urgent ? "bg-destructive text-alert-foreground" : "bg-accent text-foreground",
           )}
           aria-hidden
         >
@@ -261,7 +296,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       return {
         recap: screen.message,
         body: (
-          <div role="alert" className="rounded-lg bg-danger-deep p-4 text-primary-foreground">
+          <div role="alert" className="rounded-2xl bg-alert p-4 text-alert-foreground motion-safe:animate-[fade-up_.35s_ease-out]">
             <h1 tabIndex={-1} className="text-xl leading-snug font-semibold focus:outline-none">
               {screen.message}
             </h1>
@@ -282,14 +317,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       });
       return {
         recap: screen.question,
-        body: (
-          <>
-            {screen.context && screen.context.length > 0 && <p className="text-sm text-muted-foreground">{screen.context.join(" ")}</p>}
-            <Heading>{screen.question}</Heading>
-            <p className="text-sm text-muted-foreground">{screen.why}</p>
-          </>
-        ),
-        replies: [ask("yes", t("yes")), ask("no", t("no")), ask("unsure", t("notSure"))],
+        body: <QuestionCard question={screen.question} hint={screen.why} context={screen.context} />,
+        replies: answerButtons(ask, t),
       };
     }
     case "ask": {
@@ -299,8 +328,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       });
       return {
         recap: screen.question,
-        body: <Heading>{screen.question}</Heading>,
-        replies: [ask("yes", t("yes")), ask("no", t("no")), ask("unsure", t("notSure"))],
+        body: <QuestionCard question={screen.question} />,
+        replies: answerButtons(ask, t),
       };
     }
     case "describe":
@@ -348,14 +377,12 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       });
       return {
         recap: screen.step.title,
-        body: (
-          <>
-            <p className="text-sm text-muted-foreground">{t("step").replace("{n}", String(screen.position)).replace("{total}", String(screen.total))}</p>
-            <Heading>{screen.step.title}</Heading>
-            {screen.step.detail !== screen.step.title && <p>{screen.step.detail}</p>}
-          </>
-        ),
-        replies: [step("done", t("done"), true), step("not_possible", t("notPossible"), false), ...(state.risk === "high" || state.risk === "critical" ? [talk(screen.step.title)] : [])],
+        body: <ActionStep title={t("doNow")} step={screen.step.title} index={screen.position - 1} total={screen.total} urgent quick={quickButtons(screen.step.title, t, providers)} />,
+        replies: [
+          { ...step("done", t("done"), true), icon: <Check className="size-4" aria-hidden /> },
+          { ...step("not_possible", t("notPossible"), false), icon: <Ban className="size-4" aria-hidden /> },
+          ...(state.risk === "high" || state.risk === "critical" ? [talk(screen.step.title)] : []),
+        ],
       };
     }
     case "handoff": {
@@ -461,17 +488,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         });
       } else if (toDo.length > 0) {
         const title = urgent ? t("doNow") : t(state.status === "incident_occurred" ? "storyClear" : "storyDo");
-        const bank = providerById("bank", providers.bank);
-        const operator = providerById("operator", providers.operator);
         toDo.forEach((step, index) => {
-          // Buttons that let the user act on the step straight away.
-          const kind = stepKind(step);
-          const quick = [
-            ...(kind === "card" ? [<LinkButton key="block" href={`tel:${CARD_BLOCKING.tel}`}>{t("call")} {CARD_BLOCKING.display}</LinkButton>] : []),
-            ...((kind === "card" || kind === "bank") && bank ? [<LinkButton key="bank" href={bank.website}>{bank.name}</LinkButton>] : []),
-            ...(kind === "police" ? [<LinkButton key="police" href={POLICE.website}>{t("policeReport")}</LinkButton>] : []),
-            ...(kind === "operator" && operator ? [<LinkButton key="operator" href={operator.website}>{operator.name}</LinkButton>] : []),
-          ];
+          const quick = quickButtons(step, t, providers);
           cards.push({
             title,
             recap: step,
@@ -544,13 +562,13 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const atContact = current.title === t("contactTitle");
       if (current.action) {
         replies = [
-          { label: t("done"), primary: true, run: () => advance(current.recap, t("done")) },
-          { label: t("skipStep"), run: () => advance(current.recap, t("skipStep")) },
-          { label: t("notPossible"), run: () => advance(current.recap, t("notPossible")) },
+          { label: t("done"), primary: true, run: () => advance(current.recap, t("done")), icon: <Check className="size-4" aria-hidden /> },
+          { label: t("skipStep"), run: () => advance(current.recap, t("skipStep")), icon: <SkipForward className="size-4" aria-hidden /> },
+          { label: t("notPossible"), run: () => advance(current.recap, t("notPossible")), icon: <Ban className="size-4" aria-hidden /> },
           ...(sensitive ? [talk(current.recap)] : []),
         ];
       } else if (shown < cards.length - 1) {
-        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")) }];
+        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
       } else if (atContact && needsBank && !providers.bank) {
         replies = [...BANKS.map((bank) => ({ label: bank.name, run: () => choose("bank", bank.id) })), { label: t("otherProvider"), run: () => choose("bank", "other") }];
       } else if (atContact && needsOperator && !providers.operator) {

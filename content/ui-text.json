@@ -60,9 +60,9 @@
     "sv": "En leverantör bad oss ändra sina bankuppgifter"
   },
   "pasteToggle": {
-    "en": "Attach suspicious message, email or link",
-    "fi": "Liitä epäilyttävä viesti, sähköposti tai linkki",
-    "sv": "Bifoga misstänkt meddelande, mejl eller länk"
+    "en": "Paste a message or link",
+    "fi": "Liitä viesti tai linkki",
+    "sv": "Klistra in meddelande eller länk"
   },
   "pasteLabel": {
     "en": "Suspicious message or URL",
@@ -440,9 +440,9 @@
     "sv": "Fortsätt"
   },
   "demoLabel": {
-    "en": "DNA Network Threat Intelligence",
-    "fi": "DNA Verkkoturvan tilannekuva",
-    "sv": "DNA Nätverkssäkerhetsintelligens"
+    "en": "DNA signal",
+    "fi": "DNA-signaali",
+    "sv": "DNA-signal"
   },
   "demonone": {
     "en": "Normal (No network anomalies detected)",
@@ -480,9 +480,9 @@
     "sv": "DNA Företagsskydd: Före detta anställds aktiva konto"
   },
   "options": {
-    "en": "Security Settings & Simulation",
-    "fi": "Turva-asetukset ja simulointi",
-    "sv": "Säkerhetsinställningar och simulering"
+    "en": "Settings",
+    "fi": "Asetukset",
+    "sv": "Inställningar"
   },
   "close": {
     "en": "Close",
@@ -490,9 +490,9 @@
     "sv": "Stäng"
   },
   "examples": {
-    "en": "Incident Scenarios (One-Click Test)",
-    "fi": "Hyökkäysskenaariot (Pikatestaus)",
-    "sv": "Attackscenarier (Snabbtest)"
+    "en": "Try a scenario",
+    "fi": "Kokeile tilannetta",
+    "sv": "Testa ett scenario"
   },
   "details": {
     "en": "Details",
@@ -703,5 +703,80 @@
     "en": "I don't want to do this",
     "fi": "En halua tehdä tätä",
     "sv": "Jag vill inte göra det"
+  },
+  "settingsYou": {
+    "en": "You",
+    "fi": "Sinä",
+    "sv": "Du"
+  },
+  "settingsAppearance": {
+    "en": "Appearance",
+    "fi": "Ulkoasu",
+    "sv": "Utseende"
+  },
+  "settingsServices": {
+    "en": "Your services",
+    "fi": "Palvelusi",
+    "sv": "Dina tjänster"
+  },
+  "theme": {
+    "en": "Theme",
+    "fi": "Teema",
+    "sv": "Tema"
+  },
+  "themeSystem": {
+    "en": "System",
+    "fi": "Järjestelmä",
+    "sv": "System"
+  },
+  "themeLight": {
+    "en": "Light",
+    "fi": "Vaalea",
+    "sv": "Ljust"
+  },
+  "themeDark": {
+    "en": "Dark",
+    "fi": "Tumma",
+    "sv": "Mörkt"
+  },
+  "textSize": {
+    "en": "Text size",
+    "fi": "Tekstin koko",
+    "sv": "Textstorlek"
+  },
+  "animations": {
+    "en": "Animations",
+    "fi": "Animaatiot",
+    "sv": "Animationer"
+  },
+  "on": {
+    "en": "On",
+    "fi": "Päällä",
+    "sv": "På"
+  },
+  "off": {
+    "en": "Off",
+    "fi": "Pois",
+    "sv": "Av"
+  },
+  "yourBank": {
+    "en": "Bank",
+    "fi": "Pankki",
+    "sv": "Bank"
+  },
+  "yourOperator": {
+    "en": "Mobile operator",
+    "fi": "Operaattori",
+    "sv": "Operatör"
+  },
+  "notSet": {
+    "en": "Not set",
+    "fi": "Ei valittu",
+    "sv": "Inte vald"
+  },
+  "clearData": {
+    "en": "Clear saved data",
+    "fi": "Tyhjennä tallennetut tiedot",
+    "sv": "Rensa sparade uppgifter"
   }
 }

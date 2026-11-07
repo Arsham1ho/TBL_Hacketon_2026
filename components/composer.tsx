@@ -25,7 +25,7 @@ export function DescriptionComposer(p: {
         if (text.trim()) p.onSend();
       }}
     >
-      <div className="flex items-end gap-2 rounded-xl border border-border-strong bg-white p-1.5 focus-within:border-primary">
+      <div className="flex items-end gap-2 rounded-xl border border-border-strong bg-card p-1.5 focus-within:border-primary">
         <label className="sr-only" htmlFor="description">
           {p.question}
         </label>

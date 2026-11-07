@@ -2,23 +2,27 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Landmark,
+  Monitor,
+  Moon,
+  Smartphone,
+  Sun,
+  Trash,
   Building2,
-  Check,
   KeyRound,
-  Shield,
-  Signal,
   SlidersHorizontal,
-  Sparkles,
   User,
   X,
 } from "lucide-react";
-import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
+import { type DemoScenario } from "@/adapters/signals";
 import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
 import { client, type AgentPreview } from "@/lib/client";
 import { getStoredUser, setStoredUser, type MockUser } from "@/lib/mock-users";
-import { translator, type TextKey } from "@/lib/ui-text";
+import { translator } from "@/lib/ui-text";
+import { DEFAULT_PREFERENCES, loadPreferences, motionReduced, savePreferences, type Preferences } from "@/lib/preferences";
+import { BANKS, OPERATORS, type Provider } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
@@ -252,6 +256,68 @@ export const RICH_BUSINESS_SCENARIOS: AttackScenario[] = [
 // What has been said so far.
 type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
 
+const SettingsGroup = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="grid gap-1">
+    <h3 className="px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{title}</h3>
+    <div className="grid divide-y divide-border rounded-2xl border border-border">{children}</div>
+  </section>
+);
+
+// A label on the left and its control on the right, stacking on narrow screens.
+const SettingRow = ({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode }) => (
+  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2.5">
+    <span className="flex items-center gap-2 text-sm font-medium">
+      {icon}
+      {label}
+    </span>
+    <div className="w-full sm:w-auto sm:min-w-[260px]">{children}</div>
+  </div>
+);
+
+function ProviderSelect({ id, value, options, notSet, other, onChange }: { id: string; value?: string; options: Provider[]; notSet: string; other: string; onChange: (id: string) => void }) {
+  return (
+    <select
+      id={id}
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 w-full rounded-full border border-border-strong bg-card px-4 text-sm text-foreground focus:border-primary focus:outline-none"
+    >
+      <option value="" disabled>
+        {notSet}
+      </option>
+      {options.map((option) => (
+        <option key={option.id} value={option.id}>
+          {option.name}
+        </option>
+      ))}
+      <option value="other">{other}</option>
+    </select>
+  );
+}
+
+function Segmented({ label, value, options, onChange }: { label: string; value: string; options: { value: string; label: string; icon?: React.ReactNode }[]; onChange: (value: string) => void }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex gap-1 rounded-full bg-accent p-1">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          role="radio"
+          aria-checked={value === option.value}
+          onClick={() => onChange(option.value)}
+          className={cn(
+            "flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-all",
+            value === option.value ? "bg-card text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {option.icon}
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const WIDTH = "mx-auto w-full max-w-[640px] px-4";
 
 export function SafeStepApp() {
@@ -319,7 +385,7 @@ export function SafeStepApp() {
   // Keeps the newest message in view, and moves keyboard and screen reader users to it.
   // Also follows each new card of a result. Waits a frame so the new content is laid out first.
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = motionReduced();
     const frame = requestAnimationFrame(() => latest.current?.scrollIntoView({ block: "end", behavior: reduced ? "auto" : "smooth" }));
     if (!busy) log.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
     return () => cancelAnimationFrame(frame);
@@ -336,6 +402,28 @@ export function SafeStepApp() {
       operator: saved.operator ?? guessProvider("operator", currentUser?.personal.operatorSubscription),
     });
   }, [currentUser]);
+
+  const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
+  useEffect(() => setPreferences(loadPreferences()), []);
+  function updatePreferences(change: Partial<Preferences>) {
+    const next = { ...preferences, ...change };
+    setPreferences(next);
+    savePreferences(next);
+  }
+
+  // Forgets everything this device remembers: preferences, providers and the demo login.
+  function clearSaved() {
+    try {
+      ["safestep-providers", "safestep-preferences", "safestep_active_user_id"].forEach((key) => localStorage.removeItem(key));
+    } catch {}
+    setProviders({});
+    setPreferences(DEFAULT_PREFERENCES);
+    savePreferences(DEFAULT_PREFERENCES);
+    try {
+      localStorage.removeItem("safestep-preferences");
+    } catch {}
+    handleLogoutUser();
+  }
 
   function choose(kind: ProviderKind, id: string) {
     const next = { ...providers, [kind]: id };
@@ -435,7 +523,7 @@ export function SafeStepApp() {
             <button
               type="button"
               onClick={() => setShowProfileModal(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
+              className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-card/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
             >
               <span className="flex size-5 items-center justify-center rounded-full bg-accent font-bold text-[10px]">
                 {currentUser.type === "small_business" ? (
@@ -453,7 +541,7 @@ export function SafeStepApp() {
             <button
               type="button"
               onClick={() => setShowLoginModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-card/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
             >
               <KeyRound className="size-3.5" />
               <span>Log In</span>
@@ -486,249 +574,107 @@ export function SafeStepApp() {
           className="m-0 mx-auto mt-auto max-h-[88dvh] w-full max-w-[640px] overflow-y-auto rounded-t-2xl border-t border-border-strong bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-foreground shadow-2xl backdrop:bg-black/40"
         >
           <div className="grid gap-5">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-accent text-foreground">
-                  <SlidersHorizontal className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold tracking-tight">{t("options")}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {shown === "fi"
-                      ? "DNA-verkkoturvan tilannekuva, hyökkäysskenaariot ja asetukset"
-                      : shown === "sv"
-                        ? "DNA nätverkssäkerhet, attackscenarier och inställningar"
-                        : "DNA carrier threat intelligence, attack scenarios & settings"}
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2.5 text-base font-bold tracking-tight">
+                <span className="flex size-9 items-center justify-center rounded-full bg-accent">
+                  <SlidersHorizontal className="size-4" aria-hidden />
+                </span>
+                {t("options")}
+              </h2>
               <button
                 type="button"
                 onClick={() => options.current?.close()}
                 aria-label={t("close")}
-                title={t("close")}
-                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 <X className="size-4" aria-hidden />
               </button>
             </div>
 
-            {/* Audience & Language */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <span className="text-xs font-semibold text-foreground">{t("audience")}</span>
-                <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-border bg-accent/40 p-1">
-                  {(["consumer", "small_business"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => {
-                        setAudience(value);
-                        setSelectedScenarioId(null);
-                      }}
-                      className={cn(
-                        "flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
-                        audience === value
-                          ? "bg-foreground text-background shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {value === "consumer" ? <User className="size-3.5" /> : <Building2 className="size-3.5" />}
-                      <span>{t(value === "consumer" ? "consumer" : "smallBusiness")}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-1.5">
-                <label htmlFor="language" className="text-xs font-semibold text-foreground">
-                  {t("language")}
-                </label>
-                <select
-                  id="language"
-                  value={choice}
-                  onChange={(event) => setChoice(event.target.value as Language | "auto")}
-                  className="h-9 w-full rounded-lg border border-border-strong bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-none"
-                >
-                  <option value="auto">{t("auto")}</option>
-                  {LANGUAGES.map(({ code, label }) => (
-                    <option key={code} value={code}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* DNA Network Threat Intelligence */}
-            <div className="rounded-xl border border-border bg-accent/25 p-3.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <Signal className="size-4 text-foreground" />
-                  <h3 className="text-xs font-bold text-foreground">{t("demoLabel")}</h3>
-                </div>
-                <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  DNA Carrier Telemetry
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mb-2.5">
-                {shown === "fi"
-                  ? "Reaaliaikainen operaattoriverkon havaintotieto (DNS-suojaus, SIM-seuranta, puheluanalyysi)."
-                  : shown === "sv"
-                    ? "Realtidsinformation från operatörsnätverket (DNS-skydd, SIM-spårning, samtalsanalys)."
-                    : "Real-time telecom intelligence from DNA's infrastructure (DNS protection, SIM alerts, call analysis)."}
-              </p>
-              <select
-                id="demo"
-                value={demo}
-                onChange={(event) => setDemo(event.target.value as DemoScenario)}
-                className="h-10 w-full rounded-lg border border-border-strong bg-background px-3 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
-              >
-                {DEMO_SCENARIOS.map((scenario) => (
-                  <option key={scenario} value={scenario}>
-                    {t(`demo${scenario}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Preset Attack Scenarios */}
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-foreground" />
-                  <h3 className="text-xs font-bold text-foreground">{t("examples")}</h3>
-                </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {shown === "fi"
-                    ? "Valitse skenaario ladataksesi viestin & DNA-signaalin"
-                    : shown === "sv"
-                      ? "Välj ett scenario för att ladda meddelande & signal"
-                      : "Select scenario to load message & DNA signal"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {(consumer ? RICH_CONSUMER_SCENARIOS : RICH_BUSINESS_SCENARIOS).map((scenario) => {
-                  const isSelected = selectedScenarioId === scenario.id;
-                  return (
-                    <div
-                      key={scenario.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => {
-                        setSelectedScenarioId(scenario.id);
-                        setMessage(scenario.text[shown] ?? scenario.text.en);
-                        setDemo(scenario.signal);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setSelectedScenarioId(scenario.id);
-                          setMessage(scenario.text[shown] ?? scenario.text.en);
-                          setDemo(scenario.signal);
-                        }
-                      }}
-                      className={cn(
-                        "flex cursor-pointer flex-col justify-between rounded-xl border p-2.5 text-left transition-all",
-                        isSelected
-                          ? "border-foreground bg-accent/60 shadow-xs ring-1 ring-foreground/20"
-                          : "border-border bg-card hover:border-foreground/30 hover:bg-accent/20",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">{scenario.icon}</span>
-                          <span className="text-xs font-semibold text-foreground">
-                            {scenario.title[shown] ?? scenario.title.en}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground text-[10px] text-background">
-                            <Check className="size-2.5" />
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
-                        {scenario.description[shown] ?? scenario.description.en}
-                      </p>
-                      <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-foreground">
-                        <span className="size-1.5 rounded-full bg-foreground" />
-                        <span className="truncate">{t(`demo${scenario.signal}`)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Attach Suspicious Message / Link */}
-            <div className="grid gap-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="incident" className="text-xs font-semibold text-foreground">
-                  {t("pasteToggle")}
-                </label>
-                {incident.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setIncident("")}
-                    className="text-[11px] text-muted-foreground hover:text-foreground underline"
-                  >
-                    {shown === "fi" ? "Tyhjennä" : shown === "sv" ? "Rensa" : "Clear"}
-                  </button>
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                {shown === "fi"
-                  ? "Liitä epäilyttävä tekstiviesti, sähköpostiviestin teksti tai verkkosivun osoite teknistä skannausta varten."
-                  : shown === "sv"
-                    ? "Klistra in misstänkt sms, mejltext eller webblänk för teknisk analys."
-                    : "Paste raw SMS text, email body, or website link for technical artifact analysis."}
-              </p>
-              <textarea
-                id="incident"
-                rows={2}
-                maxLength={10000}
-                value={incident}
-                onChange={(event) => setIncident(event.target.value)}
-                placeholder={
-                  shown === "fi"
-                    ? 'Esim. "DNA: Sinulla on noutamaton paketti. Maksa tulli tästä: https://posti-fi-tulli.com"'
-                    : shown === "sv"
-                      ? 'T.ex. "DNA: Du har ett outhämtat paket. Betala tull här: https://posti-fi-tulli.com"'
-                      : 'e.g. "DNA: You have an unpaid parcel fee. Pay here: https://posti-fi-tulli.com"'
-                }
-                className="w-full rounded-lg border border-border-strong bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
-              />
-            </div>
-
-            {/* Action Bar & Safety Note */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border pt-4">
-              <p className="text-[11px] text-muted-foreground text-center sm:text-left">
-                {t("safetyNote")}
-              </p>
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <Btn
-                  variant="plain"
-                  className="min-h-9 px-3 text-xs"
-                  onClick={() => options.current?.close()}
-                >
-                  {t("close")}
-                </Btn>
-                <Btn
-                  variant="primary"
-                  className="min-h-9 px-4 text-xs font-semibold"
-                  onClick={() => {
-                    options.current?.close();
-                    if (message.trim()) {
-                      start();
-                    }
+            <SettingsGroup title={t("settingsYou")}>
+              <SettingRow label={t("audience")}>
+                <Segmented
+                  label={t("audience")}
+                  value={audience}
+                  options={[
+                    { value: "consumer", label: t("consumer"), icon: <User className="size-3.5" aria-hidden /> },
+                    { value: "small_business", label: t("smallBusiness"), icon: <Building2 className="size-3.5" aria-hidden /> },
+                  ]}
+                  onChange={(value) => {
+                    setAudience(value as Audience);
+                    setSelectedScenarioId(null);
                   }}
-                >
-                  {shown === "fi" ? "Aloita arviointi" : shown === "sv" ? "Starta bedömning" : "Start Assessment"}
-                </Btn>
-              </div>
+                />
+              </SettingRow>
+              <SettingRow label={t("language")}>
+                <Segmented
+                  label={t("language")}
+                  value={choice}
+                  options={[{ value: "auto", label: t("auto") }, ...LANGUAGES.map(({ code }) => ({ value: code, label: code.toUpperCase() }))]}
+                  onChange={(value) => setChoice(value as Language | "auto")}
+                />
+              </SettingRow>
+            </SettingsGroup>
+
+            <SettingsGroup title={t("settingsAppearance")}>
+              <SettingRow label={t("theme")}>
+                <Segmented
+                  label={t("theme")}
+                  value={preferences.theme}
+                  options={[
+                    { value: "system", label: t("themeSystem"), icon: <Monitor className="size-3.5" aria-hidden /> },
+                    { value: "light", label: t("themeLight"), icon: <Sun className="size-3.5" aria-hidden /> },
+                    { value: "dark", label: t("themeDark"), icon: <Moon className="size-3.5" aria-hidden /> },
+                  ]}
+                  onChange={(value) => updatePreferences({ theme: value as Preferences["theme"] })}
+                />
+              </SettingRow>
+              <SettingRow label={t("textSize")}>
+                <Segmented
+                  label={t("textSize")}
+                  value={preferences.text}
+                  options={[
+                    { value: "normal", label: "A" },
+                    { value: "large", label: "A+" },
+                  ]}
+                  onChange={(value) => updatePreferences({ text: value as Preferences["text"] })}
+                />
+              </SettingRow>
+              <SettingRow label={t("animations")}>
+                <Segmented
+                  label={t("animations")}
+                  value={preferences.motion}
+                  options={[
+                    { value: "on", label: t("on") },
+                    { value: "off", label: t("off") },
+                  ]}
+                  onChange={(value) => updatePreferences({ motion: value as Preferences["motion"] })}
+                />
+              </SettingRow>
+            </SettingsGroup>
+
+            {/* Used to show the right contact when something happens. */}
+            <SettingsGroup title={t("settingsServices")}>
+              <SettingRow label={t("yourBank")} icon={<Landmark className="size-4" aria-hidden />}>
+                <ProviderSelect id="bank" value={providers.bank} options={BANKS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("bank", id)} />
+              </SettingRow>
+              <SettingRow label={t("yourOperator")} icon={<Smartphone className="size-4" aria-hidden />}>
+                <ProviderSelect id="operator" value={providers.operator} options={OPERATORS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("operator", id)} />
+              </SettingRow>
+            </SettingsGroup>
+
+            <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
+              <button
+                type="button"
+                onClick={clearSaved}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-destructive hover:bg-danger-soft"
+              >
+                <Trash className="size-4" aria-hidden />
+                {t("clearData")}
+              </button>
+              <Btn variant="primary" className="min-h-10 px-5 text-sm" onClick={() => options.current?.close()}>
+                {t("done")}
+              </Btn>
             </div>
           </div>
         </dialog>
@@ -794,7 +740,7 @@ export function SafeStepApp() {
           <button
             type="button"
             onClick={() => setShowProfileModal(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
+            className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-card/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
           >
             <span className="flex size-5 items-center justify-center rounded-full bg-accent font-bold text-[10px]">
               {currentUser.type === "small_business" ? (
@@ -809,7 +755,7 @@ export function SafeStepApp() {
           <button
             type="button"
             onClick={() => setShowLoginModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-card/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
           >
             <KeyRound className="size-3.5" />
             <span>Log In</span>
@@ -820,7 +766,7 @@ export function SafeStepApp() {
           onClick={() => void restart()}
           aria-label={t("exit")}
           title={t("exit")}
-          className="flex size-11 items-center justify-center rounded-lg bg-white/90 text-muted-foreground hover:bg-accent"
+          className="flex size-11 items-center justify-center rounded-lg bg-card/90 text-muted-foreground hover:bg-accent"
         >
           <X className="size-5" aria-hidden />
         </button>
@@ -979,7 +925,8 @@ export function SafeStepApp() {
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
           {replies.map((option) => (
-            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1">
+            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1 gap-2">
+              {option.icon}
               {option.label}
             </Btn>
           ))}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Risk } from "@/engine/types";
+import { motionReduced } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 
 // Where the needle points for each risk level, from 0 (left) to 100 (right).
@@ -15,7 +16,8 @@ const R = 96;
 // The text colour matches, because the glow uses currentColor.
 const tickColor = (share: number) =>
   share < 0.4 ? "stroke-success text-success" : share < 0.7 ? "stroke-warning text-warning" : share < 0.88 ? "stroke-destructive text-destructive" : "stroke-danger-deep text-danger-deep";
-const fillColor: Record<Risk, string> = { none: "fill-success", low: "fill-success", medium: "fill-warning", high: "fill-destructive", critical: "fill-danger-soft" };
+// The readout is a dark display with bright digits in both themes, like a car's dashboard.
+const fillColor: Record<Risk, string> = { none: "fill-[oklch(0.82_0.15_155)]", low: "fill-[oklch(0.82_0.15_155)]", medium: "fill-[oklch(0.84_0.14_80)]", high: "fill-[oklch(0.72_0.19_25)]", critical: "fill-[oklch(0.7_0.21_25)]" };
 const textColor: Record<Risk, string> = { none: "text-success", low: "text-success", medium: "text-warning", high: "text-destructive", critical: "text-danger-deep" };
 
 function point(share: number, radius: number) {
@@ -31,7 +33,7 @@ export function RiskGauge({ risk, label, caption, size = "lg" }: { risk: Risk; l
   const [count, setCount] = useState(0);
   useEffect(() => {
     const target = VALUE[risk];
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (motionReduced()) {
       setValue(target);
       setCount(target);
       return;
@@ -85,7 +87,7 @@ export function RiskGauge({ risk, label, caption, size = "lg" }: { risk: Risk; l
         />
         <circle cx={CX} cy={CY} r={9} className="fill-card stroke-foreground" strokeWidth={3} />
         {/* The digital readout, like the trip counter under a speedometer. */}
-        <rect x={CX - 26} y={CY - 52} width={52} height={22} rx={5} className="fill-foreground" />
+        <rect x={CX - 26} y={CY - 52} width={52} height={22} rx={5} className="fill-[oklch(0.16_0_0)] stroke-[oklch(0.32_0_0)]" strokeWidth={1} />
         <text x={CX} y={CY - 36} textAnchor="middle" className={cn("font-mono text-[15px] font-bold tabular-nums", fillColor[risk])}>
           {String(count).padStart(3, "0")}
         </text>
