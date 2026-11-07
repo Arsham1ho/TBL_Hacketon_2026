@@ -77,17 +77,25 @@ python3 "$SIMSET_DIR/eval/evaluate.py" \
 
 ## Results so far
 
-Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned on these same cases, so these numbers show what the logic can reach, not expected accuracy on new cases.
+Measured on 7 November 2026 with the supplied evaluator and the keyword extractor, so no LLM is involved. The rules were tuned on these 588 development cases, so these numbers show what the logic can reach, not expected accuracy on new wording. Full results, the five journeys, failure examples and the packaging hypothesis are in [RESULTS.md](RESULTS.md).
 
-| Metric | Rules baseline | Target | SafeStep |
+| Metric | Rules baseline | Target | SafeStep (one message / conversation) |
 |---|---:|---:|---:|
-| Safe-action pass | 60.5% | 80%+ | 95.9% |
-| False alarms on harmless cases | 28.0% | Under 10% | **11.4%, target missed** |
-| Escalation recall | 47.0% | 90%+ | 98.5% |
-| Asked decisive question | 70.0% | 90%+ | 95.0% |
-| Unsafe statements | 0% | 0% | 0% |
+| Safe-action pass | 60.5% | 80%+ | 97.6% / 95.7% |
+| False alarms on harmless cases | 28.0% | Under 10% | 9.8% / 9.8% |
+| Escalation recall | 47.0% | 90%+ | 100% / 100% |
+| Asked decisive question | 70.0% | 90%+ | 100% / 100% |
+| Unsafe statements | 0% | 0% | 0% / 0% |
+| Five sample journeys | | | 5 of 5 pass in both modes |
 
-`gemini-3.5-flash-lite`, the current default, has only been measured on a 50-case sample so far: 98.0% safe-action pass and no false alarms. The full run is still to do.
+On the frozen new-wording test, written after the rules were frozen, the action matched in 7 of 12 cases and escalation in 10 of 12.
+
+The test-set answers are in `test_predictions.jsonl` (335 of 335 covered, validated with `tools/validate.py`). To regenerate them:
+
+```bash
+npm run eval:dev -- data/test/inputs.jsonl test_predictions.jsonl
+python3 "$SIMSET_DIR/tools/validate.py" --submission test_predictions.jsonl
+```
 
 ## Project status
 
@@ -101,12 +109,14 @@ Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned 
 
 ## Known limits
 
-- False alarms are above the 10% target on the full development set.
+- False alarms are 9.8%, just under the 10% target. Most come from genuine operator offers and shop links.
 - Finnish and Swedish text still needs review by native speakers.
 - The free Gemini tier allows 15 requests a minute. Above that, the app falls back to the keyword extractor.
 - Masking can miss letter-and-number codes and codes with no code word nearby.
 - Swedish source titles fall back to English, because the supplied guidance has no Swedish titles.
-- The frozen new-wording test scored 7 of 12 with the keyword extractor.
+- The frozen new-wording test scored 7 of 12 with the keyword extractor. Unfamiliar wording is the main remaining risk.
+- The privacy proxy is 71.9 in one-message mode, against 92.2 in conversation, because consent can only be requested in a conversation.
+- The comprehension check and the manual safety review in RESULTS.md are still to do.
 
 ## Licence
 

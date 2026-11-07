@@ -1,15 +1,27 @@
 # Engine evaluation status
 
-The offline extractor and deterministic rules were run on all 588 development cases with the supplied evaluator. Safe-action pass was 98.0%, false alarms on 132 benign cases were 9.1%, escalation recall was 100.0%, and the evaluator flagged no unsafe statements. These cases informed rule development, so this is a development score, not held-out accuracy.
+The current results are in [RESULTS.md](../RESULTS.md) at the repository root. This file only keeps notes on how the evaluation was run.
 
-The offline engine generated predictions for all 335 supplied test inputs. `tools/validate.py` accepted the submission: 335 covered, 0 missing. Their reference answers are withheld, so no accuracy score is available. Fourteen additional scenario regressions cover novel wording and safety classes, including WhatsApp code sharing, romance payment requests, gift cards, invoice wording, number transfer, and prompt injection.
+## Summary (7 November 2026, keyword extractor)
 
-A single synthetic Gemini call succeeded. The full Gemini development run was stopped before completion because the free tier required lengthy pacing. Do not present the offline score as a Gemini score. The supplied Windows multi-turn simulator uses `select.select()` on a subprocess pipe and fails locally with `WinError 10093`; the bot protocol still needs a compatible run before submission.
+| | One message | Conversation |
+|---|---:|---:|
+| Safe-action pass | 97.6% | 95.7% |
+| Unsafe statements | 0% | 0% |
+| False alarms on 132 harmless cases | 9.8% | 9.8% |
+| Escalation recall | 100% | 100% |
+| Asked the decisive question | 100% | 100% |
 
-These are automated checks. They do not replace manual safety review or review of Finnish and Swedish wording.
+The rules were developed on these same cases, so this is a development score, not held-out accuracy.
+
+All 335 test inputs have predictions in `test_predictions.jsonl`, and `tools/validate.py` accepts it: 335 covered, 0 missing. Their reference answers are withheld, so no accuracy score is available.
+
+The supplied multi-turn simulator runs on macOS and Linux with `--bot "npx tsx eval/bot.ts"`. It failed on Windows because it uses `select.select()` on a subprocess pipe.
+
+Gemini has only been measured on a 50-case sample. Don't present the keyword scores as Gemini scores.
 
 ## Frozen paraphrase holdout
 
-On 7 November 2026, 12 new English, Finnish and Swedish paraphrases were written after the development rules were frozen and run once with the offline extractor. The first-run action result was **7/12** and the escalation check was **10/12**. The six observed failures were preserved rather than used for rule tuning: own login, booked support, Swedish remote access, former-staff escalation, an out-of-scope tracing request, and a Finnish bank-detail change. This is a small challenge set, not an estimate of production accuracy. Run it again with `npm run eval:holdout`; set `HOLDOUT_ENFORCE=1` only when a future frozen target should fail CI.
+On 7 November 2026, 12 new English, Finnish and Swedish paraphrases were written after the development rules were frozen and run once with the keyword extractor. The action matched in **7 of 12** and the escalation check passed in **10 of 12**. The failures were kept rather than used for tuning: own login, booked support, Swedish remote access, former-staff escalation, an out-of-scope tracing request, and a Finnish bank-detail change. Run it again with `npm run eval:holdout`.
 
-The failure pattern shows that unfamiliar phrasing and multilingual extraction remain the main risk. The Gemini comparison must report these cases separately from the tuned development score.
+Unfamiliar wording and multilingual extraction remain the main risk. These are automated checks and don't replace the manual safety review or a native-speaker review of the Finnish and Swedish text.

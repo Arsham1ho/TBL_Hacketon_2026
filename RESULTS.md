@@ -8,7 +8,7 @@ All numbers below were measured on 7 November 2026 on the current `main`, with t
 
 ## 1. What we built
 
-SafeStep is a chat assistant for consumers and small businesses inside DNA's identified app or business portal. **The LLM reads; code decides.** An Input Guard masks card numbers, codes and passwords first. Gemini (or a keyword reader as backstop and fallback) turns the user's words into structured facts, and a Fact Validator drops any fact without a real quote from the user. Fixed rules then choose status, risk, urgency, the one main action and the human destination; the LLM cannot set any of these. A **Decision Flip** runs Yes and No through the rules and asks a question only when the answer changes the advice. Replies are composed from approved text in Finnish, English and Swedish and checked by an Output Guard. The app is Next.js; the engine is TypeScript with 511 unit tests.
+SafeStep is a chat assistant for consumers and small businesses inside DNA's identified app or business portal. **The LLM reads; code decides.** An Input Guard masks card numbers, codes and passwords first. Gemini (or a keyword reader as backstop and fallback) turns the user's words into structured facts, and a Fact Validator drops any fact without a real quote from the user. Fixed rules then choose status, risk, urgency, the one main action and the human destination; the LLM cannot set any of these. A **Decision Flip** runs Yes and No through the rules and asks a question only when the answer changes the advice. Replies are composed from approved text in Finnish, English and Swedish and checked by an Output Guard. The app is Next.js; the engine is TypeScript with 534 unit tests.
 
 ## 2. Safety boundaries
 
