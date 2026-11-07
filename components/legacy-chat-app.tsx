@@ -246,6 +246,13 @@ export function LegacyChatApp() {
               <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
                 {screen.statusLabel}
               </p>
+              {screen.classification && (
+                <div className="rounded-xl border border-gray-200 bg-white px-3 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{screen.classification.label}</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">{screen.classification.title}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">{screen.classification.description}</p>
+                </div>
+              )}
               {screen.branches ? (
                 screen.branches.map(b => (
                   <div key={b.condition}>

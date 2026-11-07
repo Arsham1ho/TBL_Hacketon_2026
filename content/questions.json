@@ -138,5 +138,25 @@
       "ifRisky": "Om du inte är trygg just nu, ring 112 först.",
       "ifSafe": "Om du är trygg just nu:"
     }
+  },
+  "time_of_event": {
+    "en": {
+      "question": "Is anyone still pressuring you or waiting for you to act right now?",
+      "why": "If the pressure is still live, stop the contact before doing anything else.",
+      "ifRisky": "If someone is still pressuring you right now:",
+      "ifSafe": "If the contact has ended:"
+    },
+    "fi": {
+      "question": "Painostaako joku sinua edelleen tai odottaako toimintaasi juuri nyt?",
+      "why": "Jos painostus jatkuu, lopeta yhteys ennen kuin teet mitään muuta.",
+      "ifRisky": "Jos joku painostaa sinua juuri nyt:",
+      "ifSafe": "Jos yhteys on päättynyt:"
+    },
+    "sv": {
+      "question": "Pressar någon dig fortfarande eller väntar på att du ska agera just nu?",
+      "why": "Om pressen fortfarande pågår ska du avsluta kontakten innan du gör något annat.",
+      "ifRisky": "Om någon fortfarande pressar dig just nu:",
+      "ifSafe": "Om kontakten har avslutats:"
+    }
   }
 }

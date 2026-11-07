@@ -7,6 +7,7 @@ import { confidenceBand } from "./confidence";
 import { fallbackScreen, stopScreen } from "./fallback";
 import { fastDanger } from "./fast-danger";
 import { safeScreen } from "./output-guard";
+import { incidentCategory } from "./incident-category";
 import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters/signals";
 import { handoffPreview } from "../adapters/handoff";
 import type { Case } from "./case";
@@ -143,7 +144,7 @@ function present(sessionId: string, journey: Journey, override?: Screen): ApiRes
   else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
-  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })) };
+  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0) };
   const all = item.availableSignals;
   return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }

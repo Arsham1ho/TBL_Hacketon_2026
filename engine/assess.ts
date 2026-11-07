@@ -4,7 +4,7 @@ import { checkDecision } from "./contract";
 import { guardInput } from "./input-guard";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
-import { decide, MAX_FLIPS, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
+import { decide, MAX_FLIPS, MAX_HIGH_RISK_FLIPS, pickContextQuestion, pickFlip, pickHighRiskFlip, unresolvedFlip, worstCase, type Question } from "./question-picker";
 import { UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
 import { mergeFacts, validateFacts } from "./fact-validator";
@@ -73,7 +73,7 @@ async function attempt(extract: Extractor, extraction: ExtractionInput): Promise
 export type Assessment = {
   outcome: Outcome;
   decision: Decision;
-  flip: Flip | null;
+  flip: Question | null;
   unknownTopics: Topic[];
   interruption: InterruptionKind | null;
   confidence: number;
@@ -104,8 +104,14 @@ export function withinContract(item: Case, outcome: Outcome, unknownTopics: Topi
 
 export function assess(item: Case, asked = 0): Assessment {
   // Running out of questions doesn't answer them: an unasked fact stays unknown.
-  const undecided = pickFlip(item);
-  const open = asked < MAX_FLIPS ? undecided : null;
+  const primaryFlip = pickFlip(item);
+  const hasGoodContext = Object.keys(item.answers).length > 0 && confirmedFacts(item).length >= 2;
+  const highRisk = ["threat_in_progress", "incident_occurred"].includes(decide(item).status);
+  const deeperFlip = !primaryFlip && hasGoodContext && highRisk ? pickHighRiskFlip(item) : null;
+  const undecided = primaryFlip ?? deeperFlip;
+  const context = asked === 0 && !undecided ? pickContextQuestion(item) : null;
+  const maximumQuestions = hasGoodContext && highRisk ? MAX_HIGH_RISK_FLIPS : MAX_FLIPS;
+  const open = asked < maximumQuestions ? undecided ?? context : null;
   const pending = undecided ?? unresolvedFlip(item);
   const unknownTopics = pending ? [pending.topic] : [];
   const { outcome, decision } = withinContract(item, pending ? worstCase(pending) : decide(item), unknownTopics);
@@ -115,7 +121,10 @@ export function assess(item: Case, asked = 0): Assessment {
     decision,
     flip: open,
     unknownTopics,
-    interruption: interruptionFor(item.facts),
+    interruption: interruptionFor({
+      ...item.facts,
+      happeningNow: item.answers.time_of_event === "yes" ? true : item.answers.time_of_event === "no" ? false : item.facts.happeningNow,
+    }),
     confidence: caseConfidence(item, unknownTopics.length, outcome.situation === "unclear"),
     confirmedFacts: confirmedFacts(item),
     composed: compose(outcome, item.language, open, pending?.topic ?? null),

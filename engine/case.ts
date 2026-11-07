@@ -45,6 +45,7 @@ export function topicValue(item: Case, topic: Topic): Answer | null {
     return facts.userAlreadyDid.includes("nothing") ? "no" : null;
   }
   if (topic === "self_initiated") return facts.selfInitiated;
+  if (topic === "time_of_event") return item.answers.time_of_event ?? toAnswer(facts.happeningNow);
   if (topic === "password_reused") return toAnswer(facts.passwordReused);
   if (topic === "signal_lost") return toAnswer(facts.serviceLost);
   return null;

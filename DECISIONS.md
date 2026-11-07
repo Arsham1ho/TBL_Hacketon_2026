@@ -105,7 +105,7 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 | Stop Screen doesn't fire for self-started or verified events | Own logins and booked IT support are harmless cases in the dataset |
 | User-facing label "Looks safe", not "Safe" | Avoids claiming certainty the evidence can't support |
 | Safe needs positive evidence | "Nothing risky found" called a grandchild money call and an emptied account Safe |
-| Decision Flips are computed by running Yes and No through the rules | A question exists only if the answers lead to different responses |
+| Decision Flips are computed by running Yes and No through the rules | A decisive question exists only if the answers lead to different responses; otherwise SafeStep asks one incident-specific context question before guidance |
 | Not sure gives conditional advice under Needs verification | Advice is safe for the worse answer without claiming it is true |
 | Don't advise blocking a card until exposure is known | The bank can decide, and unneeded blocking is unjustified alarm |
 | Facts need a quote that appears in the source text | A model can't narrow a case by inventing facts |

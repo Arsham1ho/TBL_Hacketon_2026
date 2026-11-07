@@ -1,4 +1,5 @@
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
+import type { IncidentCategory } from "./incident-category";
 
 // The contract between the engine and the UI. The API returns these and the UI only
 // renders them, so the UI holds no safety logic. Change this file together, not alone.
@@ -26,6 +27,7 @@ export type Screen =
       confidence: string;
       unknowns: string[];
       sources: { id: string; title: string }[];
+      classification: IncidentCategory | null;
     }
   | { type: "rescue"; step: RescueStep; position: number; total: number }
   | { type: "handoff"; destination: Destination; summary: string[]; omitted: string[] }

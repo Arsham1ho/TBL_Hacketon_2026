@@ -2,7 +2,7 @@ import approved from "../content/approved-text.json";
 import questions from "../content/questions.json";
 import reasons from "../content/reasons.json";
 import steps from "../content/steps.json";
-import type { Flip } from "./question-picker";
+import type { Question } from "./question-picker";
 import type { Outcome } from "./situations";
 import type { Language, Topic } from "./types";
 
@@ -95,7 +95,7 @@ export type Composed = {
 
 // Action first, then the reason. Under an unknown fact the steps are conditional,
 // so the advice never states that the worse branch is true.
-export function compose(outcome: Outcome, language: Language, flip: Flip | null, unknownTopic: Topic | null): Composed {
+export function compose(outcome: Outcome, language: Language, flip: Question | null, unknownTopic: Topic | null): Composed {
   const texts = stepTexts(outcome, language);
   const asked = flip ? questionText(flip.topic, language) : null;
   const wording = unknownTopic ? questionText(unknownTopic, language) : null;

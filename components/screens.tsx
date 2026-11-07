@@ -99,6 +99,13 @@ export function ResultScreen(p: { screen: ScreenOf<"result">; status: Status; t:
   return (
     <div className="flex flex-col gap-5">
       <StatusLabel status={p.status} label={screen.statusLabel} />
+      {screen.classification && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{screen.classification.label}</p>
+          <p className="mt-1 text-lg font-bold text-navy">{screen.classification.title}</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{screen.classification.description}</p>
+        </section>
+      )}
       {screen.branches ? (
         <>
           <H1>{t("eachCase")}</H1>
