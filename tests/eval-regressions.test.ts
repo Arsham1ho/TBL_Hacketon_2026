@@ -62,3 +62,20 @@ describe("answers that say yes or no without the words", () => {
     expect(readAnswerOffline("Hänellä on pääsy laskutukseen.", "fi", "business_access")).toBe("yes");
   });
 });
+
+describe("hedged and negated answers", () => {
+  it("keeps a hedged payment answer unsure, so the advice still covers money that has gone", async () => {
+    const { readAnswerOffline } = await import("../engine/answer-reader");
+    expect(readAnswerOffline("En ole varma, ehkä se on vielä maksamatta.", "fi", "payment_status")).toBe("unsure");
+    expect(readAnswerOffline("I'm not sure, I think it's still unpaid?", "en", "payment_status")).toBe("unsure");
+    expect(readAnswerOffline("Not sure, maybe I already paid it", "en", "payment_status")).toBe("unsure");
+  });
+
+  it("reads lost access as no", async () => {
+    const { readAnswerOffline } = await import("../engine/answer-reader");
+    expect(readAnswerOffline("They no longer have access.", "en", "business_access")).toBe("no");
+    expect(readAnswerOffline("They don't have access anymore.", "en", "business_access")).toBe("no");
+    expect(readAnswerOffline("Hänellä ei ole enää pääsyä.", "fi", "business_access")).toBe("no");
+    expect(readAnswerOffline("Han har inte längre åtkomst.", "sv", "business_access")).toBe("no");
+  });
+});
