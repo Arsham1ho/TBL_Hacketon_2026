@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { randomUUID } from "node:crypto";
-import { extractFacts, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
+import { extractFacts, interpretInterviewAnswer, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
 import { isTriage, pickFlip } from "../../../engine/question-picker";
 import { UNCLEAR } from "../../../engine/situations";
@@ -54,8 +54,15 @@ export async function POST(request: Request) {
       const llm = llmAvailable();
       const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
+      if (journey && payload.kind === "ai_answer" && llm && (payload.answer === "yes" || payload.answer === "no")) {
+        const last = journey.interview?.at(-1);
+        if (last) {
+          const interpreted = await interpretInterviewAnswer(last.question, last.answer, journey.item.language);
+          if (interpreted && interpreted.answer === payload.answer) journey.item = { ...journey.item, answers: { ...journey.item.answers, [interpreted.topic]: interpreted.answer } };
+        }
+      }
       session.journey = journey;
-      return NextResponse.json(await respond(sessionId, journey, response));
+      return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response));
     } catch {
       return NextResponse.json({ error: "invalid_event" }, { status: 409 });
     }
@@ -84,6 +91,10 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   // No fixed number of questions: the AI keeps asking until it has a clear picture and
   // returns no question. A repeated question or a failed LLM call also ends the interview.
   if (!journey?.input || !llmAvailable() || journey.interviewDone) return response;
+  // Three follow-ups is the normal conversational budget. Preserve the rule-driven
+  // flip on screen when the budget is spent, since it may change the action.
+  const questionsAnswered = (journey.flipHistory?.length ?? 0) + (journey.interview?.length ?? 0) + Number(Boolean(journey.linkContextAsked));
+  if (questionsAnswered >= 3) return response;
   // An unclear case, or a "needs checking" result that still has gaps, gets a live question.
   // Clear incidents go straight to their steps.
   const unclear = response.screen.type === "flip" && isTriage(pickFlip(journey.item));
@@ -96,7 +107,14 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   const mask = (value: string) => guardInput(value).userText;
   const history = [...(journey.flipHistory ?? []), ...(journey.interview ?? [])].map(({ question, answer }) => ({ question: mask(question), answer: mask(answer) }));
   const facts = { ...journey.item.facts, evidence: journey.item.facts.evidence.map(({ fact, quote }) => ({ fact, quote: mask(quote) })) };
-  const question = await nextQuestion({ story, asked: history, language: journey.item.language, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics });
+  const summaryGaps = [
+    !journey.item.facts.incidentType && "what happened",
+    !journey.item.facts.contactStartedBy && "who initiated contact",
+    journey.item.facts.asksFor.length === 0 && journey.item.facts.asksNothing !== true && "what was requested",
+    journey.item.facts.userAlreadyDid.length === 0 && "what the person did",
+    journey.item.facts.happeningNow === null && "whether it is still happening",
+  ].filter((gap): gap is string => Boolean(gap));
+  const question = await nextQuestion({ story, asked: history, language: journey.item.language, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics, summaryGaps });
   if (question === "done") journey.interviewDone = true;
   if (!question || question === "done") return response;
   journey.pendingAsk = { id: randomUUID().slice(0, 8), question };

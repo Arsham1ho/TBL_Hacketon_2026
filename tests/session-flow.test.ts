@@ -130,6 +130,17 @@ describe("session flow", () => {
     expect(asked.response.screen).toMatchObject({ type: "handoff", destination: "business_security_support" });
   });
 
+  it("warns about a live remote-access request, then asks whether access was granted", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("A caller says they are from Microsoft and is asking for remote access to my laptop right now."), sentToLlm: false });
+    expect(started.response.screen.type).toBe("stop");
+    const continued = await handleEvent("test", started.journey, { kind: "continue" });
+    expect(continued.response.screen).toMatchObject({ type: "flip", topic: "remote_access_given" });
+    const no = await handleEvent("test", continued.journey, { kind: "answer", topic: "remote_access_given", answer: "no" });
+    expect(no.response.state.status).toBe("threat_in_progress");
+    const yes = await handleEvent("test", continued.journey, { kind: "answer", topic: "remote_access_given", answer: "yes" });
+    expect(yes.response.state.status).toBe("incident_occurred");
+  });
+
   it("shows readable unknowns and sources, not internal ids", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text asking for card details."), sentToLlm: false });
     const done = await handleEvent("test", started.journey, { kind: "answer", topic: (started.response.screen as { topic: "card_details_entered" }).topic, answer: "unsure" });

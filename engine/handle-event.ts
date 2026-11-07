@@ -84,7 +84,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       const answer = text || { yes: "yes", no: "no", unsure: "not sure" }[event.answer ?? "unsure"];
       journey.pendingAsk = undefined;
       journey.interview = [...(current.interview ?? []), { question: ask.question, answer }];
-      journey.asked++;
+      // AI discovery does not consume the allowance for decisive rule questions.
       // A typed answer is the user's own words, so it joins the story the rules read.
       if (text && journey.input) journey.input = { ...journey.input, openingMessage: `${journey.input.openingMessage}\n${text}` };
       journey.item = await readInterview(journey, event.extractor);
