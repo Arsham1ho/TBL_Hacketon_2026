@@ -21,6 +21,12 @@ If a user answers "Not sure", the fact stays unknown and the advice covers both 
 
 **Scam Radar** checks each report in the background against four ranked synthetic patterns. When supported facts resemble one, the result shows the match with a clear prototype label. There is no separate Radar control. Radar does not read DNA reports or change risk, status, urgency, recovery steps, or the chosen action. Its mock feed lives in `engine/scam-radar.ts` and can later be replaced with an approved trend source.
 
+**Link and message check.** When someone says they received a message, email or link, SafeStep asks them to paste it. Links are opened on the server as plain text: no scripts run, nothing is submitted, and private or internal addresses are never contacted. Each link gets a 0–100 score from threat lists (OpenPhish, and Google Safe Browsing if a key is set), domain age and registrar, look-alike names, DNS, the TLS certificate, security headers and the page content. The score only sets the visible link signal; the rules still decide.
+
+**Scam coverage.** Besides calls, messages and links, the fact readers recognise crypto (seed phrases, drained wallets, withdrawal fees), investment, romance and "new number" family scams, job and task scams, marketplace links, sextortion, gift cards, QR codes, social-account takeovers, unknown card charges and identity theft, in all three languages. Crypto and sextortion have their own rules and approved advice.
+
+**Plans.** A demo plan switch shows how DNA could package the service (see [BUSINESS.md](BUSINESS.md)). Safety advice, Rescue Mode and handoff to a person are free on every plan. Paid plans add DNA signal checks, the decision report and priority help. No payment is taken.
+
 See [TASKS.md](TASKS.md) for the team plan, [ARCHITECTURE.md](ARCHITECTURE.md) for the design, [DECISIONS.md](DECISIONS.md) for the safety contract and results, and [strategy.md](strategy.md) for the product plan.
 
 ## Setup
@@ -39,6 +45,7 @@ Then edit `.env.local`:
 | `GEMINI_API_KEY` | Fact reading with Gemini. Used first if set |
 | `OPENAI_API_KEY` | Fact reading with OpenAI, if there is no Gemini key |
 | `SIMSET_DIR` | Full path to the DNA SimSet folder, needed for evaluation only |
+| `GOOGLE_SAFE_BROWSING_KEY` | Optional. Adds Google Safe Browsing to the link check |
 
 With no key, the app still runs on the keyword extractor alone.
 
@@ -75,19 +82,42 @@ python3 "$SIMSET_DIR/eval/evaluate.py" \
   --submission answers.jsonl
 ```
 
-## Results so far
+## Results
 
-Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned on these same cases, so these numbers show what the logic can reach, not expected accuracy on new cases.
+Measured on 8 November 2026 on the 588 development cases with the keyword extractor (no LLM), scored by the supplied evaluator v2.0.1. The rules were tuned on these cases, so these numbers show what the logic can reach, not expected accuracy on new cases.
 
 | Metric | Rules baseline | Target | SafeStep |
 |---|---:|---:|---:|
-| Safe-action pass | 60.5% | 80%+ | 95.9% |
-| False alarms on harmless cases | 28.0% | Under 10% | **11.4%, target missed** |
-| Escalation recall | 47.0% | 90%+ | 98.5% |
-| Asked decisive question | 70.0% | 90%+ | 95.0% |
-| Unsafe statements | 0% | 0% | 0% |
+| Safe-action pass | 60.5% | 80%+ | **91.2%** |
+| Unsafe statements | 0% | 0% | **0.0%** |
+| False alarms on harmless cases | 28.0% | Under 10% | **9.8%** |
+| Escalation recall | 47.0% | 90%+ | **90.9%** |
+| Asked decisive question | 70.0% | 90%+ | **93.3%** |
+| Consent violations | — | 0% | **0.0%** |
+| Weighted brief proxy (80 automated points) | 67.1 | 80+ | **92.6** |
 
-`gemini-3.5-flash-lite`, the current default, has only been measured on a 50-case sample so far: 98.0% safe-action pass and no false alarms. The full run is still to do.
+Brief scorecard proxy: correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, privacy and consent 93.1.
+
+### The five journeys
+
+| Journey | Cases | Safe-action pass |
+|---|---:|---:|
+| Breach notice | 120 | 98.3% |
+| Suspicious message | 156 | 97.4% |
+| Clicked link | 84 | 94.0% |
+| Small-business incident | 156 | 82.1% |
+| Suspicious call | 72 | 81.9% |
+
+Consumers pass 95.2% and small businesses 82.8%. Small-business and call cases are the weakest; most of their misses are over-reactions (sending a cautious check to the bank) rather than unsafe advice.
+
+### Failure and escalation examples
+
+- **Escalation:** "Someone threatens to share my intimate photos unless I pay" is handed to a human advisor, with the police listed and the advice not to pay, keep evidence and report the account.
+- **Failure (fixed):** "Suspicious payments" said by a bank-impostor caller was first read as an unknown card charge, sending 8 call cases to the wrong action. The charge pattern now runs after the call pattern.
+- **Failure (fixed):** the Finnish line "Kerroit jakaneesi koodin" (You said you shared a code) was flagged by the evaluator as telling the user to share a code, in 10 answers. It was reworded.
+- **Remaining:** 31 over-reactions and 13 false alarms on harmless cases, mostly genuine operator and bank notices sent to a cautious check.
+
+The LLM run on 7 November (`gpt-5.4-mini`, older evaluator) is in [DECISIONS.md](DECISIONS.md#9-stage-2-results).
 
 ## Project status
 
@@ -101,7 +131,8 @@ Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned 
 
 ## Known limits
 
-- False alarms are above the 10% target on the full development set.
+- The link check reaches the open internet from the server. In production it should run in an isolated network.
+- Plans are a demo switch with hypothesis prices, not billing.
 - Finnish and Swedish text still needs review by native speakers.
 - The free Gemini tier allows 15 requests a minute. Above that, the app falls back to the keyword extractor.
 - Masking can miss letter-and-number codes and codes with no code word nearby.

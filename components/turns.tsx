@@ -1,9 +1,11 @@
+import { hasFeature, planFor, signalFeature, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
+import { LockedNote, QueueChip } from "./plans";
 import type { ReactNode } from "react";
 import type { ApiRequest, ApiResponse, DataReceipt, Screen, SupportRoute } from "@/engine/screens";
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { Lock, ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,10 @@ type Actions = {
   ended?: boolean;
   // Opens the full decision report, when one was made for this chat.
   openReport?: () => void;
+  // The demo plan, and the plan sheet opened on the plan that unlocks a feature.
+  // Voice mode leaves these out, so it isn't gated.
+  plan?: Plan;
+  showPlans?: (highlight?: Plan, feature?: Feature) => void;
 };
 
 const RISK_TEXT: Record<Risk, TextKey> = { none: "riskNone", low: "riskLow", medium: "riskMedium", high: "riskHigh", critical: "riskCritical" };
@@ -700,7 +706,8 @@ export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t 
 }
 
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
-  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport } = actions;
+  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport, plan = "business", showPlans = () => {} } = actions;
+  const planText = PLAN_COPY[response.language];
   const { screen, state } = response;
   // A person is offered only when the risk is critical, or the rules found the case needs
   // one. Lower risks are handled in the chat. Fallback and failed steps offer one anyway.
@@ -785,9 +792,13 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
             <p className="text-sm text-muted-foreground">
               {screen.why} {screen.limit} {screen.ifRefused}
             </p>
+            {!hasFeature(plan, signalFeature(screen.signal)) && <LockedNote feature={signalFeature(screen.signal)} language={response.language} />}
           </>
         ),
-        replies: [choose(true, t("allow")), choose(false, t("deny"))],
+        // Without the plan, the case carries on exactly as if the check was declined.
+        replies: hasFeature(plan, signalFeature(screen.signal))
+          ? [choose(true, t("allow")), choose(false, t("deny"))]
+          : [{ label: planText.seePlans, primary: true, run: () => showPlans(planFor(signalFeature(screen.signal)), signalFeature(screen.signal)), icon: <Lock className="size-4" aria-hidden /> }, choose(false, planText.continueWithout)],
       };
     }
     case "rescue": {
@@ -810,7 +821,12 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const recap = t("handoffTitle");
       return {
         recap,
-        body: <HandoffCard screen={screen} state={state} t={t} />,
+        body: (
+          <>
+            <QueueChip priority={hasFeature(plan, "priority")} language={response.language} />
+            <HandoffCard screen={screen} state={state} t={t} />
+          </>
+        ),
         replies: [
           { label: t("approve"), primary: true, run: () => handoff(recap, t("approve"), true) },
           { label: t("dontShare"), run: () => handoff(recap, t("dontShare"), false) },
@@ -1074,7 +1090,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         ),
         // New chat is in the top bar, so the end offers the report to view (and save from there). Without one, New chat stays here.
         replies: openReport
-          ? [{ label: t("downloadReport"), primary: true, run: openReport, icon: <FileText className="size-4" aria-hidden /> }]
+          ? [hasFeature(plan, "report")
+              ? { label: t("downloadReport"), primary: true, run: openReport, icon: <FileText className="size-4" aria-hidden /> }
+              : { label: t("downloadReport"), primary: true, run: () => showPlans("bundle", "report"), icon: <Lock className="size-4" aria-hidden /> }]
           : [{ label: t("newChat"), primary: true, run: restart, icon: <SquarePen className="size-4" aria-hidden /> }],
       };
   }

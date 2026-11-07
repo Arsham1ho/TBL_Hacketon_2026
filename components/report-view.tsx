@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, BadgeCheck, BookOpen, Braces, ChartColumn, CircleCheck, CircleQuestionMark, Clock, Database, FileDown, Info, ListChecks, MessageCircleQuestionMark, Quote, Route, ShieldCheck, Sparkles, Tag, Target, TrendingUp, TriangleAlert, X } from "lucide-react";
+import { ArrowLeft, BadgeCheck, BookOpen, Braces, ChartColumn, CircleCheck, CircleQuestionMark, Clock, Database, FileDown, Info, ListChecks, MessageCircleQuestionMark, Quote, Route, ShieldCheck, Tag, Target, TrendingUp, TriangleAlert, X } from "lucide-react";
 import type { Language, Risk } from "@/engine/types";
 import type { SavedReport } from "@/lib/history";
 import type { TextKey, Translate } from "@/lib/ui-text";
@@ -318,7 +318,7 @@ export function ReportView({ report, t, language, onClose }: { report: SavedRepo
           </div>
 
           {/* Key findings: the gauge, four headline numbers and the one step that matters most. */}
-          <Section icon={<Sparkles className="size-5" />} title={t("reportKeyFindings")}>
+          <Section icon={<ListChecks className="size-5" />} title={t("reportKeyFindings")}>
             <div className="flex flex-wrap items-center gap-2">
               <StatusLabel status={decision.status} label={decision.statusLabel} />
               {report.likelyType && (

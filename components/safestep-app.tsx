@@ -38,6 +38,8 @@ import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { LinkAnalysisCard } from "./link-analysis";
+import { PlanChip, PlansSheet } from "./plans";
+import { hasFeature, loadPlan, savePlan, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
 import { pasteCopy, wantsPaste } from "@/lib/received";
 import type { ContentAnalysis } from "@/adapters/link-scan";
 import { ReportView } from "./report-view";
@@ -344,6 +346,32 @@ export function SafeStepApp() {
   const [pasteFor, setPasteFor] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
   const shownAnalysis = useRef<string | null>(null);
+  // The demo plan from BUSINESS.md. Paid plans unlock signal checks, the report and priority help.
+  const [plan, setPlan] = useState<Plan>("free");
+  const [plansOpen, setPlansOpen] = useState<Plan | true | false>(false);
+  // The locked feature that opened the sheet, so it can say what upgrading unlocks right now.
+  const [planReason, setPlanReason] = useState<Feature | undefined>();
+  const [reportAfterUpgrade, setReportAfterUpgrade] = useState(false);
+  useEffect(() => setPlan(loadPlan()), []);
+  function openPlans(highlight?: Plan, feature?: Feature) {
+    setPlanReason(feature);
+    setPlansOpen(highlight ?? true);
+  }
+  function choosePlan(next: Plan) {
+    setPlan(next);
+    savePlan(next);
+    setPlansOpen(false);
+    // Confirmed in the chat, so the change is visible in the conversation and its history.
+    if (items.length > 0) setItems((previous) => [...previous, { from: "safestep", text: `${PLAN_COPY[shown].upgradedTo} ${PLAN_COPY[shown].plans[next].name}.` }]);
+    // An upgrade from the report lock opens the report straight away.
+    if (planReason === "report" && hasFeature(next, "report") && report) setReportAfterUpgrade(true);
+    setPlanReason(undefined);
+  }
+  useEffect(() => {
+    if (!reportAfterUpgrade) return;
+    setReportAfterUpgrade(false);
+    setReportOpen(true);
+  }, [reportAfterUpgrade]);
   const [demo, setDemo] = useState<DemoScenario>("none");
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -684,6 +712,7 @@ export function SafeStepApp() {
       >
         <History className="size-5" aria-hidden />
       </button>
+      <PlansSheet open={plansOpen !== false} plan={plan} language={shown} highlight={typeof plansOpen === "string" ? plansOpen : undefined} recommended={audience === "small_business" ? "business" : "bundle"} reason={planReason} onChoose={choosePlan} onClose={() => { setPlansOpen(false); setPlanReason(undefined); }} />
       <HistoryPanel
         open={historyOpen}
         onClose={closeHistory}
@@ -710,6 +739,7 @@ export function SafeStepApp() {
       <div className="flex h-dvh flex-col">
         {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+          <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
           {currentUser ? (
             <button
               type="button"
@@ -921,6 +951,8 @@ export function SafeStepApp() {
     finish: (recap: string, label: string) => void finish(recap, label),
     ended,
     openReport: report ? () => setReportOpen(true) : undefined,
+    plan,
+    showPlans: openPlans,
   };
   const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
   const replies: Reply[] = failed
@@ -934,6 +966,7 @@ export function SafeStepApp() {
     <div className="flex h-dvh flex-col">
       {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+          <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
         {currentUser ? (
           <button
             type="button"

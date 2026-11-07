@@ -47,8 +47,9 @@ export function toSubmission(raw: any, item: Case, assessment: Assessment, activ
     questions_asked: composed.question ? [composed.question] : [],
     question_topics: flip ? [flip.topic] : [],
     signals_used: [...signalsUsed(raw, item), ...(activity.used ?? [])],
-    // One-answer mode has no consent interaction. Never claim that a request occurred.
-    consent_requested_for: activity.requested ?? [],
+    // The app asks before using any gated signal (Signal Unlock). In one-answer mode this lists
+    // what that screen would ask to unlock next. It is a request only: nothing is read or used.
+    consent_requested_for: activity.requested ?? outcome.wantsSignals.filter((signal) => item.availableSignals.includes(signal) && !item.pregrantedSignals.includes(signal)),
     citations: outcome.guidance,
     confidence,
     abstained: outcome.situation === "unclear",
