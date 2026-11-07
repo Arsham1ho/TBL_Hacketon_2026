@@ -69,9 +69,22 @@ function categoryKey(item: Case, outcome: Outcome): CategoryKey | null {
 
 export type IncidentStory = { attempted: string; prevent: string[]; investigation: { why: string; wanted: string; spot: string } };
 
+const BUSINESS_PAYMENT_STORY: Record<Language, IncidentStory> = {
+  en: { attempted: "Someone requested a business payment or a change to where it is sent.", prevent: ["Confirm payment details by calling a number your business already knows.", "Require a second person to approve new payment details."], investigation: { why: "An unexpected request can redirect a real business payment.", wanted: "A payment to an account that has not been independently verified.", spot: "A changed account or urgent payment request needs a separate check before payment." } },
+  fi: { attempted: "Joku pyysi yritysmaksua tai muutosta tilille, jolle maksu lähetetään.", prevent: ["Varmista maksutiedot soittamalla yrityksesi ennestään tuntemaan numeroon.", "Pyydä toista henkilöä hyväksymään uudet maksutiedot."], investigation: { why: "Odottamaton pyyntö voi ohjata aidon yritysmaksun väärälle tilille.", wanted: "Maksun tilille, jota ei ole varmistettu erillistä kautta.", spot: "Muuttunut tilinumero tai kiireellinen maksupyyntö on tarkistettava ennen maksua." } },
+  sv: { attempted: "Någon begärde en företagsbetalning eller ändrade kontot som betalningen ska skickas till.", prevent: ["Bekräfta betalningsuppgifterna genom att ringa ett nummer som företaget redan känner till.", "Låt en andra person godkänna nya betalningsuppgifter."], investigation: { why: "En oväntad begäran kan leda en riktig företagsbetalning till fel konto.", wanted: "En betalning till ett konto som inte har kontrollerats på ett oberoende sätt.", spot: "Ett ändrat konto eller en brådskande betalningsbegäran behöver kontrolleras före betalning." } },
+};
+const DIRECT_PAYMENT_STORY: Record<Language, IncidentStory> = {
+  en: { attempted: "Someone asked you to send money. Their identity and reason for the request have not been verified.", prevent: ["Pause before sending money to someone you only know online.", "Check the request through a separate contact method you chose yourself."], investigation: { why: "A personal request can feel urgent even when the recipient has not been verified.", wanted: "A payment from you.", spot: "An unexpected request for money that you cannot check independently." } },
+  fi: { attempted: "Joku pyysi sinua lähettämään rahaa. Pyytäjää ja maksun syytä ei ole vielä varmistettu.", prevent: ["Pysähdy ennen kuin lähetät rahaa verkossa tapaamallesi henkilölle.", "Tarkista pyyntö erillisellä yhteystavalla, jonka valitset itse."], investigation: { why: "Henkilökohtainen pyyntö voi tuntua kiireelliseltä, vaikka vastaanottajaa ei ole varmistettu.", wanted: "Maksun sinulta.", spot: "Odottamaton rahapyyntö, jota et voi tarkistaa erikseen." } },
+  sv: { attempted: "Någon bad dig skicka pengar. Personens identitet och orsaken till begäran har inte bekräftats.", prevent: ["Stanna upp innan du skickar pengar till någon du bara känner på nätet.", "Kontrollera begäran genom en separat kontaktväg som du själv väljer."], investigation: { why: "En personlig begäran kan kännas brådskande även när mottagaren inte har kontrollerats.", wanted: "En betalning från dig.", spot: "En oväntad begäran om pengar som du inte kan kontrollera separat." } },
+};
+
 // Always gives the user a plain account. A case with no clear type gets general guidance,
 // so nothing here claims more than the rules have established.
 export function incidentStory(item: Case, outcome: Outcome, status: Status): IncidentStory {
+  if (item.audience === "small_business" && ["payment_held", "payment_detail_change", "payment_sent"].includes(outcome.situation)) return BUSINESS_PAYMENT_STORY[item.language];
+  if (outcome.situation === "payment_lure" && !item.signals.hasLink && !item.mentions?.some(mention => mention === "email" || mention === "sms")) return DIRECT_PAYMENT_STORY[item.language];
   const key = outcome.situation === "left_alone" ? "left_alone" : status === "safe" ? "harmless" : outcome.situation === "personal_safety" ? "personal_safety" : categoryKey(item, outcome) ?? "general";
   const { attempted, why, wanted, spot, prevent } = guide[key][item.language];
   return { attempted, prevent, investigation: { why, wanted, spot } };

@@ -164,6 +164,11 @@
     "fi": "Viesti painostaa maksamaan tai antamaan korttitiedot linkin kautta.",
     "sv": "Det pressar dig att betala eller lämna kortuppgifter via en länk."
   },
+  "direct_payment_request": {
+    "en": "Someone asked you to send money, but the request and recipient have not been independently verified.",
+    "fi": "Joku pyysi sinua lähettämään rahaa, mutta pyyntöä ja vastaanottajaa ei ole varmistettu erikseen.",
+    "sv": "Någon bad dig skicka pengar, men begäran och mottagaren har inte kontrollerats separat."
+  },
   "flagged_link": {
     "en": "The link check flagged this link as risky.",
     "fi": "Linkkitarkistus merkitsi linkin riskialttiiksi.",

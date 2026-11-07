@@ -34,6 +34,7 @@ const REASON_OF: Record<string, ReasonKey> = {
   colleague_order: "order_check",
   unauthorised_order: "order_check",
   booked_remote_support: "harmless",
+  active_remote_control: "device_exposed",
   remote_banking_exposed: "money_or_card",
   remote_device_exposed: "device_exposed",
   unwanted_app: "device_exposed",
@@ -58,6 +59,7 @@ const REASON_OF: Record<string, ReasonKey> = {
   breach_email_only: "breach_email",
   fake_breach_notice: "fake_notice",
   breach_password: "breach_password",
+  breach_unverified: "fake_notice",
   unrequested_reset: "reset",
   router_or_network: "router",
   payment_verified: "payment_verified",
@@ -89,7 +91,9 @@ export const reasonKeyFor = (situation: string): ReasonKey | undefined => REASON
 
 export function reasonText(outcome: Outcome, language: Language, audience?: Audience, item?: Case): string {
   const confirmed = (action: Case["facts"]["userAlreadyDid"][number], topic: Topic) => item && (didAction(item, action) || topicValue(item, topic) === "yes");
-  const key = outcome.situation === "card_exposed" && confirmed("entered_card", "card_details_entered") ? "card_entered_reason"
+  const key = outcome.situation === "payment_lure" && item && !item.signals.hasLink
+      && !item.mentions?.some(mention => mention === "email" || mention === "sms") ? "direct_payment_request"
+    : outcome.situation === "card_exposed" && confirmed("entered_card", "card_details_entered") ? "card_entered_reason"
     : outcome.situation === "money_gone" && confirmed("paid", "money_transferred") ? "money_sent_reason"
     : ["code_given", "non_bank_code_given", "bank_code_given"].includes(outcome.situation) && confirmed("shared_code", "code_shared") ? "code_shared_reason"
     : outcome.situation === "remote_device_exposed" && confirmed("gave_remote_access", "remote_access_given") ? "remote_granted_reason"

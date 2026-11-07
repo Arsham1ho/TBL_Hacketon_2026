@@ -113,6 +113,9 @@ export function validateFacts(raw: unknown, sources: FactSources): Facts | null 
   const actionEvidence = evidence.filter(({ fact }) => fact === "userAlreadyDid" || fact.startsWith("userAlreadyDid:"));
   facts.userAlreadyDid = facts.userAlreadyDid.filter(action => actionEvidence.some(({ fact, quote }) => {
     if (fact !== `userAlreadyDid:${action}` && !(fact === "userAlreadyDid" && facts.userAlreadyDid.length === 1)) return false;
+    // "Nothing" affects every action question. A narrow denial such as
+    // "I refused the code" cannot establish that no other action occurred.
+    if (action === "nothing" && !/\b(?:did nothing|didn't do anything|did not do anything|haven't done anything|have not done anything|nothing yet|ignored it|deleted (?:it|the message|the text|the sms|the email)|en tehnyt mitään|en ole tehnyt mitään|poistin (?:sen|viestin)|gjorde inget|har inte gjort något|raderade (?:det|den|meddelandet))\b/iu.test(squash(quote))) return false;
     // A substring quote may omit a preceding denial or request. Inspect the
     // surrounding clause rather than treating the quote's existence as proof.
     const needle = squash(quote);

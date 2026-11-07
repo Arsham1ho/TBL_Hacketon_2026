@@ -1,4 +1,5 @@
 import { didAction, topicValue, type Case } from "./case";
+import { remoteControlActive } from "./interruption";
 import type { Destination, ExternalContact, GatedSignal, PrimaryAction, Risk, Status, Topic, Urgency } from "./types";
 
 export type Outcome = {
@@ -148,6 +149,16 @@ export const SITUATIONS: Situation[] = [
       ),
   },
   {
+    id: "active_remote_control",
+    when: (c) => remoteControlActive(c.facts) && selfStarted(c) !== "yes",
+    then: (c) => outcome(
+      "active_remote_control", "isolate_device_and_scan", "threat_in_progress", "high", "immediate",
+      ["disconnect_device", "get_device_checked"],
+      ["guidance_remote_access", "guidance_device_compromise"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
+  },
+  {
     id: "signaled_sim_change",
     when: (c) => is(c, "phone_call") && poses(c, "operator") && asks(c, "code")
       && !did(c, "shared_code") && c.gatedFindings?.["subscription.recent_events"] === "recent_sim_change",
@@ -177,7 +188,7 @@ export const SITUATIONS: Situation[] = [
     then: (c) => outcome(
       "signaled_former_staff_access", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
       c.audience === "small_business"
-        ? ["revoke_access", "change_password", "review_sessions", "notify_data_protection"]
+        ? ["revoke_access", "change_password", "review_sessions"]
         : ["revoke_access", "change_password", "review_sessions"],
       ["guidance_offboarding", "guidance_shared_accounts"],
       { destination: person(c, "security_specialist"), rescue: true },
@@ -244,10 +255,10 @@ export const SITUATIONS: Situation[] = [
         "high",
         "today",
         c.audience === "small_business"
-          ? ["change_password", "review_sessions", "revoke_access", "notify_data_protection"]
-          : ["change_password", "review_sessions", "revoke_access"],
+          ? ["revoke_access", "change_password", "review_sessions"]
+          : ["revoke_access", "change_password", "review_sessions"],
         ["guidance_offboarding", "guidance_shared_accounts"],
-        { rescue: true, wantsSignals: ["business.staff_accounts"] },
+        { destination: person(c, "security_specialist"), rescue: true, wantsSignals: ["business.staff_accounts"] },
       ),
   },
   {
@@ -549,12 +560,12 @@ export const SITUATIONS: Situation[] = [
       yes(c, "self_initiated")
         ? outcome(
             "own_login",
-            "change_password_and_enable_mfa",
-            "threat_in_progress",
-            "low",
-            "routine",
-            ["review_sessions"],
-            ["guidance_unknown_login"],
+            "no_action_needed",
+            "safe",
+            "none",
+            "none",
+            ["explain_benign"],
+            ["guidance_unknown_login", "guidance_proportionate_advice"],
             { wantsSignals: ["operator_account.recent_logins"] },
           )
         : outcome(
@@ -570,15 +581,15 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "fake_breach_notice",
-    when: (c) => is(c, "data_breach_notice") && asks(c, "login") && c.signals.hasLink,
-    then: () =>
+    when: (c) => is(c, "data_breach_notice") && asks(c, "login") && !c.facts.dataExposed.includes("password"),
+    then: (c) =>
       outcome(
         "fake_breach_notice",
         "verify_via_official_channel",
         "threat_in_progress",
         "medium",
         "routine",
-        ["dont_open_link", "verify_official_channel"],
+        [...(c.signals.hasLink ? ["dont_open_link"] : []), "verify_official_channel"],
         ["guidance_fake_breach_notice", "guidance_smishing_basics", "guidance_prompt_injection"],
       ),
   },
@@ -590,7 +601,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "breach_password",
-    when: (c) => is(c, "data_breach_notice"),
+    when: (c) => is(c, "data_breach_notice") && (c.facts.dataExposed.includes("password") || c.facts.dataExposed.includes("bank_login")),
     then: () =>
       outcome(
         "breach_password",
@@ -602,6 +613,14 @@ export const SITUATIONS: Situation[] = [
         ["guidance_breach_response", "guidance_password_reuse"],
         { rescue: true },
       ),
+  },
+  {
+    id: "breach_unverified",
+    when: (c) => is(c, "data_breach_notice"),
+    then: () => outcome(
+      "breach_unverified", "verify_via_official_channel", "needs_verification", "medium", "today",
+      ["verify_official_channel"], ["guidance_breach_response", "guidance_proportionate_advice"],
+    ),
   },
   {
     id: "unrequested_reset",
@@ -899,15 +918,23 @@ export const SITUATIONS: Situation[] = [
     id: "payment_lure",
     // A lure the user explicitly left alone falls through to "left_alone" below.
     when: (c) => (asks(c, "money") || asks(c, "card") || asks(c, "app_install") || asks(c, "remote_access")) && !(c.facts.userAlreadyDid.includes("nothing") && c.facts.happeningNow !== true),
-    then: () =>
+    then: (c) =>
       outcome(
         "payment_lure",
-        "do_not_interact_and_delete",
+        c.signals.hasLink || c.mentions?.some(mention => mention === "email" || mention === "sms")
+          ? "do_not_interact_and_delete" : "verify_via_official_channel",
         "threat_in_progress",
         "medium",
         "routine",
-        ["dont_open_link", "dont_pay_or_transfer", "delete_or_report_message"],
-        ["guidance_parcel_scam", "guidance_smishing_basics", "guidance_prompt_injection"],
+        [
+          ...(c.signals.hasLink || did(c, "opened_link") ? ["dont_open_link"] : []),
+          "dont_pay_or_transfer",
+          ...(c.signals.hasLink || c.mentions?.some(mention => mention === "email" || mention === "sms")
+            ? ["delete_or_report_message"] : ["verify_person_independently"]),
+        ],
+        c.signals.hasLink || c.mentions?.some(mention => mention === "email" || mention === "sms")
+          ? ["guidance_parcel_scam", "guidance_smishing_basics", "guidance_prompt_injection"]
+          : ["guidance_payment_verification", "guidance_proportionate_advice"],
       ),
   },
   {

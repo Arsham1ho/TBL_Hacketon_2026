@@ -48,7 +48,25 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
   // The keyword reader gets plain text: the wrapper tags are for the LLM only.
   const plain = { ...extraction, incidentText: guarded.maskedIncident ?? "" };
   const backstop = validateFacts(offlineExtract(plain), guarded) ?? offlineExtract({ ...plain, userText: "", incidentText: "" });
-  const facts = primary ? { ...mergeFacts(primary, backstop), language: input.language } : backstop;
+  let facts = primary ? { ...mergeFacts(primary, backstop), language: input.language } : backstop;
+  // A breach notice that *asks* for a password does not establish that the
+  // password was in the breach. Both readers can otherwise turn that request
+  // into unnecessary password-recovery advice.
+  const exposureClaim = /(?:passwords?|salasan\w*|lösenord\w*).{0,45}(?:leak|expos|breach|compromis|vuot|läck)|(?:leak|expos|breach|compromis|vuot|läck).{0,45}(?:passwords?|salasan\w*|lösenord\w*)/iu;
+  if (facts.incidentType === "data_breach_notice" && facts.dataExposed.includes("password") && !exposureClaim.test(`${guarded.userText}\n${guarded.maskedIncident ?? ""}`)) {
+    facts = { ...facts, dataExposed: facts.dataExposed.filter(value => value !== "password"), evidence: facts.evidence.filter(entry => entry.fact !== "dataExposed") };
+  }
+  // A request to disclose a code is not evidence that the user disclosed it.
+  // Explicit first-person denial wins over an extracted quote from the request.
+  if (/\b(?:i (?:have not|haven't|did not|didn't|never) (?:shared|given|read out|sent|typed)|en (?:ole )?(?:jakanut|antanut|kertonut|syöttänyt)|jag har inte (?:delat|gett|läst upp|skickat))\b.{0,25}\b(?:code|pin|koodi|koodia|kod|it)\b/iu.test(guarded.userText)) {
+    facts = { ...facts, userAlreadyDid: facts.userAlreadyDid.filter(action => action !== "shared_code"), evidence: facts.evidence.filter(entry => entry.fact !== "userAlreadyDid:shared_code") };
+  }
+  const paymentDenied = /\b(?:i (?:have not|haven't|did not|didn't|never) (?:paid|sent|transferred)\b.{0,35}\b(?:money|payment|invoice|funds|anything|it)\b|en (?:ole )?(?:vielä )?(?:maksanut|lähettänyt maksua|siirtänyt rahaa)|jag har inte (?:ännu )?(?:betalat|skickat pengar|fört över pengar))\b/iu.test(guarded.userText);
+  const codeDenied = facts.asksFor.includes("code") && !facts.userAlreadyDid.includes("shared_code")
+    && /\b(?:i (?:refused|declined)(?:\b|\b.{0,25}\b(?:code|it))|i (?:did not|didn't|have not|haven't)\b.{0,25}\b(?:code|share|give|read|send|it)|en (?:antanut|kertonut|jakanut|lähettänyt)\b.{0,20}\b(?:koodi|koodia|sitä)|jag (?:vägrade|delade inte|gav inte|läste inte upp)\b.{0,20}\b(?:kod|koden|den))\b/iu.test(guarded.userText);
+  const explicitAnswers: Answers = paymentDenied && !facts.userAlreadyDid.includes("paid")
+    ? { payment_status: "no", money_transferred: "no" } : {};
+  if (codeDenied) explicitAnswers.code_shared = "no";
   return {
     extractedBy: primary || extract === offlineExtract ? "primary" : "fallback",
     secretsFound: guarded.secretsFound,
@@ -58,7 +76,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       facts,
       manipulationCues: detectManipulationCues(`${guarded.userText}\n${guarded.maskedIncident ?? ""}`),
       conflicts: primary ? conflictingTopics(primary, backstop) : [],
-      answers: {},
+      answers: explicitAnswers,
       unsure: [],
       signals: { ...input.signals, hasLink },
       pregrantedSignals: gated(input.consent.preGranted),

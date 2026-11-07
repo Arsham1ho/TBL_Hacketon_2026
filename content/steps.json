@@ -59,6 +59,11 @@
     "fi": "Tarkista asia palvelun omasta sovelluksesta tai verkkosivulta, jonka avaat itse.",
     "sv": "Kontrollera det i tjänstens egen app eller officiella webbplats som du öppnar själv."
   },
+  "verify_person_independently": {
+    "en": "Check who is asking and why through a separate contact method you chose yourself before sending money.",
+    "fi": "Varmista pyytäjä ja maksun syy itse valitsemallasi erillisellä yhteystavalla ennen rahojen lähettämistä.",
+    "sv": "Kontrollera vem som ber om pengar och varför via en separat kontaktväg som du själv väljer innan du betalar."
+  },
   "verify_out_of_band": {
     "en": "Call them on a number you already know, not one from the message.",
     "fi": "Soita tuttuun numeroon, jonka tiedät jo, älä viestin numeroon.",

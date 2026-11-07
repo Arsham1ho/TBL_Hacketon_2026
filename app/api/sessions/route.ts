@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       const llm = llmAvailable();
       const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
-      if (journey && payload.kind === "ai_answer" && llm && (payload.answer === "yes" || payload.answer === "no")) {
+      if (journey && payload.kind === "ai_answer" && !session.journey.pendingAsk?.topic && llm && (payload.answer === "yes" || payload.answer === "no")) {
         const last = journey.interview?.at(-1);
         if (last) {
           const interpreted = await interpretInterviewAnswer(last.question, last.answer, journey.item.language);
@@ -92,15 +92,28 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   // No fixed number of questions: the AI keeps asking until it has a clear picture and
   // returns no question. A repeated question or a failed LLM call also ends the interview.
   if (!journey?.input || !llmAvailable() || journey.interviewDone) return response;
-  // Three follow-ups is the normal conversational budget. Preserve the rule-driven
-  // flip on screen when the budget is spent, since it may change the action.
+  // Complex incidents may need several facts before the advice is specific.
+  // Rule-driven decisive questions still have room in this shared budget.
   const questionsAnswered = (journey.flipHistory?.length ?? 0) + (journey.interview?.length ?? 0) + Number(Boolean(journey.linkContextAsked));
-  if (questionsAnswered >= 3) return response;
-  // An unclear case, or a "needs checking" result that still has gaps, gets a live question.
-  // Clear incidents go straight to their steps.
+  if (questionsAnswered >= 5) return response;
+  // Never delay a stop, rescue, or human handoff. A non-urgent incident can
+  // gather missing context before its final explanation is displayed.
   const unclear = response.screen.type === "flip" && isTriage(pickFlip(journey.item));
-  const gaps = response.screen.type === "result" && response.state.status === "needs_verification";
-  if (!unclear && !gaps) return response;
+  const followUp = response.screen.type === "result" && response.state.status !== "safe"
+    && response.state.urgency !== "immediate" && (response.state.status === "needs_verification" || response.state.status === "threat_in_progress");
+  if (!unclear && !followUp) return response;
+  const lacksIncidentStory = !journey.item.facts.incidentType || journey.item.facts.incidentType === "other"
+    || (journey.item.facts.asksFor.length === 0 && journey.item.facts.userAlreadyDid.length === 0
+      && journey.item.facts.evidence.length <= 2);
+  if (unclear && lacksIncidentStory && !journey.interview?.length && !journey.flipHistory?.length) {
+    const question = {
+      en: "What happened that made you concerned, without including codes or passwords?",
+      fi: "Mitä tapahtui ja mikä huolestutti sinua ilman koodeja tai salasanoja?",
+      sv: "Vad hände som gjorde dig orolig, utan att skriva koder eller lösenord?",
+    }[journey.item.language];
+    journey.pendingAsk = { id: randomUUID().slice(0, 8), question, open: true };
+    return present(sessionId, journey);
+  }
   const masked = guardInput(journey.input.openingMessage, journey.input.incidentContent);
   const story = [masked.userText, masked.maskedIncident].filter(Boolean).join("\n");
   const assessment = assess(journey.item, journey.asked);
@@ -110,15 +123,15 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   const facts = { ...journey.item.facts, evidence: journey.item.facts.evidence.map(({ fact, quote }) => ({ fact, quote: mask(quote) })) };
   const summaryGaps = [
     !journey.item.facts.incidentType && "what happened",
-    !journey.item.facts.contactStartedBy && "who initiated contact",
     journey.item.facts.asksFor.length === 0 && journey.item.facts.asksNothing !== true && "what was requested",
     journey.item.facts.userAlreadyDid.length === 0 && "what the person did",
-    journey.item.facts.happeningNow === null && "whether it is still happening",
+    journey.item.facts.happeningNow === null && response.state.status === "threat_in_progress" && "whether the threat is still happening",
   ].filter((gap): gap is string => Boolean(gap));
+  if (followUp && summaryGaps.length === 0 && assessment.unknownTopics.length === 0) return response;
   const question = await nextQuestion({ story, asked: history, language: journey.item.language, audience: journey.item.audience, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics, summaryGaps });
   if (question === "done") journey.interviewDone = true;
   if (!question || question === "done") return response;
-  journey.pendingAsk = { id: randomUUID().slice(0, 8), question };
+  journey.pendingAsk = { id: randomUUID().slice(0, 8), question: question.question, topic: question.topic, open: question.open };
   return present(sessionId, journey);
 }
 

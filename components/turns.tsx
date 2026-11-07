@@ -750,7 +750,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       return {
         recap: screen.question,
         body: <QuestionCard question={screen.question} />,
-        replies: answerButtons(ask, t),
+        replies: screen.open ? [] : answerButtons(ask, t),
       };
     }
     case "describe":
@@ -842,7 +842,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const cards: { title: string; recap: string; node: ReactNode; action?: boolean }[] = [];
       cards.push({
         title: t("incidentSummary"),
-        recap: `${t("incidentSummary")}: ${screen.statusLabel}${type ? ` · ${type.title}` : ""}`,
+        recap: `${t("incidentSummary")}: ${screen.statusLabel}${type ? ` · ${type.title}` : ""}. ${story.attempted}`,
         node: (
           <section aria-labelledby="summary-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.4s_ease-out]">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -877,7 +877,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       if (screen.branches) {
         cards.push({
           title: t("eachCase"),
-          recap: t("eachCase"),
+          recap: `${t("eachCase")}: ${screen.branches.map((branch) => `${branch.condition} ${branch.steps.join(" ")}`).join(" ")}`,
           node: (
             <Panel tone="warning" icon={<TriangleAlert className="size-4" aria-hidden />} title={t("eachCase")}>
               {screen.branches.map((branch) => (
@@ -906,15 +906,19 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         });
       }
       if (done.length > 0) {
-        cards.push({ title: t("storyDone"), recap: t("storyDone"), node: <DoneCard title={t("storyDone")} items={done} /> });
+        cards.push({ title: t("storyDone"), recap: `${t("storyDone")}: ${done.join(" ")}`, node: <DoneCard title={t("storyDone")} items={done} /> });
       }
-      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), node: <PreventCard title={t("storyPrevent")} tips={story.prevent} /> });
+      cards.push({ title: t("storyPrevent"), recap: `${t("storyPrevent")}: ${story.prevent.join(" ")}`, node: <PreventCard title={t("storyPrevent")} tips={story.prevent} /> });
       if (needsBank || needsOperator || needsPolice) {
         const bank = providerById("bank", providers.bank);
         const operator = providerById("operator", providers.operator);
         cards.push({
           title: t("contactTitle"),
-          recap: t("contactTitle"),
+          recap: `${t("contactTitle")}: ${[
+            needsBank ? bank?.name ?? t("bank") : null,
+            needsOperator ? operator?.name ?? t("operator_support_agent") : null,
+            needsPolice ? t("police") : null,
+          ].filter(Boolean).join(", ")}`,
           node: (
             <Panel tone="calm" icon={<Phone className="size-4" aria-hidden />} title={t("contactTitle")}>
               {needsBank && (
@@ -939,7 +943,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           ),
         });
       }
-      cards.push({ title: t("wrapTitle"), recap: t("wrapTitle"), node: <WrapCard t={t} person={needsPerson} /> });
+      cards.push({ title: t("wrapTitle"), recap: `${t("wrapTitle")}: ${t("wrapIntro")}`, node: <WrapCard t={t} person={needsPerson} /> });
 
       const shown = Math.min(stage, cards.length - 1);
       const extras = [
@@ -1002,7 +1006,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         const stillLive = live && !closed;
         replies = [
           ...(stillLive ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),
-          { label: t("finishChat"), primary: !stillLive, run: () => (finish ? finish(t("wrapTitle"), t("finishChat")) : restart()), icon: <Check className="size-4" aria-hidden /> },
+          { label: t("finishChat"), primary: !stillLive, run: () => (finish ? finish(current.recap, t("finishChat")) : restart()), icon: <Check className="size-4" aria-hidden /> },
           ...(revealed.includes("why") ? [] : [{ label: t("investigate"), run: () => reveal("why"), icon: <Search className="size-4" aria-hidden /> }]),
           ...(revealed.includes("details") ? [] : [{ label: t("details"), run: () => reveal("details"), icon: <FileText className="size-4" aria-hidden /> }]),
           ...(needsPerson ? [talk(recap)] : []),

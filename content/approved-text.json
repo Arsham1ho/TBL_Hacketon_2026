@@ -72,6 +72,11 @@
         "action": "Avsluta samtalet eller sessionen nu."
       }
     },
+    "remote_control_active": {
+      "en": { "message": "Stop. Someone may still control your device.", "action": "Disconnect the device from the internet now. Do not sign in to accounts on it." },
+      "fi": { "message": "Seis. Joku voi yhä hallita laitettasi.", "action": "Katkaise laitteen verkkoyhteys nyt. Älä kirjaudu sillä tileillesi." },
+      "sv": { "message": "Stopp. Någon kan fortfarande styra din enhet.", "action": "Koppla bort enheten från internet nu. Logga inte in på konton med den." }
+    },
     "app_install": {
       "en": {
         "message": "Stop. Don't install anything they ask you to.",

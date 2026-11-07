@@ -3,6 +3,7 @@ import type { Facts } from "./types";
 export type InterruptionKind =
   | "personal_safety"
   | "remote_access"
+  | "remote_control_active"
   | "app_install"
   | "code"
   | "approval"
@@ -36,6 +37,7 @@ export function interruptionFor(facts: Facts): InterruptionKind | null {
   if (facts.selfInitiated === "yes" || facts.independentlyVerified === true) return null;
   if (facts.incidentType === "ransomware") return "ransomware";
   if (facts.incidentType === "approval_prompts") return "approval";
+  if (remoteControlActive(facts)) return "remote_control_active";
   if (facts.incidentType === "remote_session" || facts.userAlreadyDid.includes("gave_remote_access")) {
     return "remote_access";
   }
@@ -47,4 +49,10 @@ export function interruptionFor(facts: Facts): InterruptionKind | null {
     return "live_request";
   }
   return null;
+}
+
+export function remoteControlActive(facts: Facts): boolean {
+  return facts.incidentType === "remote_session" && facts.happeningNow === true
+    && facts.selfInitiated !== "yes" && facts.independentlyVerified !== true
+    && facts.evidence.some(({ fact, quote }) => fact === "happeningNow" && /control|styr|ohjaa|hallit|still (?:has|have) access|åtkomst.*pågår|etäkäyttö.*käynnissä/iu.test(quote));
 }

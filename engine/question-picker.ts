@@ -37,7 +37,7 @@ function fitSteps(item: Case, outcome: Outcome): Outcome {
       const written = item.mentions?.some((mention) => mention === "email" || mention === "sms") || item.signals.hasLink;
       return call || !written;
     }
-    if (step === "block_card") return !didAction(item, "paid") || didAction(item, "entered_card");
+    if (step === "block_card") return cardInvolved(item);
     return true;
   }).map((step) => (step === "contact_bank_now" && !cardInvolved(item) ? "contact_bank_official" : step));
   // Money that has left needs a crime report as well as the bank.

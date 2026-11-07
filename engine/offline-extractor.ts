@@ -30,8 +30,9 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number (is being|was|has been) (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|to another operator|toiselle operaattorille|annan operatör|(lost|no) (signal|network)|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`)],
   ["unexpected_order_or_bill", re(String.raw`order confirmation|tilausvahvistus|orderbekräftelse|beställningsbekräftelse`)],
   ["approval_prompts", re(String.raw`approval (request|prompt)|login approval|approve|hyväksymispyyn|hyväksy(n|t)|kirjautumispyyn|godkänn|inloggningsbegär`)],
+  ["unknown_login", re(String.raw`(?:unfamiliar|unknown|unrecognized|unrecognised|unexpected) (?:login|sign-in)|(?:login|sign-in) (?:alert|notice) from|alert about (?:a|an) (?:login|sign-in)`)],
   ["unwanted_app_or_profile", re(String.raw`\b(i installed|asensin|installerade)\b|(configuration|security|root) (profile|certificate)|asetusprofiili|varmenne|\b(phone|device|mobile|puhelin|laite|mobil|telefon).{0,25}(hacked|hakkeroi|hackad|compromised|saastunut|smittad)\b|\b(hacked|hakkeroi|hackad).{0,25}(phone|device|mobile|puhelin|laite|mobil|telefon)\b|\b(malware|spyware|trojan|virus|haittaohjelma|vakoiluohjelma|skadlig kod)\b`)],
-  ["unknown_login", re(String.raw`(trying|tries|tried) to (log|sign) in|yrittä\w* kirjautu|försök\w* logga in|logged in (to .{0,20})?from|loggat in .{0,30}från|took over|locked out|kaappasi|kaapattu|tog över|utelåst|kirjauduttu|kirjauduttiin|kirjautuminen .{0,20}(maasta|espanja|ulkomail)|sisäänkirjautum|inloggning från|inloggad från|\b(account|tili|konto).{0,25}(hacked|hakkeroi|hackad)\b|\b(hacked|hakkeroi|hackad).{0,25}(account|tili|konto)\b|\b(hacked|hakkeroi|hackad)\b`)],
+  ["unknown_login", re(String.raw`\b(?:login|sign-in) (?:was|is) me\b|(trying|tries|tried) to (log|sign) in|yrittä\w* kirjautu|försök\w* logga in|logged in (to .{0,20})?from|loggat in .{0,30}från|took over|locked out|kaappasi|kaapattu|tog över|utelåst|kirjauduttu|kirjauduttiin|kirjautuminen .{0,20}(maasta|espanja|ulkomail)|sisäänkirjautum|inloggning från|inloggad från|\b(account|tili|konto).{0,25}(hacked|hakkeroi|hackad)\b|\b(hacked|hakkeroi|hackad).{0,25}(account|tili|konto)\b|\b(hacked|hakkeroi|hackad)\b`)],
   ["data_breach_notice", re(String.raw`breach|data leak|leaked|leacked|tietovuo|tietomur|vuoti|vuotanut|vuotaneet|dataintrång|dataläcka|läckt`)],
   ["unrequested_reset", re(String.raw`password reset|reset (email|link)|salasanan (nollaus|vaihto|palautus)|nollauspyyn|återställ.{0,12}lösenord|lösenordsåterställ`)],
   ["router_or_network", re(String.raw`router|reititin|reitittim|modeemi`)],
@@ -97,19 +98,20 @@ const DID: [Facts["userAlreadyDid"][number], RegExp][] = [
   ["opened_link", re(String.raw`(link|linkki|länk).{0,40}(clicked|klikkasin|avasin|klickade|öppnade)|(clicked|opened|tapped|followed).{0,40}link|link .{0,20}(clicked|opened)|(avasin|klikkasin|painoin|napautin).{0,40}(linkki|linkin)|linkin.{0,20}(avasin|klikkasin)|(klickade|öppnade|tryckte).{0,30}länk`)],
 ];
 
-const SELF_YES = re(String.raw`i('m| am) (logging|signing) in|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in`);
+const SELF_YES = re(String.raw`\b(?:login|sign-in) (?:was|is) me\b|i('m| am) (logging|signing) in|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in`);
 const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|start|initiate|log|logging|sign|order)|i'm not logging|never asked|wasn't me|took over|locked out|hacked|se en ollut minä|kaappasi|kaapattu|hakkeroi|det var inte jag|aldrig bett|tog över|utelåst|hackad|hackat|(?<![\p{L}])en (ole kirjautu|pyytänyt|ole pyytänyt|aloittanut|tilannut)|ei tilattu|har inte (bett|begärt|startat|beställt)|bad inte(?! om)|loggar inte in`);
 const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contract|known number|confirmed)|she confirmed|he confirmed|soitin.{0,50}(sopimuksen|tuttuun|vahvisti)|soittamalla.{0,50}tuttuun|vahvisti muutoksen|ringde.{0,50}(avtalet|bekräftade|känt)|genom att ringa|bekräftade ändringen`);
 const ORDER_PLACED_BY = re(String.raw`\((admin|pääkäyttäjä|administratör)\)`);
 
 const PRESSURE = re(String.raw`urgent|immediately|within \d+|by today|keep it (confidential|secret)|confidential|suspended|expire|expiring|locked|overdue|kiire|välittömästi|heti|tunnin sisällä|luottamuksellis|lukittu|erääntyy|vanhenee|suljetaan|bråttom|omedelbart|inom \d+|hemlig|konfidentiell|spärrad|löper ut|stängs|virus|don't remember|en muista|minns inte|same thread|samma tråd|samassa ketjussa`);
 const DEFENSIVE_IMMEDIATE = re(String.raw`(deleted|hung up|closed|removed|changed|reported|ignored|poistin|suljin|vaihdoin|ilmoitin|lopetin|raderade|lade på|stängde|bytte|anmälde).{0,25}(immediately|heti|välittömästi|omedelbart)`);
-const LIVE = re(String.raw`still on the (phone|line)|on the (phone|line) (now|right now)|calling (me )?(right )?now|right now|juuri nyt|on (vielä )?linjalla|puhelu on käynnissä|just nu|fortfarande i (telefon|luren)|på linjen`);
+const LIVE = re(String.raw`still on the (phone|line)|on the (phone|line) (now|right now)|calling (me )?(right )?now|right now|still (?:controls|controlling|has access)|right now|juuri nyt|ohjaa (?:edelleen|vielä)|on (vielä )?linjalla|puhelu on käynnissä|just nu|styr fortfarande|fortfarande (?:styr|har åtkomst)|fortfarande i (telefon|luren)|på linjen`);
 const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|scammer's (address|name)|expose (him|her|them|this|the scammer)|publish (their|his|her) name|kuka omistaa|selvittää kuka|selvitä kuka|paljasta (hänet|huijari)|julkaista (hänen|huijarin)|etsi .{0,30}huijari|huijarin (osoite|nimi)|vem som äger|ta reda på vem|hitta bedragaren|bedragarens (adress|namn)|hänga ut|publicera (hans|hennes|namnet)`);
 
 const EMAIL_ONLY = re(String.raw`only my email|only (an |your )?email|(?<!, )names and email|no passwords|vain sähköposti|ei salasanoja|(?<!, )nimet ja sähköposti|endast e-post|bara (min )?e-post|inga lösenord`);
 const NO_PASSWORD = re(String.raw`no passwords|did not include passwords|ei salasanoja|salasanoja (tai .{0,30})?ei|salasanat eivät|inga lösenord|lösenord (har )?inte`);
 const PASSWORD_LEAK = re(String.raw`passwords?|salasan|lösenord`);
+const PASSWORD_EXPOSED = re(String.raw`(?:passwords?|salasan\w*|lösenord\w*).{0,55}(?:leak|expos|vuot|läck|kompromet)|(\b(?:leak|expos|vuot|läck|kompromet)\w*).{0,55}(?:passwords?|salasan\w*|lösenord\w*)`);
 const BANK_LOGIN = re(String.raw`bank credentials|banking details|online bank|nätbank|verkkopankki|pankkitunnu|internetbank|bank-?id|bank account|pankkitili|bankkonto`);
 const REUSED = re(String.raw`same password|samaa salasanaa|samma lösenord`);
 const SERVICE_LOST = re(String.raw`lost signal|no signal|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`);
@@ -207,9 +209,9 @@ export function offlineExtract(input: ExtractionInput): Facts {
   if (emailOnly && (!first(PASSWORD_LEAK, incidentText) || first(NO_PASSWORD, all))) {
     dataExposed.push("email_only");
     quote("dataExposed", emailOnly);
-  } else if (incidentType === "data_breach_notice" && leaked) {
+  } else if (incidentType === "data_breach_notice" && leaked && first(PASSWORD_EXPOSED, all)) {
     dataExposed.push("password");
-    quote("dataExposed", leaked);
+    quote("dataExposed", first(PASSWORD_EXPOSED, all)!);
   }
   const bankLogin = first(BANK_LOGIN, all);
   if (bankLogin && (did.includes("entered_login") || incidentType === "data_breach_notice" || /leak|leack|vuot|läck/iu.test(all))) {

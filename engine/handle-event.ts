@@ -24,7 +24,7 @@ import { radarMatch } from "./scam-radar";
 import { contextualQuestion } from "./contextual-question";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; flipHistory?: { topic: Topic; question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean; linkContextAsked?: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; flipHistory?: { topic: Topic; question: string; answer: string }[]; pendingAsk?: { id: string; question: string; topic?: Topic; open?: boolean }; interviewDone?: boolean; linkContextAsked?: boolean };
 export type Event =
   | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
@@ -90,6 +90,9 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       // A typed answer is the user's own words, so it joins the story the rules read.
       if (text && journey.input) journey.input = { ...journey.input, openingMessage: `${journey.input.openingMessage}\n${text}` };
       journey.item = await readInterview(journey, event.extractor);
+      if (ask.topic && (event.answer === "yes" || event.answer === "no")) {
+        journey.item = applyAnswer(journey.item, ask.topic, event.answer);
+      }
       if (text) noteTypedText(journey, { ...event, text });
       else if (event.extractor && event.sentToLlm) journey.sentToLlm = true;
     }
@@ -208,20 +211,25 @@ async function reread(journey: Journey, text: string, extractor?: Extractor, rep
 // "Did they ask for your code?" as a fact even when the answer is No.
 async function readInterview(journey: Journey, extractor?: Extractor): Promise<Case> {
   const current = journey.item;
-  if (!extractor || !journey.input) return current;
+  if (!journey.input) return current;
+  const offline = async (): Promise<Case> => {
+    const read = await intake(journey.input!);
+    return { ...current, facts: { ...mergeFacts(read.item.facts, current.facts), language: current.language }, mentions: [...new Set([...(current.mentions ?? []), ...(read.item.mentions ?? [])])] };
+  };
+  if (!extractor) return offline();
   const transcript = (journey.interview ?? []).map((item) => `Question: ${item.question}\nThe person answered: ${item.answer}`).join("\n");
   const guarded = guardInput(`${journey.input.openingMessage}\n\nFollow-up questions and answers:\n${transcript}`, journey.input.incidentContent);
   let raw: unknown = null;
   try {
     raw = await extractor({ userText: guarded.userText, incidentText: guarded.incidentContent ?? "", language: current.language, incidentChannel: journey.input.incidentChannel, hasRiskyLink: current.signals.hasLink, audience: current.audience });
   } catch {
-    return current;
+    return offline();
   }
   // A question provides context, never proof. Only the person's own report and
   // answers can support an extracted fact, even if a model quotes the question.
   const answerSource = guardInput([journey.input.openingMessage, ...(journey.interview ?? []).map(item => item.answer)].join("\n"), journey.input.incidentContent);
   const read = validateFacts(raw, answerSource);
-  if (!read) return current;
+  if (!read) return offline();
   return { ...current, facts: { ...mergeFacts(read, current.facts), language: current.language }, conflicts: [...new Set([...(current.conflicts ?? []), ...conflictingTopics(read, current.facts)])], mentions: [...new Set([...(current.mentions ?? []), ...detectMentions(guarded.userText)])] };
 }
 

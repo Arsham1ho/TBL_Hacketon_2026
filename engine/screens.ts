@@ -25,7 +25,7 @@ export type Screen =
   // "off_topic" also asks whether anything happened, with Yes and No replies.
   | { type: "describe"; reason: "greeting" | "off_topic" | "link_context"; message: string; hint: string }
   // A live follow-up question written by the LLM for an unclear report. Answers become facts.
-  | { type: "ask"; id: string; question: string }
+  | { type: "ask"; id: string; question: string; open?: boolean }
   | { type: "unlock"; signal: GatedSignal; what: string; why: string; limit: string; ifRefused: string }
   | {
       type: "result";

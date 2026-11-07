@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GET, POST } from "../app/api/sessions/route";
 import { POST as postAction } from "../app/api/sessions/[id]/[action]/route";
 import { DELETE as deleteSession } from "../app/api/sessions/[id]/route";
+import { GET as getHandoffSummary } from "../app/api/sessions/[id]/handoff-summary/route";
 
 const request = (body: unknown) => new Request("http://localhost/api/sessions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
@@ -35,7 +36,9 @@ describe("sessions API", () => {
   it("withholds simulated agent view until handoff approval", async () => {
     const started = await (await POST(request({ kind: "start", audience: "consumer", language: "en", message: "Someone asked for my WhatsApp code and I gave the code to them." }))).json();
     const url = `http://localhost/api/sessions?sessionId=${started.sessionId}`;
+    const summary = () => getHandoffSummary(new Request("http://localhost/api/handoff-summary"), { params: Promise.resolve({ id: started.sessionId }) });
     expect((await GET(new Request(url))).status).toBe(403);
+    expect((await summary()).status).toBe(403);
     let response = started;
     while (response.screen.type === "rescue") {
       response = await (await POST(request({ kind: "rescue", sessionId: started.sessionId, stepId: response.screen.step.id, outcome: "done" }))).json();
@@ -43,5 +46,11 @@ describe("sessions API", () => {
     expect(response.screen.type).toBe("handoff");
     response = await (await POST(request({ kind: "handoff", sessionId: started.sessionId, approved: true }))).json();
     expect((await GET(new Request(url))).status).toBe(200);
+    const handoff = await summary();
+    expect(handoff.status).toBe(200);
+    expect(handoff.headers.get("cache-control")).toBe("no-store");
+    expect(await handoff.json()).toMatchObject({ simulated: true, summary: expect.any(Array), details: expect.any(Object) });
+    await POST(request({ kind: "end", sessionId: started.sessionId }));
+    expect((await summary()).status).toBe(404);
   });
 });
