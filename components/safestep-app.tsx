@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { Building2, KeyRound, SlidersHorizontal, User, X } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
 import { readAnswerOffline } from "@/engine/answer-reader";
 import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
 import { client, type AgentPreview } from "@/lib/client";
+import { getStoredUser, setStoredUser, type MockUser } from "@/lib/mock-users";
 import { translator, type TextKey } from "@/lib/ui-text";
 import { cn } from "@/lib/utils";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
+import { LoginPage } from "./login-page";
 import { agentTurn, screenTurn, type Reply } from "./turns";
 import { Btn, SecretNote, StepMark } from "./ui";
+import { UserProfileModal } from "./user-profile-modal";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -39,6 +42,9 @@ type Item = { from: "user" | "safestep"; text: string };
 const WIDTH = "mx-auto w-full max-w-[640px] px-4";
 
 export function SafeStepApp() {
+  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [choice, setChoice] = useState<Language | "auto">("auto");
   const [browserLanguage, setBrowserLanguage] = useState<Language>("fi");
   const [audience, setAudience] = useState<Audience>("consumer");
@@ -57,6 +63,11 @@ export function SafeStepApp() {
   const options = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    const user = getStoredUser();
+    if (user) {
+      setCurrentUser(user);
+      setAudience(user.type);
+    }
     const code = navigator.language.slice(0, 2);
     if (code === "en" || code === "sv") setBrowserLanguage(code);
     if (process.env.NODE_ENV === "production") return;
@@ -64,6 +75,19 @@ export function SafeStepApp() {
     const review = name ? demoScreen(name) : null;
     if (review) setResponse(review);
   }, []);
+
+  function handleLoginUser(user: MockUser) {
+    setCurrentUser(user);
+    setAudience(user.type);
+    setStoredUser(user);
+    setShowLoginModal(false);
+  }
+
+  function handleLogoutUser() {
+    setCurrentUser(null);
+    setStoredUser(null);
+    setShowProfileModal(false);
+  }
 
   const shown = response?.language ?? (choice === "auto" ? browserLanguage : choice);
   const t = translator(shown);
@@ -149,15 +173,45 @@ export function SafeStepApp() {
   if (items.length === 0 && !response) {
     return (
       <div className="flex h-dvh flex-col">
-        <button
-          type="button"
-          onClick={() => options.current?.showModal()}
-          aria-label={t("options")}
-          title={t("options")}
-          className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent"
-        >
-          <SlidersHorizontal className="size-5" aria-hidden />
-        </button>
+        <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={() => setShowProfileModal(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
+            >
+              <span className="flex size-5 items-center justify-center rounded-full bg-accent font-bold text-[10px]">
+                {currentUser.type === "small_business" ? (
+                  <Building2 className="size-3" />
+                ) : (
+                  <User className="size-3" />
+                )}
+              </span>
+              <span className="max-w-[120px] truncate">{currentUser.name}</span>
+              <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                {currentUser.type === "small_business" ? "Business" : "Consumer"}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
+            >
+              <KeyRound className="size-3.5" />
+              <span>Log In</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => options.current?.showModal()}
+            aria-label={t("options")}
+            title={t("options")}
+            className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent"
+          >
+            <SlidersHorizontal className="size-5" aria-hidden />
+          </button>
+        </div>
         <main ref={log} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
           <StepMark className="size-10 text-foreground" />
           <h1 tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
@@ -246,6 +300,28 @@ export function SafeStepApp() {
             <p className="text-sm text-muted-foreground">{t("safetyNote")}</p>
           </div>
         </dialog>
+
+        {currentUser && (
+          <UserProfileModal
+            user={currentUser}
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+            onSwitchUser={() => {
+              setShowProfileModal(false);
+              setShowLoginModal(true);
+            }}
+            onLogout={handleLogoutUser}
+          />
+        )}
+
+        {showLoginModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+            <LoginPage
+              onLoginSuccess={handleLoginUser}
+              onBackToApp={() => setShowLoginModal(false)}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -272,15 +348,42 @@ export function SafeStepApp() {
 
   return (
     <div className="flex h-dvh flex-col">
-      <button
-        type="button"
-        onClick={() => void restart()}
-        aria-label={t("exit")}
-        title={t("exit")}
-        className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-lg bg-white/90 text-muted-foreground hover:bg-accent"
-      >
-        <X className="size-5" aria-hidden />
-      </button>
+      <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+        {currentUser ? (
+          <button
+            type="button"
+            onClick={() => setShowProfileModal(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent"
+          >
+            <span className="flex size-5 items-center justify-center rounded-full bg-accent font-bold text-[10px]">
+              {currentUser.type === "small_business" ? (
+                <Building2 className="size-3" />
+              ) : (
+                <User className="size-3" />
+              )}
+            </span>
+            <span className="max-w-[110px] truncate">{currentUser.name}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowLoginModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-white/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
+          >
+            <KeyRound className="size-3.5" />
+            <span>Log In</span>
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => void restart()}
+          aria-label={t("exit")}
+          title={t("exit")}
+          className="flex size-11 items-center justify-center rounded-lg bg-white/90 text-muted-foreground hover:bg-accent"
+        >
+          <X className="size-5" aria-hidden />
+        </button>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <main ref={log} role="log" className={cn(WIDTH, "grid gap-4 pt-14 pb-4")}>
@@ -384,6 +487,29 @@ export function SafeStepApp() {
           ))}
         </div>
       )}
+
+      {currentUser && (
+        <UserProfileModal
+          user={currentUser}
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          onSwitchUser={() => {
+            setShowProfileModal(false);
+            setShowLoginModal(true);
+          }}
+          onLogout={handleLogoutUser}
+        />
+      )}
+
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+          <LoginPage
+            onLoginSuccess={handleLoginUser}
+            onBackToApp={() => setShowLoginModal(false)}
+          />
+        </div>
+      )}
+
       {prototypeLine}
     </div>
   );
