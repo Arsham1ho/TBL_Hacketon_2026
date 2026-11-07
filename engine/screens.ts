@@ -19,7 +19,11 @@ export type RescueStep = {
 
 export type Screen =
   | { type: "stop"; message: string; actions: string[] }
-  | { type: "flip"; topic: Topic; question: string; why: string; statusLabel: string; branches: Branch[] }
+  // context: approved lines saying what was understood, shown before a triage question.
+  | { type: "flip"; topic: Topic; question: string; why: string; statusLabel: string; branches: Branch[]; context?: string[] }
+  // Shown when the first message holds nothing to assess, such as only a greeting.
+  // "off_topic" also asks whether anything happened, with Yes and No replies.
+  | { type: "describe"; reason: "greeting" | "off_topic"; message: string; hint: string }
   | { type: "unlock"; signal: GatedSignal; what: string; why: string; limit: string; ifRefused: string }
   | {
       type: "result";
@@ -31,6 +35,8 @@ export type Screen =
       unknowns: string[];
       sources: { id: string; title: string }[];
       classification: IncidentCategory | null;
+      // Hedged scam type for the summary card, available even while a fact is unknown.
+      likelyType: IncidentCategory | null;
       story: IncidentStory;
       // Steps the user finished in Rescue Mode, so they aren't repeated as to-dos.
       completed: string[];
@@ -73,6 +79,8 @@ export type ApiRequest =
   | { kind: "continue" }
   | { kind: "talk_to_person"; route?: SupportRoute }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
+  | { kind: "answer_text"; topic: Topic; text: string }
+  | { kind: "add_details"; text: string }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
   | { kind: "handoff"; approved: boolean };

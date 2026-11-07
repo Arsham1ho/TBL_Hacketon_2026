@@ -862,7 +862,8 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "payment_lure",
-    when: (c) => asks(c, "money") || asks(c, "card") || asks(c, "app_install") || asks(c, "remote_access"),
+    // A lure the user explicitly left alone falls through to "left_alone" below.
+    when: (c) => (asks(c, "money") || asks(c, "card") || asks(c, "app_install") || asks(c, "remote_access")) && !(c.facts.userAlreadyDid.includes("nothing") && c.facts.happeningNow !== true),
     then: () =>
       outcome(
         "payment_lure",

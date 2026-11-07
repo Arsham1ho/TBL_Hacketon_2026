@@ -27,6 +27,12 @@ const SCREENS: Record<Screen["type"], Screen> = {
     statusLabel: "Needs checking",
     branches,
   },
+  describe: {
+    type: "describe",
+    reason: "greeting",
+    message: "Hi. Tell me what happened, in your own words.",
+    hint: "For example: who contacted you and how, what they asked for, and what you have already done.",
+  },
   unlock: {
     type: "unlock",
     signal: "subscription.recent_events",
@@ -44,7 +50,7 @@ const SCREENS: Record<Screen["type"], Screen> = {
     confidence: "What you told us points clearly to this.",
     unknowns: [],
     sources: [{ id: "guidance_link_opened_no_input", title: "A link was opened, but nothing was entered" }],
-    classification: null,
+    classification: null, likelyType: null,
     story: {
       attempted: "Someone tried to make you pay or give card details under pressure.",
       prevent: ["Check deliveries in the service's own app, never through a link."],

@@ -298,5 +298,73 @@
     "en": "You can also talk to a person.",
     "fi": "Voit myös puhua ihmisen kanssa.",
     "sv": "Du kan också prata med en person."
+  },
+  "describe": {
+    "en": {
+      "message": "Hi. Tell me what happened, in your own words.",
+      "hint": "For example: who contacted you and how, what they asked for, and what you have already done."
+    },
+    "fi": {
+      "message": "Hei. Kerro omin sanoin, mitä tapahtui.",
+      "hint": "Esimerkiksi: kuka otti yhteyttä ja miten, mitä hän pyysi ja mitä olet jo tehnyt."
+    },
+    "sv": {
+      "message": "Hej. Berätta med egna ord vad som hände.",
+      "hint": "Till exempel: vem som kontaktade dig och hur, vad de bad om och vad du redan har gjort."
+    }
+  },
+  "understood": {
+    "account": {
+      "en": "You mentioned your account.",
+      "fi": "Mainitsit tilisi.",
+      "sv": "Du nämnde ditt konto."
+    },
+    "money": {
+      "en": "You mentioned money or a payment.",
+      "fi": "Mainitsit rahan tai maksun.",
+      "sv": "Du nämnde pengar eller en betalning."
+    },
+    "device": {
+      "en": "You mentioned your device.",
+      "fi": "Mainitsit laitteesi.",
+      "sv": "Du nämnde din enhet."
+    },
+    "call": {
+      "en": "You mentioned a phone call.",
+      "fi": "Mainitsit puhelun.",
+      "sv": "Du nämnde ett samtal."
+    },
+    "sms": {
+      "en": "You mentioned a text message.",
+      "fi": "Mainitsit tekstiviestin.",
+      "sv": "Du nämnde ett sms."
+    },
+    "email": {
+      "en": "You mentioned an email.",
+      "fi": "Mainitsit sähköpostin.",
+      "sv": "Du nämnde ett mejl."
+    },
+    "intro": {
+      "en": "I need a little more detail, so a few quick questions first.",
+      "fi": "Tarvitsen vähän lisätietoa, joten ensin muutama nopea kysymys.",
+      "sv": "Jag behöver lite mer information, så först några snabba frågor."
+    }
+  },
+  "offTopic": {
+    "en": {
+      "message": "I can help with scams, hacking, data leaks and anything that looks suspicious. Has something like that happened?",
+      "hint": "If it has, tell me what happened in your own words.",
+      "none": "All right. If something suspicious happens, such as a strange message, call or login, come back any time."
+    },
+    "fi": {
+      "message": "Autan huijauksissa, tietomurroissa, tietovuodoissa ja kaikessa epäilyttävässä. Onko jotain tällaista tapahtunut?",
+      "hint": "Jos on, kerro omin sanoin, mitä tapahtui.",
+      "none": "Selvä. Jos jotain epäilyttävää tapahtuu, kuten outo viesti, puhelu tai kirjautuminen, palaa milloin tahansa."
+    },
+    "sv": {
+      "message": "Jag hjälper till med bedrägerier, intrång, dataläckor och allt som verkar misstänkt. Har något sådant hänt?",
+      "hint": "Om det har det, berätta med egna ord vad som hände.",
+      "none": "Okej. Om något misstänkt händer, som ett konstigt meddelande, samtal eller en inloggning, kom tillbaka när som helst."
+    }
   }
 }

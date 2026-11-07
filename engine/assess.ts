@@ -2,6 +2,7 @@ import type { Answers, Case, VisibleSignals } from "./case";
 import { compose, type Composed } from "./composer";
 import { checkDecision } from "./contract";
 import { guardInput } from "./input-guard";
+import { detectMentions } from "./mentions";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
 import { decide, flipLimit, isTriage, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
@@ -58,6 +59,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       signals: { ...input.signals, hasLink },
       pregrantedSignals: gated(input.consent.preGranted),
       availableSignals: gated(input.consent.requires),
+      mentions: detectMentions(`${guarded.userText}\n${guarded.maskedIncident ?? ""}`),
     },
   };
 }

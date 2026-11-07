@@ -1,6 +1,7 @@
 import text from "../content/action-vocabulary.json";
 import { didAction, topicValue, withAnswer, type Case } from "./case";
 import { matchSituation, safeIsBlocked, UNCLEAR, type Outcome } from "./situations";
+import { orderByMentions } from "./mentions";
 import type { Topic } from "./types";
 
 export const MAX_FLIPS = 2;
@@ -19,13 +20,28 @@ function severity(item: Outcome): number {
   return INTERVENTION[item.primaryAction] * 100 + RISKS.indexOf(item.risk) * 10 + URGENCIES.indexOf(item.urgency);
 }
 
+// "The number on your card" only fits when a card is part of the story.
+function cardInvolved(item: Case): boolean {
+  const { facts } = item;
+  return didAction(item, "entered_card") || topicValue(item, "card_details_entered") === "yes" || facts.asksFor.includes("card")
+    || facts.dataExposed.includes("card") || facts.assetInvolved.includes("card");
+}
+
 // Advice must fit what happened: a phone call has no link, and a bank transfer has no card.
 function fitSteps(item: Case, outcome: Outcome): Outcome {
   const steps = outcome.steps.filter((step) => {
     if (step === "dont_open_link") return item.signals.hasLink || !["phone_call", "missed_call"].includes(item.facts.incidentType ?? "");
+    // "Hang up" only fits a call. A message that mentions no call doesn't get it.
+    if (step === "hang_up_dont_call_back") {
+      const call = ["phone_call", "missed_call"].includes(item.facts.incidentType ?? "") || item.mentions?.includes("call");
+      const written = item.mentions?.some((mention) => mention === "email" || mention === "sms") || item.signals.hasLink;
+      return call || !written;
+    }
     if (step === "block_card") return !didAction(item, "paid") || didAction(item, "entered_card");
     return true;
-  });
+  }).map((step) => (step === "contact_bank_now" && !cardInvolved(item) ? "contact_bank_official" : step));
+  // Money that has left needs a crime report as well as the bank.
+  if (didAction(item, "paid") && steps.some((step) => step.startsWith("contact_bank")) && !steps.includes("report_police")) steps.push("report_police");
   return { ...outcome, steps };
 }
 
@@ -48,7 +64,10 @@ export function pickFlip(item: Case): Flip | null {
   const match = matchSituation(item);
   // A Safe outcome that the gate refuses is unclear, so it gets the same questions.
   const blocked = match.then(item).status === "safe" && safeIsBlocked(item);
-  for (const topic of (blocked ? UNCLEAR : match).flips ?? []) {
+  const situation = blocked ? UNCLEAR : match;
+  // Only the triage questions follow what the message mentions. Known situations keep their order.
+  const flips = situation === UNCLEAR ? orderByMentions(UNCLEAR.flips ?? [], item.mentions, item.triagePriority) : situation.flips ?? [];
+  for (const topic of flips) {
     if (topicValue(item, topic) !== null || item.unsure.includes(topic)) continue;
     const flip = flipFor(item, topic);
     if (flip) return flip;

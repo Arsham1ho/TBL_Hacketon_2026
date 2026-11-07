@@ -40,9 +40,9 @@
     "sv": "Småföretag"
   },
   "whatHappened": {
-    "en": "What happened?",
-    "fi": "Mitä tapahtui?",
-    "sv": "Vad hände?"
+    "en": "What happened",
+    "fi": "Mitä tapahtui",
+    "sv": "Vad som hände"
   },
   "whatHappenedBusiness": {
     "en": "What's happening at your business?",
@@ -588,5 +588,50 @@
     "en": "Good. Keep the steps above in mind, and start again if anything changes.",
     "fi": "Hyvä. Pidä yllä olevat ohjeet mielessä ja aloita uudelleen, jos jokin muuttuu.",
     "sv": "Bra. Håll stegen ovan i minnet och börja om om något förändras."
+  },
+  "incidentSummary": {
+    "en": "Incident summary",
+    "fi": "Yhteenveto tapahtuneesta",
+    "sv": "Sammanfattning av händelsen"
+  },
+  "scamType": {
+    "en": "Scam type",
+    "fi": "Huijauksen tyyppi",
+    "sv": "Typ av bedrägeri"
+  },
+  "notClearYet": {
+    "en": "Not clear yet",
+    "fi": "Ei vielä selvä",
+    "sv": "Inte klart än"
+  },
+  "situation": {
+    "en": "Situation",
+    "fi": "Tilanne",
+    "sv": "Situation"
+  },
+  "howSure": {
+    "en": "How sure we are",
+    "fi": "Kuinka varmoja olemme",
+    "sv": "Hur säkra vi är"
+  },
+  "doNow": {
+    "en": "Do this now",
+    "fi": "Tee nämä heti",
+    "sv": "Gör detta nu"
+  },
+  "whoCanHelp": {
+    "en": "Who can help",
+    "fi": "Kuka voi auttaa",
+    "sv": "Vem kan hjälpa"
+  },
+  "newConversation": {
+    "en": "New conversation",
+    "fi": "Uusi keskustelu",
+    "sv": "Ny konversation"
+  },
+  "keepChatting": {
+    "en": "You can keep writing here if anything changes or you have a question.",
+    "fi": "Voit jatkaa kirjoittamista tähän, jos jokin muuttuu tai sinulla on kysyttävää.",
+    "sv": "Du kan fortsätta skriva här om något ändras eller om du har en fråga."
   }
 }

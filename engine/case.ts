@@ -1,3 +1,4 @@
+import type { Mention } from "./mentions";
 import type { Audience, Facts, GatedSignal, Language, Topic } from "./types";
 
 export type Answer = "yes" | "no";
@@ -21,6 +22,10 @@ export type Case = {
   pregrantedSignals: GatedSignal[];
   availableSignals: GatedSignal[];
   gatedFindings?: Partial<Record<GatedSignal, string>>;
+  // Words the message mentions. They order triage questions and never decide anything.
+  mentions?: Mention[];
+  // Triage questions in the order the LLM found most relevant. Order only, never an answer.
+  triagePriority?: Topic[];
 };
 
 const FROM_ACTIONS: Partial<Record<Topic, Facts["userAlreadyDid"][number]>> = {

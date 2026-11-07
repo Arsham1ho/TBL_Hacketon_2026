@@ -13,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
-import { readAnswerOffline } from "@/engine/answer-reader";
 import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
@@ -856,6 +855,48 @@ export function SafeStepApp() {
         </main>
       </div>
 
+      {response?.screen.type === "describe" && (
+        <div className={WIDTH}>
+          <DescriptionComposer
+            question=""
+            sample={t("typeAnswerOrDetails")}
+            sendLabel={t("send")}
+            text={followUp}
+            disabled={busy}
+            onChange={setFollowUp}
+            onSend={() => {
+              if (!followUp.trim()) return;
+              const text = followUp.trim();
+              setFollowUp("");
+              record({ from: "user", text: maskSecrets(text).text });
+              void send({ kind: "add_details", text });
+            }}
+          />
+        </div>
+      )}
+
+      {response?.screen.type === "end" && (
+        <div className={WIDTH}>
+          <DescriptionComposer
+            question=""
+            sample={t("askFollowUp")}
+            sendLabel={t("send")}
+            text={followUp}
+            disabled={busy}
+            onChange={setFollowUp}
+            onSend={() => {
+              if (!followUp.trim()) return;
+              const text = followUp.trim();
+              setFollowUp("");
+              setMessage(text);
+              record({ from: "user", text: maskSecrets(text).text });
+              // A new case in the same chat: earlier messages stay on screen.
+              void send({ kind: "start", audience, language: choice, fallbackLanguage: browserLanguage, message: text });
+            }}
+          />
+        </div>
+      )}
+
       {response?.screen.type === "result" && (
         <div className={WIDTH}>
           <DescriptionComposer
@@ -870,17 +911,8 @@ export function SafeStepApp() {
               const text = followUp.trim();
               setFollowUp("");
               record({ from: "user", text: maskSecrets(text).text });
-              const nextMessage = `${message ? message + "\n" : ""}${text}`;
-              setMessage(nextMessage);
-              void send({
-                kind: "start",
-                audience,
-                language: choice,
-                fallbackLanguage: browserLanguage,
-                message: nextMessage,
-                ...(incident.trim() ? { incident } : {}),
-                ...(demo !== "none" ? { demoScenario: demo } : {}),
-              });
+              // Added to the same session, so earlier answers and progress are kept.
+              void send({ kind: "add_details", text });
             }}
           />
         </div>
@@ -901,11 +933,11 @@ export function SafeStepApp() {
                 if (!followUp.trim()) return;
                 const text = followUp.trim();
                 setFollowUp("");
-                const answer = readAnswerOffline(text, shown, flipScreen.topic);
-                reply(flipScreen.question, text, {
-                  kind: "answer",
+                // The server reads the whole reply, so details beyond yes or no aren't lost.
+                reply(flipScreen.question, maskSecrets(text).text, {
+                  kind: "answer_text",
                   topic: flipScreen.topic,
-                  answer,
+                  text,
                 });
               }}
             />

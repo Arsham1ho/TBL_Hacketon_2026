@@ -52,7 +52,7 @@ Open <http://localhost:3000>.
 
 Try a quick choice or describe what happened in Finnish, English or Swedish. To see Signal Unlock, open "Simulated DNA data for this demo" and pick a scenario before sending.
 
-In development, `?screen=` opens one screen with example data, such as `/?screen=fallback`. The options are `stop`, `flip`, `unlock`, `rescue`, `handoff`, `fallback`, `end`, `threat`, `unsure` and `safe`.
+In development, `?screen=` opens one screen with example data, such as `/?screen=fallback`. The options are `stop`, `flip`, `describe`, `unlock`, `rescue`, `handoff`, `fallback`, `end`, `threat`, `unsure` and `safe`.
 
 ## Test and evaluate
 

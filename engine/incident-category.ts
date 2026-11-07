@@ -51,7 +51,8 @@ const COPY: Record<CategoryKey, Record<Language, IncidentCategory>> = {
 };
 
 function supported(item: Case): boolean {
-  return Object.keys(item.answers).length > 0 && (item.facts.evidence.length > 0 || item.answers.time_of_event !== undefined);
+  // Facts quoted from the user's own words are enough. A question isn't needed first.
+  return item.facts.evidence.some((entry) => entry.fact !== "incidentType") || (Object.keys(item.answers).length > 0 && (item.facts.evidence.length > 0 || item.answers.time_of_event !== undefined));
 }
 
 function categoryKey(item: Case, outcome: Outcome): CategoryKey | null {
@@ -78,6 +79,14 @@ export function incidentStory(item: Case, outcome: Outcome, status: Status): Inc
 
 export function incidentCategory(item: Case, outcome: Outcome, status: Status, hasUnknownDecisiveFact: boolean): IncidentCategory | null {
   if ((status !== "threat_in_progress" && status !== "incident_occurred") || hasUnknownDecisiveFact || !supported(item)) return null;
+  const key = categoryKey(item, outcome);
+  return key ? COPY[key][item.language] : null;
+}
+
+// The likely type for the summary card, shown even while a fact is unknown. The copy is
+// already hedged ("Likely incident type"). A safe outcome gets none, so it can't alarm.
+export function likelyCategory(item: Case, outcome: Outcome, status: Status): IncidentCategory | null {
+  if (status === "safe" || outcome.situation === "left_alone") return null;
   const key = categoryKey(item, outcome);
   return key ? COPY[key][item.language] : null;
 }

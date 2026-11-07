@@ -15,9 +15,9 @@ const NEGATIVE: Record<Language, RegExp> = {
   sv: word(String.raw`nej|inte|aldrig|inget|ingen`),
 };
 const POSITIVE: Record<Language, RegExp> = {
-  en: word(String.raw`yes|yeah|yep|i did|i have|myself|i clicked|i pressed|i moved|i ordered|they ordered|logged in|i am|i'm`),
-  fi: word(String.raw`kyllä|joo|juu|tein|teimme|itse|painoin|klikkasin|tilasi|tilasin|annoin|olen`),
-  sv: word(String.raw`ja|jo|gjorde|själv|klickade|beställde|tryckte|installerade|jag är`),
+  en: word(String.raw`yes|yeah|yep|yup|sure|correct|that's right|true|exactly|indeed|of course|i did|i have|i was|myself|i clicked|i pressed|i moved|i ordered|they ordered|logged in|i am|i'm|i typed|i entered|i gave|i paid|i sent|i shared|i installed|i told|i transferred|i read`),
+  fi: word(String.raw`kyllä|joo|juu|jep|totta|pitää paikkansa|tein|teimme|itse|painoin|klikkasin|tilasi|tilasin|annoin|olen|maksoin|syötin|kirjoitin|lähetin|asensin|kerroin|luin|siirsin`),
+  sv: word(String.raw`ja|jo|japp|stämmer|precis|gjorde|själv|klickade|beställde|tryckte|installerade|jag är|betalade|skrev|angav|gav|skickade|berättade|läste|överförde`),
 };
 // A clear opening word decides the reply, whatever follows it.
 const OPENS_YES: Record<Language, RegExp> = {

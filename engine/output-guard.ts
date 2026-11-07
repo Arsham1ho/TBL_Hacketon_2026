@@ -26,11 +26,13 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
   const branchesAreApproved = (branches: { condition: string; steps: string[] }[]) =>
     branches.every(branch => conditions.includes(branch.condition) && branch.steps.every(step => stepLines.includes(step)));
   if (screen.type === "stop") return Object.values(approved.stop).some(entry => entry[language].message === screen.message && screen.actions[0] === entry[language].action);
+  if (screen.type === "end" && approved.offTopic[language].none === screen.message) return true;
   if (screen.type === "fallback") return Object.values(approved.fallback).some(entry => entry[language].message === screen.message && JSON.stringify(entry[language].actions) === JSON.stringify(screen.actions));
   if (screen.type === "flip") {
     const copy = questionText(screen.topic, language);
+    const contextLines = Object.values(approved.understood).map(entry => entry[language]);
     return screen.question === copy.question && screen.why === copy.why && statusLabels.includes(screen.statusLabel)
-      && branchesAreApproved(screen.branches);
+      && branchesAreApproved(screen.branches) && (screen.context ?? []).every(line => contextLines.includes(line));
   }
   if (screen.type === "result") {
     const reasonLines = Object.values(reasons).map(entry => entry[language]);
@@ -38,7 +40,12 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
     return statusLabels.includes(screen.statusLabel) && confidenceLines.includes(screen.confidence)
       && reasonLines.includes(screen.reason) && screen.steps.every(step => stepLines.includes(step))
       && (screen.branches === null || branchesAreApproved(screen.branches))
-      && (screen.classification === null || isApprovedIncidentCategory(screen.classification, language));
+      && (screen.classification === null || isApprovedIncidentCategory(screen.classification, language))
+      && (!screen.likelyType || isApprovedIncidentCategory(screen.likelyType, language));
+  }
+  if (screen.type === "describe") {
+    const copy = screen.reason === "greeting" ? approved.describe[language] : approved.offTopic[language];
+    return screen.message === copy.message && screen.hint === copy.hint;
   }
   if (screen.type === "rescue") return stepLines.includes(screen.step.detail);
   return true;

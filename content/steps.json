@@ -193,5 +193,10 @@
     "en": "Update the device's software.",
     "fi": "Päivitä laitteen ohjelmisto.",
     "sv": "Uppdatera enhetens programvara."
+  },
+  "contact_bank_official": {
+    "en": "Contact your bank now on its official number or in its own app.",
+    "fi": "Ota heti yhteyttä pankkiisi sen virallisessa numerossa tai pankin omassa sovelluksessa.",
+    "sv": "Kontakta din bank nu på dess officiella nummer eller i bankens egen app."
   }
 }

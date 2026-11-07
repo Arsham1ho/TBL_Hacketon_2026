@@ -3,6 +3,8 @@ import type { ApiRequest, ApiResponse, DataReceipt, SupportRoute } from "@/engin
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
+import { CircleCheck, FileText, ShieldCheck, TriangleAlert, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
@@ -56,6 +58,34 @@ const List = ({ items }: { items: string[] }) => (
       <li key={item}>{item}</li>
     ))}
   </ul>
+);
+
+const RISK_LEVEL: Record<Risk, number> = { none: 0, low: 1, medium: 2, high: 4, critical: 5 };
+const METER: Record<Risk, string> = { none: "bg-success", low: "bg-success", medium: "bg-warning", high: "bg-destructive", critical: "bg-danger-deep" };
+
+const Fact = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="grid gap-0.5">
+    <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
+    <dd className="font-medium">{children}</dd>
+  </div>
+);
+
+// Each part of the result has its own look, so the urgent part is seen first.
+const PANEL = {
+  danger: "border-destructive bg-danger-soft",
+  warning: "border-warning bg-warning-soft",
+  success: "border-success bg-success-soft",
+  info: "border-navy/40 bg-accent",
+  calm: "border-border-strong bg-card",
+};
+const Panel = ({ tone, icon, title, children }: { tone: keyof typeof PANEL; icon: ReactNode; title: string; children: ReactNode }) => (
+  <section className={cn("grid gap-2 rounded-xl border-l-4 border p-4 text-sm", PANEL[tone])}>
+    <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+      {icon}
+      {title}
+    </h2>
+    {children}
+  </section>
 );
 
 const Heading = ({ children }: { children: ReactNode }) => (
@@ -124,6 +154,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         recap: screen.question,
         body: (
           <>
+            {screen.context && screen.context.length > 0 && <p className="text-sm text-muted-foreground">{screen.context.join(" ")}</p>}
             <Heading>{screen.question}</Heading>
             <p className="text-sm text-muted-foreground">{screen.why}</p>
           </>
@@ -131,6 +162,22 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies: [ask("yes", t("yes")), ask("no", t("no")), ask("unsure", t("notSure"))],
       };
     }
+    case "describe":
+      return {
+        recap: screen.message,
+        body: (
+          <>
+            <Heading>{screen.message}</Heading>
+            <p className="text-sm text-muted-foreground">{screen.hint}</p>
+          </>
+        ),
+        replies: screen.reason === "off_topic"
+          ? [
+              { label: t("yes"), run: () => reply(screen.message, t("yes"), { kind: "add_details", text: t("yes") }) },
+              { label: t("no"), run: () => reply(screen.message, t("no"), { kind: "add_details", text: t("no") }) },
+            ]
+          : [talk(screen.message)],
+      };
     case "unlock": {
       const choose = (granted: boolean, label: string): Reply => ({
         label,
@@ -199,6 +246,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
     case "result": {
       const safe = state.status === "safe";
       const live = state.status === "threat_in_progress";
+      const urgent = !safe && (state.urgency === "immediate" || state.status === "incident_occurred" || live);
       const { story } = screen;
       const toDo = screen.steps.filter((step) => !screen.completed.includes(step));
       const done = [
@@ -210,89 +258,95 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const routes = screen.supportRoutes.slice(0, 3).map((route) => contact(recap, route));
       const firstRoute = screen.supportRoutes[0];
       const stillHappening = firstRoute ? contact(recap, firstRoute, t("stillHappening")) : { ...talk(recap), label: t("stillHappening") };
-      const startAgain: Reply = { label: t("startNew"), run: restart };
+      // The chat stays open after a result, so there is no "start again" here: the user keeps
+      // writing in the box below, and can still reach a person.
       const replies: Reply[] = safe
-        ? [startAgain]
+        ? []
         : live && !closed
           ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")) }, stillHappening]
           : routes.length > 0
-            ? [{ ...routes[0]!, primary: true }, ...routes.slice(1), startAgain]
-            : [talk(recap), startAgain];
+            ? [{ ...routes[0]!, primary: true }, ...routes.slice(1)]
+            : [talk(recap)];
+      const type = screen.classification ?? screen.likelyType;
+      const level = RISK_LEVEL[state.risk];
       return {
         recap,
         body: (
           <>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusLabel status={state.status} label={screen.statusLabel} />
-              <span className="rounded-md bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">
-                {t("risk")}: {t(RISK_TEXT[state.risk])}
-              </span>
-              <span className="rounded-md bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">
-                {t("urgency")}: {t(URGENCY_TEXT[state.urgency])}
-              </span>
-            </div>
-            {screen.classification && (
-              <div className="grid gap-0.5">
-                <Heading>{screen.classification.title}</Heading>
-                {screen.classification.description && (
-                  <p className="text-sm text-muted-foreground">{screen.classification.description}</p>
-                )}
+            <section aria-labelledby="summary-title" className="grid gap-3 rounded-xl border border-border-strong bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h1 id="summary-title" tabIndex={-1} className="flex items-center gap-2 text-base font-semibold focus:outline-none">
+                  <FileText className="size-4" aria-hidden />
+                  {t("incidentSummary")}
+                </h1>
+                <StatusLabel status={state.status} label={screen.statusLabel} />
               </div>
-            )}
-            {screen.branches ? (
-              <>
-                {!screen.classification && <Heading>{t("eachCase")}</Heading>}
-                {screen.branches.map((branch) => (
-                  <div key={branch.condition}>
-                    <p className="font-medium">{branch.condition}</p>
-                    {branch.steps.map((step) => (
-                      <p key={step}>{step}</p>
-                    ))}
-                  </div>
-                ))}
-              </>
-            ) : safe ? (
-              <Heading>{screen.reason}</Heading>
-            ) : state.status === "incident_occurred" ? (
-              <>
-                {response.summary.length > 0 && (
-                  <Section title={t("storySummary")}>
-                    <List items={response.summary} />
-                  </Section>
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                <Fact label={t("risk")}>
+                  <span className="flex items-center gap-2">
+                    <span className="flex gap-0.5" aria-hidden>
+                      {[1, 2, 3, 4, 5].map((step) => (
+                        <span key={step} className={cn("h-2 w-4 rounded-sm", step <= level ? METER[state.risk] : "bg-muted")} />
+                      ))}
+                    </span>
+                    {t(RISK_TEXT[state.risk])}
+                  </span>
+                </Fact>
+                <Fact label={t("urgency")}>{t(URGENCY_TEXT[state.urgency])}</Fact>
+                <Fact label={t("scamType")}>{type ? type.title : t("notClearYet")}</Fact>
+                <Fact label={t("howSure")}>{screen.confidence}</Fact>
+                {screen.supportRoutes.length > 0 && (
+                  <Fact label={t("whoCanHelp")}>{screen.supportRoutes.map((route) => t(route)).join(", ")}</Fact>
                 )}
-                {toDo.length > 0 && (
-                  <Section title={t("storyClear")}>
+              </dl>
+              {type && <p className="text-sm text-muted-foreground">{type.description}</p>}
+              <div className="grid gap-1 border-t border-border pt-3">
+                <h2 className="text-sm font-semibold">{t("whatHappened")}</h2>
+                <p className="text-sm">{story.attempted}</p>
+                {response.summary.length > 0 && <List items={response.summary} />}
+                <p className="text-sm text-muted-foreground">{screen.reason}</p>
+              </div>
+            </section>
+
+            {screen.branches ? (
+              <Panel tone="warning" icon={<TriangleAlert className="size-4" aria-hidden />} title={t("eachCase")}>
+                {screen.branches.map((branch) => (
+                  <div key={branch.condition} className="grid gap-1">
+                    <p className="font-medium">{branch.condition}</p>
                     <ol className="grid list-decimal gap-1 pl-5">
-                      {toDo.map((step) => (
+                      {branch.steps.map((step) => (
                         <li key={step}>{step}</li>
                       ))}
                     </ol>
-                  </Section>
-                )}
-              </>
+                  </div>
+                ))}
+              </Panel>
             ) : (
               toDo.length > 0 && (
-                <Section title={t("storyDo")}>
-                  <ol className="grid list-decimal gap-1 pl-5">
+                <Panel
+                  tone={urgent ? "danger" : "calm"}
+                  icon={urgent ? <Zap className="size-4" aria-hidden /> : <CircleCheck className="size-4" aria-hidden />}
+                  title={urgent ? t("doNow") : safe ? t("storyDo") : t(state.status === "incident_occurred" ? "storyClear" : "storyDo")}
+                >
+                  <ol className="grid list-decimal gap-1.5 pl-5">
                     {toDo.map((step) => (
-                      <li key={step}>{step}</li>
+                      <li key={step} className={urgent ? "font-medium" : undefined}>{step}</li>
                     ))}
                   </ol>
-                </Section>
+                </Panel>
               )
             )}
-            {!safe && !screen.classification && <p className="text-muted-foreground">{screen.reason}</p>}
-            <Section title={t("storyAttempted")}>
-              <p>{story.attempted}</p>
-            </Section>
+
             {done.length > 0 && (
-              <Section title={t("storyDone")}>
+              <Panel tone="success" icon={<CircleCheck className="size-4" aria-hidden />} title={t("storyDone")}>
                 <List items={done} />
-              </Section>
+              </Panel>
             )}
-            <Section title={t("storyPrevent")}>
+
+            <Panel tone="info" icon={<ShieldCheck className="size-4" aria-hidden />} title={t("storyPrevent")}>
               <List items={story.prevent} />
-            </Section>
+            </Panel>
+
             {closed && <p className="font-medium">{t("stoppedThanks")}</p>}
             <Details title={t("investigate")}>
               <p>
@@ -309,8 +363,6 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
               </p>
             </Details>
             <Details title={t("details")}>
-              {screen.classification && <p>{screen.reason}</p>}
-              <p>{screen.confidence}</p>
               {screen.unknowns.length > 0 && (
                 <p>
                   {t("stillUnknown")}: {screen.unknowns.join(" ")}
@@ -324,6 +376,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
               <Receipt receipt={response.dataReceipt} t={t} />
               <p>{response.notice}</p>
             </Details>
+            <p className="text-sm text-muted-foreground">{t("keepChatting")}</p>
           </>
         ),
         replies,
@@ -343,10 +396,16 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies: [talk(screen.message), { label: t("startAgain"), run: restart }],
       };
     case "end":
+      // Not a dead end: the box below starts a new case and the chat history stays.
       return {
         recap: screen.message,
-        body: <Heading>{screen.message}</Heading>,
-        replies: [{ label: t("startNew"), primary: true, run: restart }],
+        body: (
+          <>
+            <Heading>{screen.message}</Heading>
+            <p className="text-sm text-muted-foreground">{t("keepChatting")}</p>
+          </>
+        ),
+        replies: [{ label: t("newConversation"), run: restart }],
       };
   }
 }
