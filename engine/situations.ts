@@ -735,6 +735,31 @@ export const SITUATIONS: Situation[] = [
       ),
   },
   {
+    id: "remote_access_requested_call",
+    when: (c) => (is(c, "phone_call") || is(c, "remote_session")) && asks(c, "remote_access"),
+    flips: ["remote_access_given"],
+    then: (c) => yes(c, "remote_access_given")
+      ? outcome(
+          "remote_device_exposed",
+          "isolate_device_and_scan",
+          "incident_occurred",
+          "high",
+          "immediate",
+          ["disconnect_device", "remove_app_or_profile", "get_device_checked"],
+          ["guidance_remote_access", "guidance_tech_support_fraud"],
+          { destination: person(c, "security_specialist"), rescue: true, wantsSignals: ["device.security_findings"] },
+        )
+      : outcome(
+          "risky_call",
+          "verify_via_official_channel",
+          "threat_in_progress",
+          "high",
+          "today",
+          ["verify_official_channel", "hang_up_dont_call_back", "dont_share_codes", "dont_pay_or_transfer"],
+          ["guidance_tech_support_fraud", "guidance_remote_access"],
+        ),
+  },
+  {
     id: "risky_call",
     when: (c) =>
       is(c, "phone_call") && (c.facts.asksFor.length > 0 || c.facts.pressureOrSecrecy === true),

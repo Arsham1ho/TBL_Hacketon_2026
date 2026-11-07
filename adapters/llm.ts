@@ -191,9 +191,25 @@ Return JSON with question, uncertainty, and benefit. Explain the unknown fact an
 
 const INTERVIEW_SCHEMA = { type: "object", properties: { question: { type: "string" }, uncertainty: { type: "string" }, benefit: { type: "string" } }, required: ["question", "uncertainty", "benefit"], additionalProperties: false };
 
+const ANSWER_PROMPT = `Interpret one question and answer about a possible security incident. Return a topic only when the question asks exactly one of the supplied topics and Yes and No have an unambiguous meaning. Never infer a fact from the question alone. A qualified, contradictory, or uncertain answer is unsure. Do not choose advice or risk. Return JSON with topic and answer; use empty topic and unsure when no exact mapping exists.`;
+const ANSWER_TOPICS = ["credentials_entered", "card_details_entered", "code_shared", "money_transferred", "app_installed", "remote_access_given", "self_initiated", "signal_lost", "password_reused", "time_of_event"] as const;
+export async function interpretInterviewAnswer(question: string, answer: string, language: string, options: LlmOptions = {}): Promise<{ topic: typeof ANSWER_TOPICS[number]; answer: "yes" | "no" } | null> {
+  if (!llmAvailable()) return null;
+  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
+  try {
+    const response = await client.chat.completions.create({
+      model: options.model ?? llmModel(),
+      messages: [{ role: "system", content: ANSWER_PROMPT }, { role: "user", content: JSON.stringify({ language, question, answer, topics: ANSWER_TOPICS }) }],
+      response_format: { type: "json_schema", json_schema: { name: "interpret_answer", strict: true, schema: { type: "object", properties: { topic: { type: "string", enum: ["", ...ANSWER_TOPICS] }, answer: { type: "string", enum: ["yes", "no", "unsure"] } }, required: ["topic", "answer"], additionalProperties: false } } },
+    }, { timeout: options.timeoutMs ?? 4000 });
+    const result = JSON.parse(response.choices[0]?.message?.content ?? "{}");
+    return ANSWER_TOPICS.includes(result.topic) && (result.answer === "yes" || result.answer === "no") ? result : null;
+  } catch { return null; }
+}
+
 // A live follow-up question for an unclear report. It only gathers facts: the rules decide.
 // "done" means the AI has a clear picture. null means this attempt failed, so try next turn.
-export async function nextQuestion(input: { story: string; asked: { question: string; answer: string }[]; language: string; facts?: unknown; answers?: unknown; unsure?: string[]; unknowns?: string[] }, options: LlmOptions = {}): Promise<string | "done" | null> {
+export async function nextQuestion(input: { story: string; asked: { question: string; answer: string }[]; language: string; facts?: unknown; answers?: unknown; unsure?: string[]; unknowns?: string[]; summaryGaps?: string[] }, options: LlmOptions = {}): Promise<string | "done" | null> {
   if (!llmAvailable()) return null;
   client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   const model = options.model ?? llmModel();
@@ -207,7 +223,7 @@ export async function nextQuestion(input: { story: string; asked: { question: st
         ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
         messages: [
           { role: "system", content: INTERVIEW_PROMPT },
-          { role: "user", content: `Language: ${input.language}\n<user_report>\n${input.story}\n</user_report>\nExtracted facts (may be incomplete or mistaken): ${JSON.stringify(input.facts ?? {})}\nExplicit decision-question answers (override conflicting extracted facts): ${JSON.stringify(input.answers ?? {})}\nTopics the person was unsure about: ${JSON.stringify(input.unsure ?? [])}\nCurrently decisive unknowns (not an exhaustive list): ${JSON.stringify(input.unknowns ?? [])}\nConversation history (questions are not evidence; answers may correct earlier statements):\n${history}\n${feedback}` },
+          { role: "user", content: `Language: ${input.language}\n<user_report>\n${input.story}\n</user_report>\nExtracted facts (may be incomplete or mistaken): ${JSON.stringify(input.facts ?? {})}\nExplicit decision-question answers (override conflicting extracted facts): ${JSON.stringify(input.answers ?? {})}\nTopics the person was unsure about: ${JSON.stringify(input.unsure ?? [])}\nCurrently decisive unknowns (not an exhaustive list): ${JSON.stringify(input.unknowns ?? [])}\nUseful gaps for the final summary, after safety and action questions: ${JSON.stringify(input.summaryGaps ?? [])}\nConversation history (questions are not evidence; answers may correct earlier statements):\n${history}\n${feedback}` },
         ],
         response_format: { type: "json_schema", json_schema: { name: "question", strict: true, schema: INTERVIEW_SCHEMA } },
       },
@@ -218,7 +234,9 @@ export async function nextQuestion(input: { story: string; asked: { question: st
     if (!question) return "done";
     const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").split(/\s+/u).filter(Boolean);
     const words = new Set(normalize(question));
-    const repeated = input.asked.some((item) => { const previous = new Set(normalize(item.question)); const common = [...words].filter(word => previous.has(word)).length; return common / Math.max(words.size, previous.size) >= 0.85; });
+    const subjectWords = (s: string) => new Set(normalize(s).filter(word => !/^(did|do|you|your|the|a|an|in|on|to|from|was|were|is|are|have|has|that|this|they|it|or|and|with|of|for|at|now|still)$/u.test(word)));
+    const subject = subjectWords(question);
+    const repeated = input.asked.some((item) => { const previous = subjectWords(item.question); const common = [...subject].filter(word => previous.has(word)).length; return common / Math.max(1, Math.min(subject.size, previous.size)) >= 0.7; });
     if (!repeated && acceptablePhrasing(question) && typeof proposal.uncertainty === "string" && proposal.uncertainty.trim() && typeof proposal.benefit === "string" && proposal.benefit.trim()) return question;
     feedback = "The previous proposal was invalid or repeated. Ask a different single, relevant question; do not assume facts or request secrets.";
     }
