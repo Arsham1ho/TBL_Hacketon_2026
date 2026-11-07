@@ -6,11 +6,12 @@ import { fallbackScreen, stopScreen } from "./fallback";
 import { fastDanger } from "./fast-danger";
 import { safeScreen } from "./output-guard";
 import { readSimulatedSignal } from "../adapters/signals";
+import { handoffPreview } from "../adapters/handoff";
 import type { Case } from "./case";
 import type { ApiResponse, Screen } from "./screens";
 import type { GatedSignal, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; handoffDone: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; handoffDone: boolean; handoffApproved: boolean };
 export type Event =
   | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
@@ -35,7 +36,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
   if (event.kind === "start") {
     const danger = fastDanger(event.input.openingMessage);
     const result = await intake(event.input, danger ? undefined : event.extractor);
-    journey = { item: result.item, asked: 0, secretFound: result.secretsFound.length > 0, sentToLlm: !danger && event.sentToLlm && result.extractedBy === "primary", stopSeen: false, consent: {}, used: [], rescueIndex: 0, handoffDone: false };
+    journey = { item: result.item, asked: 0, secretFound: result.secretsFound.length > 0, sentToLlm: !danger && event.sentToLlm && result.extractedBy === "primary", stopSeen: false, consent: {}, used: [], rescueIndex: 0, handoffDone: false, handoffApproved: false };
     return { journey, response: present(sessionId, journey, danger ? stopScreen(danger, journey.item.language) : undefined) };
   } else {
     if (!current) throw new Error("session_expired");
@@ -67,6 +68,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
     if (event.kind === "handoff") {
       if (active.type !== "handoff") throw new Error("invalid_event_order");
       journey.handoffDone = true;
+      journey.handoffApproved = event.approved;
     }
     if (event.kind === "continue") {
       if (active.type !== "stop") throw new Error("invalid_event_order");
@@ -98,8 +100,8 @@ function present(sessionId: string, journey: Journey, override?: Screen): ApiRes
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: composed.question, why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [] };
   else if (signal) screen = { type: "unlock", signal, what: signal, why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
-  else if (decision.destination && !journey.handoffDone) screen = { type: "handoff", destination: decision.destination, summary, omitted: [screenText[item.language].omitted] };
+  else if (decision.destination && !journey.handoffDone) screen = { type: "handoff", ...handoffPreview(decision.destination, result.confirmedFacts, item.language), summary };
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics, sources: outcome.guidance.map(id => ({ id, title: id })) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination: decision.destination, externalContacts: decision.externalContacts }, summary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination: decision.destination, externalContacts: decision.externalContacts }, summary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }

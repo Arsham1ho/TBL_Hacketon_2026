@@ -6,6 +6,8 @@ import { handleEvent, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
 import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
+import { handoffPreview } from "../../../adapters/handoff";
+import { assess } from "../../../engine/assess";
 
 const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, language: z.union([Language, z.literal("auto")]), message: z.string().trim().min(1).max(10000), incident: z.string().max(10000).optional(), demoSignals: z.array(GatedSignal).max(7).optional(), demoScenario: z.enum(DEMO_SCENARIOS).optional() });
 const Answer = z.strictObject({ kind: z.literal("answer"), sessionId: z.string().uuid(), topic: Topic, answer: z.enum(["yes", "no", "unsure"]) });
@@ -53,4 +55,16 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   }
   return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+}
+
+// Agent View is available only after explicit approval and remains simulated.
+export async function GET(request: Request) {
+  const sessionId = new URL(request.url).searchParams.get("sessionId");
+  if (!sessionId) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+  const journey = getSession(sessionId)?.journey;
+  if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
+  if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403 });
+  const result = assess(journey.item, journey.asked);
+  if (!result.decision.destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
+  return NextResponse.json({ simulated: true, ...handoffPreview(result.decision.destination, result.confirmedFacts, journey.item.language) });
 }

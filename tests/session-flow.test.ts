@@ -35,6 +35,10 @@ describe("session flow", () => {
     expect(safeScreen({ type: "end", message: "This is guaranteed safe" })).toBe(false);
   });
 
+  it("rejects a wrong-language stop screen", () => {
+    expect(safeScreen({ type: "stop", message: "Stop. Don't read out or type any code.", actions: ["End the call now. No bank, authority or operator will ask you to read out a code."] }, "fi")).toBe(false);
+  });
+
   it("does not access an optional signal after refusal", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: { ...input("My number is being transferred to another operator. I did not request it."), consent: { requires: ["subscription.recent_events"], preGranted: [] } }, sentToLlm: false });
     let journey = started.journey!;

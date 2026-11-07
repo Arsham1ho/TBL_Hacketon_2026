@@ -21,6 +21,8 @@ Subsequent events include `sessionId`:
 
 Send only the event that corresponds to the current screen. A Stop screen advances with `continue`; a Flip screen uses its returned `topic`; an Unlock screen uses its returned `signal`; a Rescue screen uses its returned `step.id`. A Handoff screen requires the user's explicit approval or refusal. `end` clears the session.
 
+After an approved handoff, `GET /api/sessions?sessionId=...` returns the simulated Agent View (`destination`, reviewed `summary`, and `omitted`). Before approval it returns `403`. A declined handoff never exposes this view.
+
 The optional `demoScenario` on start can be `flagged_link`, `warned_call`, `sim_change`, `unknown_login`, `device_issue`, or `business_access`. These are synthetic. `demoSignals` can additionally list consent-gated paths from `engine/types.ts`. The current gated provider returns an inconclusive result and never treats a missing warning as proof of safety.
 
 The route returns `400` for malformed input, `404` for an expired session, `409` for an event that does not match the current screen, and `503` if start fails. The Gemini key is read from `.env.local` on the server; without it, the offline extractor runs.
