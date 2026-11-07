@@ -433,7 +433,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "bank_login_exposed",
-    when: (c) => did(c, "entered_login") && (poses(c, "bank") || c.facts.dataExposed.includes("bank_login")),
+    when: (c) => (did(c, "entered_login") && poses(c, "bank")) || c.facts.dataExposed.includes("bank_login"),
     then: (c) => bankIncident("bank_login_exposed", c, ["guidance_bank_verification", "guidance_credential_compromise"], false),
   },
   {
@@ -718,6 +718,21 @@ export const SITUATIONS: Situation[] = [
             ["verify_official_channel", "hang_up_dont_call_back", "dont_share_codes"],
             ["guidance_bank_impostor_call", "guidance_spam_flag_meaning"],
           ),
+  },
+  {
+    id: "police_impostor_call",
+    when: (c) => is(c, "phone_call") && (poses(c, "police") || poses(c, "authority")),
+    then: () =>
+      outcome(
+        "police_impostor_call",
+        "verify_via_official_channel",
+        "threat_in_progress",
+        "high",
+        "today",
+        ["hang_up_dont_call_back", "dont_share_codes", "dont_pay_or_transfer", "report_police"],
+        ["guidance_police_impostor", "guidance_report_to_police"],
+        { externalContacts: ["police"] },
+      ),
   },
   {
     id: "risky_call",

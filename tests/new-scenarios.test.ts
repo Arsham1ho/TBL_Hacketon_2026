@@ -54,4 +54,24 @@ describe("new scenario regressions", () => {
     const result = await check("My ex partner may be monitoring my phone and I feel unsafe.");
     expect(result.decision.destination).toBe("human_advisor");
   });
+
+  it("handles live police impostor call with police external contact", async () => {
+    const result = await check("I'm on a phone call with someone pretending to be a police");
+    expect(result.decision.status).toBe("threat_in_progress");
+    expect(result.decision.externalContacts).toContain("police");
+  });
+
+  it("handles phone hacked as device compromise", async () => {
+    const result = await check("my phone got hacked");
+    expect(result.decision.primaryAction).toBe("isolate_device_and_scan");
+    expect(result.decision.status).toBe("incident_occurred");
+    expect(result.decision.risk).toBe("critical");
+  });
+
+  it("handles bank account leaked with bank contact", async () => {
+    const result = await check("my bank account got leacked");
+    expect(result.decision.primaryAction).toBe("contact_bank_and_block_cards");
+    expect(result.decision.status).toBe("incident_occurred");
+    expect(result.decision.externalContacts).toContain("bank");
+  });
 });

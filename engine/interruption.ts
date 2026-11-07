@@ -43,5 +43,8 @@ export function interruptionFor(facts: Facts): InterruptionKind | null {
   for (const [request, kind] of REQUEST_PRIORITY) {
     if (facts.asksFor.includes(request)) return kind;
   }
+  if (facts.incidentType === "phone_call" && (facts.pretendsToBe === "police" || facts.pretendsToBe === "bank" || facts.pretendsToBe === "authority")) {
+    return "live_request";
+  }
   return null;
 }

@@ -29,15 +29,15 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number (is being|was|has been) (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|to another operator|toiselle operaattorille|annan operatör|(lost|no) (signal|network)|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`)],
   ["unexpected_order_or_bill", re(String.raw`order confirmation|tilausvahvistus|orderbekräftelse|beställningsbekräftelse`)],
   ["approval_prompts", re(String.raw`approval (request|prompt)|login approval|approve|hyväksymispyyn|hyväksy(n|t)|kirjautumispyyn|godkänn|inloggningsbegär`)],
-  ["unknown_login", re(String.raw`(trying|tries|tried) to (log|sign) in|yrittä\w* kirjautu|försök\w* logga in|logged in (to .{0,20})?from|loggat in .{0,30}från|took over|locked out|hacked|kaappasi|kaapattu|hakkeroi|tog över|utelåst|hackad|hackat|kirjauduttu|kirjauduttiin|kirjautuminen .{0,20}(maasta|espanja|ulkomail)|sisäänkirjautum|inloggning från|inloggad från`)],
-  ["data_breach_notice", re(String.raw`breach|data leak|leaked|tietovuo|tietomur|vuoti|vuotanut|vuotaneet|dataintrång|dataläcka|läckt`)],
+  ["unwanted_app_or_profile", re(String.raw`\b(i installed|asensin|installerade)\b|(configuration|security|root) (profile|certificate)|asetusprofiili|varmenne|\b(phone|device|mobile|puhelin|laite|mobil|telefon).{0,25}(hacked|hakkeroi|hackad|compromised|saastunut|smittad)\b|\b(hacked|hakkeroi|hackad).{0,25}(phone|device|mobile|puhelin|laite|mobil|telefon)\b|\b(malware|spyware|trojan|virus|haittaohjelma|vakoiluohjelma|skadlig kod)\b`)],
+  ["unknown_login", re(String.raw`(trying|tries|tried) to (log|sign) in|yrittä\w* kirjautu|försök\w* logga in|logged in (to .{0,20})?from|loggat in .{0,30}från|took over|locked out|kaappasi|kaapattu|tog över|utelåst|kirjauduttu|kirjauduttiin|kirjautuminen .{0,20}(maasta|espanja|ulkomail)|sisäänkirjautum|inloggning från|inloggad från|\b(account|tili|konto).{0,25}(hacked|hakkeroi|hackad)\b|\b(hacked|hakkeroi|hackad).{0,25}(account|tili|konto)\b|\b(hacked|hakkeroi|hackad)\b`)],
+  ["data_breach_notice", re(String.raw`breach|data leak|leaked|leacked|tietovuo|tietomur|vuoti|vuotanut|vuotaneet|dataintrång|dataläcka|läckt`)],
   ["unrequested_reset", re(String.raw`password reset|reset (email|link)|salasanan (nollaus|vaihto|palautus)|nollauspyyn|återställ.{0,12}lösenord|lösenordsåterställ`)],
   ["router_or_network", re(String.raw`router|reititin|reitittim|modeemi`)],
   ["payment_detail_change", re(String.raw`(bank account|account number|tilinumero|pankkitili|kontonummer|bankkonto).{0,60}(chang|updat|new|muuttu|paivitt|uusi|uuteen|uudelle|andr|uppdater|nytt)|(new|uusi|uudelle|nytt|changed).{0,30}(bank account|account number|tilinumero|bankkonto|kontonummer)|uudelle tilille|new account`)],
   ["payment_request", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd:?n?|managing director)\b`)],
   ["ransomware", re(String.raw`(screen|näyttö|skärm).{0,30}(demand|vaati|kräv)`)],
   ["remote_session", re(String.raw`remote (support|access|session|program)|etäy|etätuki|etäyhteys|fjärr`)],
-  ["unwanted_app_or_profile", re(String.raw`\b(i installed|asensin|installerade)\b|(configuration|security|root) (profile|certificate)|asetusprofiili|varmenne`)],
   ["missed_call", re(String.raw`missed call|one ring|rang once|rang only once|puuttuva puhelu|soi (vain )?kerran|missat samtal|ringde en gång`)],
   ["phone_call", re(String.raw`(on the|in the) (line|phone)|linjalla|puhelimessa|i luren|i telefon|\b(called|call|caller|phone call|rang|ringde|samtal|soitti|soittaja|puhelu)\b`)],
   ["link_or_site", re(String.raw`\b(clicked|opened the link|avasin linkin|klikkasin|klickade|öppnade länken)\b`)],
@@ -109,7 +109,7 @@ const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|
 const EMAIL_ONLY = re(String.raw`only my email|only (an |your )?email|(?<!, )names and email|no passwords|vain sähköposti|ei salasanoja|(?<!, )nimet ja sähköposti|endast e-post|bara (min )?e-post|inga lösenord`);
 const NO_PASSWORD = re(String.raw`no passwords|did not include passwords|ei salasanoja|salasanoja (tai .{0,30})?ei|salasanat eivät|inga lösenord|lösenord (har )?inte`);
 const PASSWORD_LEAK = re(String.raw`passwords?|salasan|lösenord`);
-const BANK_LOGIN = re(String.raw`bank credentials|banking details|online bank|nätbank|verkkopankki|pankkitunnu|internetbank|bank-?id`);
+const BANK_LOGIN = re(String.raw`bank credentials|banking details|online bank|nätbank|verkkopankki|pankkitunnu|internetbank|bank-?id|bank account|pankkitili|bankkonto`);
 const REUSED = re(String.raw`same password|samaa salasanaa|samma lösenord`);
 const SERVICE_LOST = re(String.raw`lost signal|no signal|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`);
 const STRANGER = re(String.raw`unknown number|someone called|tuntemat|joku soitti|okänt nummer|någon ringde`);
@@ -207,10 +207,13 @@ export function offlineExtract(input: ExtractionInput): Facts {
     quote("dataExposed", leaked);
   }
   const bankLogin = first(BANK_LOGIN, all);
-  if (bankLogin && did.includes("entered_login")) {
+  if (bankLogin && (did.includes("entered_login") || incidentType === "data_breach_notice" || /leak|leack|vuot|läck/iu.test(all))) {
     dataExposed.push("bank_login");
     quote("dataExposed", bankLogin);
   }
+
+  const medical = first(re(String.raw`\b(doctor|physician|ambulance|hospital|medical emergency|need a doctor|call an ambulance|lääkäri|ambulanssi|sairaala|hätätila|ensiapu|läkare|ambulans|sjukhus)\b`), all);
+  if (medical) quote("personalSafetyRisk", medical);
 
   const stranger = first(STRANGER, all);
   if (stranger) quote("contactStartedBy", stranger);
@@ -236,7 +239,7 @@ export function offlineExtract(input: ExtractionInput): Facts {
     happeningNow: flag(LIVE, userText, "happeningNow"),
     // Pressure comes from whoever contacted the user, not the user's own defensive speed or "today".
     pressureOrSecrecy: flag(PRESSURE, incidentText || (first(DEFENSIVE_IMMEDIATE, userText) ? "" : userText), "pressureOrSecrecy"),
-    personalSafetyRisk: incidentType === "partner_monitoring" ? flag(PARTNER, all, "personalSafetyRisk") : null,
+    personalSafetyRisk: (incidentType === "partner_monitoring" ? flag(PARTNER, all, "personalSafetyRisk") : null) ?? (medical ? true : null),
     asksToTracePerson: flag(TRACE, userText, "asksToTracePerson") === true,
     evidence,
   };

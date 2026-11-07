@@ -22,6 +22,11 @@ describe("Fast Danger Check (fi, en, sv)", () => {
       expect(fastDanger("Min ex-man övervakar min telefon")).toBe("personal_safety");
     });
 
+    it("detects medical emergency as personal safety", () => {
+      expect(fastDanger("I need a doctor")).toBe("personal_safety");
+      expect(fastDanger("Tarvitsen lääkärin heti")).toBe("personal_safety");
+    });
+
     it("ignores ex-colleague", () => {
       expect(fastDanger("My ex-colleague emailed me an invoice")).toBeNull();
     });
@@ -60,6 +65,10 @@ describe("Fast Danger Check (fi, en, sv)", () => {
 
     it("detects live banking password request", () => {
       expect(fastDanger("He is on the line asking for my online banking login password")).toBe("login");
+    });
+
+    it("detects live impostor call", () => {
+      expect(fastDanger("I'm on a phone call with someone pretending to be a police")).toBe("live_request");
     });
   });
 

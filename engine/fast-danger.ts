@@ -10,6 +10,7 @@ const PERSONAL_SAFETY = [
   re(String.raw`\b(ex[- ]?(husband|wife|partner|spouse)|stalker|stalking|tracking my (phone|location)|tracks my phone|watches my phone|installed spyware|monitoring my phone)\b`),
   re(String.raw`\b(ex[- ]?(mieheni|vaimoni|kumppani\w*)|seuranta|seuraa (minua|puhelintani|sijaintiani)|stalkkaa|pelkään että seuraa|vakoiluohjelma|valvoo puhelintani)\b`),
   re(String.raw`\b(ex[- ]?(man|fru|partner)|spårar min telefon|övervakar min telefon|stalkar mig|installerat spionprogram|spårar min position)\b`),
+  re(String.raw`\b(doctor|physician|ambulance|hospital|medical emergency|need a doctor|call an ambulance|lääkär\w*|ambulanssi|sairaala|hätätila|ensiapu|läkare|ambulans|sjukhus)\b`),
 ];
 
 const PERSONAL_EXCLUSIONS = [
@@ -29,7 +30,7 @@ const SELF_INITIATED = [
 ];
 
 const LIVE_INDICATORS = [
-  re(String.raw`\b(now|right now|still on the (line|phone)|calling me (now|right now)|someone is calling|caller (right now )?is|on the phone|on the line|at this moment|currently connected|remote session)\b`),
+  re(String.raw`\b(now|right now|still on the (line|phone)|calling me (now|right now)|someone is calling|caller (right now )?is|on the phone|on the line|on a (phone )?call|at this moment|currently connected|remote session)\b`),
   re(String.raw`\b(puhelimessa|parhaillaan|juuri nyt|linjalla|soittaa parhaillaan|soittaa minulle nyt|puhuu parhaillaan|vielä puhelimessa|yhteys on auki)\b`),
   re(String.raw`\b(i telefonen?|just nu|på tråden|ringer mig nu|pratar parhaillaan|sitter i telefonen nu|fortfarande i telefon|ansluten just nu)\b`),
 ];
@@ -116,6 +117,11 @@ export function fastDanger(text: string): InterruptionKind | null {
   // bank_change
   if (re(String.raw`\b(bank (account|details) (has|have) changed|new bank account for (invoice|payment)|tilinumero (on )?muuttunut|uusi tilinumero|bankkontot har ändrats|nytt bankkonto)\b`).test(folded)) {
     return "bank_change";
+  }
+
+  // live impostor / fake authority or bank call
+  if (re(String.raw`\b(pretend\w*|fake|claiming to be|claims to be|valepoliisi|tekeytyy|esittäytyy)\b`).test(folded)) {
+    return "live_request";
   }
 
   return null;

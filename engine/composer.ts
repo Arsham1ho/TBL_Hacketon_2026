@@ -56,6 +56,7 @@ const REASON_OF: Record<string, ReasonKey> = {
   payment_detail_change: "payment_pressure",
   bank_code_given: "money_or_card",
   bank_call_refused: "call_scam",
+  police_impostor_call: "call_scam",
   call_ended: "call_ended",
   left_alone: "left_alone",
   risky_call: "call_scam",
