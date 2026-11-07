@@ -169,6 +169,17 @@ describe("off-topic requests", () => {
 });
 
 import { acceptablePhrasing } from "../adapters/llm";
+
+describe("decision question meaning", () => {
+  it("does not confuse a request for a code with actually sharing it", () => {
+    expect(acceptablePhrasing("Did the caller ask you to share your code?", "code_shared")).toBe(false);
+    expect(acceptablePhrasing("Did you share the code with the caller?", "code_shared")).toBe(true);
+  });
+  it("does not confuse a request for card details with entering them", () => {
+    expect(acceptablePhrasing("Did the page ask for your card details?", "card_details_entered")).toBe(false);
+    expect(acceptablePhrasing("Did you enter your card details on the page?", "card_details_entered")).toBe(true);
+  });
+});
 describe("AI-worded questions", () => {
   it("accepts a fitted question that keeps its subject", () => {
     expect(acceptablePhrasing("Did you tell the caller your bank ID code?", "code_shared")).toBe(true);

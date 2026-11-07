@@ -163,14 +163,18 @@ export function offlineExtract(input: ExtractionInput): Facts {
     return true;
   };
 
-  const did = collect(DID, userText, "userAlreadyDid").filter((action) => {
-    const match = DID.find(([value]) => value === action)![1].exec(userText);
-    return match !== null && !isDenied(userText, match, language) && !NEGATED_OBJECT.test(match[0]);
-  });
+  const did: Facts["userAlreadyDid"] = [];
+  for (const [action, pattern] of DID) {
+    const match = pattern.exec(userText);
+    if (match && !isDenied(userText, match, language) && !NEGATED_OBJECT.test(match[0])) {
+      did.push(action);
+      quote(`userAlreadyDid:${action}`, match[0]);
+    }
+  }
   const nothing = first(NOTHING_DONE, userText);
   if (nothing && did.length === 0) {
     did.push("nothing");
-    quote("userAlreadyDid", nothing);
+    quote("userAlreadyDid:nothing", nothing);
   }
 
   const selfNo = first(SELF_NO, userText);

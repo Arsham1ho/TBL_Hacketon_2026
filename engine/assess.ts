@@ -8,7 +8,7 @@ import { offlineExtract, type ExtractionInput } from "./offline-extractor";
 import { decide, flipLimit, isTriage, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
 import { UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
-import { mergeFacts, validateFacts } from "./fact-validator";
+import { conflictingTopics, mergeFacts, validateFacts } from "./fact-validator";
 import { GatedSignal, type Audience, type ConfirmedFact, type Decision, type Language, type SecretKind, type Topic } from "./types";
 
 // May return anything: the Fact Validator decides what survives.
@@ -55,6 +55,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       audience: input.audience,
       language: input.language,
       facts,
+      conflicts: primary ? conflictingTopics(primary, backstop) : [],
       answers: {},
       unsure: [],
       signals: { ...input.signals, hasLink },
@@ -123,7 +124,7 @@ export function assess(item: Case, asked = 0): Assessment {
     interruption: interruptionFor(item.facts) ?? (item.answers.time_of_event === "yes" ? "live_request" : null),
     confidence: caseConfidence(item, unknownTopics.length, outcome.situation === "unclear"),
     confirmedFacts: confirmedFacts(item),
-    composed: compose(outcome, item.language, open, pending?.topic ?? null, item.audience),
+    composed: compose(outcome, item.language, open, pending?.topic ?? null, item.audience, item),
   };
 }
 

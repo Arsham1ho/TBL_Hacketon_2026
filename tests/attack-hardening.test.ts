@@ -14,6 +14,18 @@ const input = (message: string, incidentContent: string | null = null): CaseInpu
 });
 
 describe("end-to-end attack and failure hardening", () => {
+  it("shows an urgent stop before invoking the extractor, then reads the report after continuing", async () => {
+    let calls = 0;
+    const extractor: Extractor = () => { calls++; return { ...blankFacts }; };
+    const start = await handleEvent("test", null, { kind: "start", input: input("The caller is on the line asking for my code now."), extractor, sentToLlm: true });
+    expect(start.response.screen.type).toBe("stop");
+    expect(calls).toBe(0);
+    const next = await handleEvent("test", start.journey, { kind: "continue", extractor, sentToLlm: true });
+    expect(calls).toBe(1);
+    expect(next.response.dataReceipt.sentToLlm).toBe(true);
+    expect(next.journey?.item.facts.asksFor).toContain("code");
+  });
+
   it("treats prompt injection as evidence and keeps the safe action", async () => {
     const flow = await handleEvent("test", null, {
       kind: "start",

@@ -26,6 +26,8 @@ export type Case = {
   mentions?: Mention[];
   // Triage questions in the order the LLM found most relevant. Order only, never an answer.
   triagePriority?: Topic[];
+  // Extractors supplied opposing values; answers resolve these topics.
+  conflicts?: Topic[];
 };
 
 const FROM_ACTIONS: Partial<Record<Topic, Facts["userAlreadyDid"][number]>> = {
@@ -42,6 +44,7 @@ const FROM_ACTIONS: Partial<Record<Topic, Facts["userAlreadyDid"][number]>> = {
 export function topicValue(item: Case, topic: Topic): Answer | null {
   const answered = item.answers[topic];
   if (answered) return answered;
+  if (item.conflicts?.includes(topic)) return null;
 
   const { facts } = item;
   const action = FROM_ACTIONS[topic];
