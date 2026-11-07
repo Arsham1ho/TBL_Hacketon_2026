@@ -1,9 +1,12 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { ApiRequest, ApiResponse, DataReceipt, Screen, SupportRoute } from "@/engine/screens";
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
+import type { HistoryItem, Recap } from "@/lib/history";
+import { parseLink, type EvidenceField, type LinkCheck } from "@/engine/link-check";
+import { maskSecrets } from "@/engine/input-guard";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { ArrowUpRight, AtSign, Mail, MessageSquareText, BadgeCheck, BookOpen, ChevronRight, Link2, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
@@ -19,16 +22,16 @@ type Actions = {
   t: Translate;
   business: boolean;
   // Records the exchange in the chat, then sends the request.
-  reply: (recap: string, label: string, request: ApiRequest) => void;
-  handoff: (recap: string, label: string, approved: boolean) => void;
+  reply: (recap: Recap, label: string, request: ApiRequest) => void;
+  handoff: (recap: Recap, label: string, approved: boolean) => void;
   restart: () => void;
   // Set once the user confirms a threat has stopped.
   closed: boolean;
-  close: (recap: string, label: string) => void;
+  close: (recap: Recap, label: string) => void;
   // The result is revealed card by card.
   stage: number;
   // Records the card and the user's choice as chat lines, then shows the next card.
-  advance: (recap: string, label: string) => void;
+  advance: (recap: Recap, label: string) => void;
   // Action steps the user confirmed with Done, shown under "What has been done".
   confirmed: string[];
   revealed: ("why" | "details")[];
@@ -36,7 +39,7 @@ type Actions = {
   providers: ProviderChoice;
   choose: (kind: ProviderKind, id: string) => void;
   // Ends the session from the last result card. Without it, Finish starts over.
-  finish?: (recap: string, label: string) => void;
+  finish?: (recap: Recap, label: string) => void;
   // True once the user finished the chat, so the end screen says so.
   ended?: boolean;
   // Opens the full decision report, when one was made for this chat.
@@ -441,6 +444,253 @@ function HandoffCard({ screen, state, t }: { screen: Extract<Screen, { type: "ha
   );
 }
 
+// Each verdict's accent colour and icon, used only for accents on a white card like the others.
+// The verdict is always written out too, so colour is never the only cue.
+const LINK_TONE = {
+  safe: { badge: "bg-success text-background", soft: "bg-success-soft text-success", bar: "bg-success", border: "border-success/40", Icon: ShieldCheck },
+  risky: { badge: "bg-warning text-background", soft: "bg-warning-soft text-warning", bar: "bg-warning", border: "border-warning/40", Icon: TriangleAlert },
+  avoid: { badge: "bg-destructive text-alert-foreground", soft: "bg-danger-soft text-destructive", bar: "bg-destructive", border: "border-destructive/50", Icon: Ban },
+};
+const LINK_LEVELS = ["safe", "risky", "avoid"] as const;
+const LINK_LEVEL_TEXT = { safe: "linkVerdictSafe", risky: "linkVerdictRisky", avoid: "linkVerdictAvoid" } as const;
+
+// The result of checking a received link, laid out like the incident summary: a header with the
+// verdict, a three-step scale, the address, why, and what to do.
+export function LinkVerdictCard({ check, t }: { check: LinkCheck; t: Translate }) {
+  const tone = LINK_TONE[check.verdict];
+  const path = check.display.replace(/^https?:\/\/[^/]+/, "");
+  const level = LINK_LEVELS.indexOf(check.verdict);
+  const sender = check.subject === "sender";
+  const AddressIcon = sender ? (check.display.includes("@") ? AtSign : Phone) : Link2;
+  return (
+    <section className={cn("grid gap-4 rounded-2xl border bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]", tone.border)}>
+      <div className="flex items-center gap-3">
+        <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-full", tone.badge)} aria-hidden>
+          <tone.Icon className="size-6" />
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5">
+          <PartLabel>{t(sender ? "senderCheckLabel" : "linkCheckLabel")}</PartLabel>
+          <h2 className="text-base leading-snug font-semibold">{check.title}</h2>
+        </div>
+      </div>
+
+      {/* Looks safe · Risky · Avoid, with this link's verdict lit, like the risk gauge. */}
+      <div className="grid gap-1.5" role="img" aria-label={`${t(sender ? "senderCheckLabel" : "linkCheckLabel")}: ${t(LINK_LEVEL_TEXT[check.verdict])}`}>
+        <div className="grid grid-cols-3 gap-1.5" aria-hidden>
+          {LINK_LEVELS.map((name, index) => (
+            <span key={name} className={cn("h-2 rounded-full transition-colors", index === level ? LINK_TONE[name].bar : index < level ? cn(LINK_TONE[name].bar, "opacity-30") : "bg-border-strong opacity-60")} />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 text-xs" aria-hidden>
+          {LINK_LEVELS.map((name, index) => (
+            <span key={name} className={cn("text-center", index === level ? "font-bold text-foreground" : "text-muted-foreground")}>{t(LINK_LEVEL_TEXT[name])}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-1 rounded-xl bg-accent px-3 py-2.5">
+        <span className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <AddressIcon className="size-3.5" aria-hidden />
+          {t(sender ? "senderLabel" : "linkAddress")}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate font-mono text-sm">
+            <span className="font-semibold">{sender ? check.display : check.host}</span>
+            {!sender && <span className="text-muted-foreground">{path}</span>}
+          </span>
+          {check.brand && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-card px-2.5 py-0.5 text-xs font-semibold">
+              <Tag className="size-3" aria-hidden />
+              {check.brand}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {check.reasons.length > 0 && (
+        <div className="grid gap-2">
+          <PartLabel>{t("linkWhy")}</PartLabel>
+          <ul className="grid gap-2">
+            {check.reasons.map((reason, index) => (
+              <li key={reason} className="flex items-center gap-3 rounded-xl bg-accent p-3 motion-safe:animate-[fade-up_.4s_ease-out_both]" style={{ animationDelay: `${120 + index * 100}ms` }}>
+                <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", tone.soft)} aria-hidden>
+                  {check.verdict === "safe" ? <CircleCheck className="size-5" /> : <TriangleAlert className="size-5" />}
+                </span>
+                <span className="text-sm leading-snug font-medium">{reason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex items-start gap-3 rounded-xl border border-border-strong p-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground" aria-hidden>
+          <Target className="size-5" />
+        </span>
+        <div className="grid gap-0.5">
+          <PartLabel>{t("linkWhatToDo")}</PartLabel>
+          <p className="text-[15px] leading-snug font-semibold">{check.advice}</p>
+        </div>
+      </div>
+
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <ShieldCheck className="size-3.5 shrink-0" aria-hidden />
+        {check.checkedBy}
+      </p>
+    </section>
+  );
+}
+
+const CHANNEL_ICON = { email: Mail, sms: Smartphone, call: Phone, web: Link2 };
+const FIELD_ICON = { link: Link2, content: MessageSquareText, sender: AtSign };
+type EvidenceValues = Partial<Record<EvidenceField["id"], string>>;
+
+// The form for what the user received: only the fields that fit the situation, all optional.
+// Nothing here is opened or run; the text is read as evidence.
+function EvidenceForm({ screen, t, onSubmit }: { screen: Extract<Screen, { type: "evidence" }>; t: Translate; onSubmit: (values: EvidenceValues) => void }) {
+  const [values, setValues] = useState<EvidenceValues>({});
+  const filled = Object.values(values).some((value) => value?.trim());
+  const ChannelIcon = CHANNEL_ICON[screen.channel];
+  const submit = () => filled && onSubmit(values);
+  const inputClass = "w-full rounded-xl border border-border-strong bg-background px-3.5 py-2.5 text-[15px] placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none";
+  return (
+    <section className={cn("grid gap-4 rounded-2xl border bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]", screen.retry ? "border-warning/50" : "border-border-strong")}>
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-foreground" aria-hidden>
+          <ChannelIcon className="size-6" />
+        </span>
+        <h1 tabIndex={-1} className="text-base leading-snug font-semibold focus:outline-none">{screen.message}</h1>
+      </div>
+      <p className={cn("flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm leading-snug", screen.retry ? "bg-warning-soft font-medium" : "bg-accent text-muted-foreground")}>
+        {screen.retry ? <TriangleAlert className="mt-px size-4 shrink-0 text-warning" aria-hidden /> : <ShieldCheck className="mt-px size-4 shrink-0" aria-hidden />}
+        {screen.hint}
+      </p>
+      <form
+        className="grid gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        {screen.fields.map((field) => {
+          const Icon = field.id === "sender" && screen.channel !== "email" ? Phone : FIELD_ICON[field.id];
+          const id = `evidence-${field.id}`;
+          const common = {
+            id,
+            value: values[field.id] ?? "",
+            placeholder: field.placeholder,
+            onChange: (event: { target: { value: string } }) => setValues((previous) => ({ ...previous, [field.id]: event.target.value })),
+          };
+          return (
+            <div key={field.id} className="grid gap-1.5">
+              <label htmlFor={id} className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                <Icon className="size-3.5" aria-hidden />
+                {field.label}
+              </label>
+              {field.multiline ? (
+                <textarea {...common} rows={4} className={cn(inputClass, "min-h-24 resize-y leading-relaxed")} />
+              ) : (
+                <input
+                  {...common}
+                  type={field.id === "link" ? "url" : "text"}
+                  inputMode={field.id === "link" ? "url" : undefined}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className={cn(inputClass, field.id === "link" && "font-mono text-sm", field.id === "link" && screen.retry && "border-warning")}
+                />
+              )}
+            </div>
+          );
+        })}
+        <button
+          type="submit"
+          disabled={!filled}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-base font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          <ShieldCheck className="size-4" aria-hidden />
+          {t("checkEvidence")}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+// What the user sent, as one short chat line: the link, the sender, and the start of the message.
+function evidenceSummary(values: EvidenceValues): string {
+  const link = values.link?.trim();
+  const sender = values.sender?.trim();
+  const content = values.content?.trim();
+  return [
+    link && (parseLink(link)?.display ?? link),
+    sender,
+    content && `“${maskSecrets(content).text.slice(0, 90)}${content.length > 90 ? "…" : ""}”`,
+  ].filter(Boolean).join(" · ");
+}
+
+// An earlier SafeStep step, as the chat and History keep it. Questions read as questions,
+// action steps as actions, and cards keep their lines: folded in the live chat to keep it
+// short, open in History so the whole conversation can be read back.
+export function PastItem({ item, open = false, t }: { item: HistoryItem; open?: boolean; t: Translate }) {
+  if (item.link) return <LinkVerdictCard check={item.link} t={t} />;
+  if (item.kind === "question") {
+    return (
+      <div className="flex max-w-[92%] items-start gap-2.5">
+        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-foreground" aria-hidden>
+          <MessageCircleQuestionMark className="size-4" />
+        </span>
+        <div className="grid gap-1">
+          <p className="text-[15px] leading-snug font-medium">{item.text}</p>
+          {item.detail?.map((line) => (
+            <p key={line} className="text-sm leading-snug text-muted-foreground">{line}</p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (item.kind === "step") {
+    return (
+      <p className="flex max-w-[92%] items-start gap-2.5 text-[15px] leading-snug font-medium">
+        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-accent" aria-hidden>
+          <Target className="size-4" />
+        </span>
+        <span className="pt-0.5">{item.text}</span>
+      </p>
+    );
+  }
+  if (item.kind === "card" && item.detail?.length) {
+    const lines = (
+      <ul className="grid gap-1.5 pt-1">
+        {item.detail.map((line) => (
+          <li key={line} className={cn("flex items-start gap-2 text-sm leading-snug", line.startsWith("– ") ? "pl-4 text-muted-foreground" : "")}>
+            {!line.startsWith("– ") && <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-foreground/60" aria-hidden />}
+            <span>{line.replace(/^– /, "")}</span>
+          </li>
+        ))}
+      </ul>
+    );
+    return open ? (
+      <section className="grid max-w-[92%] gap-1 rounded-2xl border border-border-strong bg-card p-3.5">
+        <h3 className="text-sm font-semibold">{item.text}</h3>
+        {lines}
+      </section>
+    ) : (
+      <details className="group max-w-[92%] rounded-2xl border border-border bg-card px-3.5 py-2.5 text-sm">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-muted-foreground marker:hidden group-open:text-foreground">
+          <ChevronRight className="size-4 shrink-0 transition-transform group-open:rotate-90" aria-hidden />
+          {item.text}
+        </summary>
+        {lines}
+      </details>
+    );
+  }
+  return (
+    <p className="flex max-w-[92%] items-start gap-2.5 text-sm text-muted-foreground">
+      <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
+      {item.text}
+    </p>
+  );
+}
+
 // A clear line in the chat where the conversation ended.
 const EndedDivider = ({ text }: { text: string }) => (
   <div className="flex items-center gap-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase" role="separator">
@@ -704,14 +954,15 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
   // A person is offered only when the risk is critical, or the rules found the case needs
   // one. Lower risks are handled in the chat. Fallback and failed steps offer one anyway.
   const needsPerson = state.risk === "critical" || Boolean(state.destination);
-  const talk = (recap: string): Reply => ({ label: t("talk"), icon: <Headset className="size-4" aria-hidden />, run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
-  const contact = (recap: string, route: SupportRoute, label = t("contactRoute").replace("{name}", t(route))): Reply => ({
+  const talk = (recap: Recap): Reply => ({ label: t("talk"), icon: <Headset className="size-4" aria-hidden />, run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
+  const contact = (recap: Recap, route: SupportRoute, label = t("contactRoute").replace("{name}", t(route))): Reply => ({
     label,
     run: () => reply(recap, label, { kind: "talk_to_person", route }),
   });
 
   switch (screen.type) {
     case "stop": {
+      const stopRecap: Recap = { text: screen.message, kind: "card", detail: screen.actions };
       const label = t(business ? "stoppedBusiness" : "stopped");
       return {
         recap: screen.message,
@@ -727,13 +978,13 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
             ))}
           </div>
         ),
-        replies: [{ label, primary: true, run: () => reply(screen.message, label, { kind: "continue" }) }, ...(needsPerson ? [talk(screen.message)] : [])],
+        replies: [{ label, primary: true, run: () => reply(stopRecap, label, { kind: "continue" }) }, ...(needsPerson ? [talk(stopRecap)] : [])],
       };
     }
     case "flip": {
       const ask = (answer: "yes" | "no" | "unsure", label: string): Reply => ({
         label,
-        run: () => reply(screen.question, label, { kind: "answer", topic: screen.topic, answer }),
+        run: () => reply({ text: screen.question, kind: "question", detail: [...(screen.context ?? []), screen.why] }, label, { kind: "answer", topic: screen.topic, answer }),
       });
       return {
         recap: screen.question,
@@ -744,7 +995,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
     case "ask": {
       const ask = (answer: "yes" | "no" | "unsure", label: string): Reply => ({
         label,
-        run: () => reply(screen.question, label, { kind: "ai_answer", id: screen.id, answer }),
+        run: () => reply({ text: screen.question, kind: "question" }, label, { kind: "ai_answer", id: screen.id, answer }),
       });
       return {
         recap: screen.question,
@@ -763,16 +1014,31 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         ),
         replies: screen.reason === "off_topic"
           ? [
-              { label: t("yes"), run: () => reply(screen.message, t("yes"), { kind: "add_details", text: t("yes") }) },
-              { label: t("no"), run: () => reply(screen.message, t("no"), { kind: "add_details", text: t("no") }) },
+              { label: t("yes"), run: () => reply({ text: screen.message, kind: "question", detail: [screen.hint] }, t("yes"), { kind: "add_details", text: t("yes") }) },
+              { label: t("no"), run: () => reply({ text: screen.message, kind: "question", detail: [screen.hint] }, t("no"), { kind: "add_details", text: t("no") }) },
             ]
           : [],
       };
+    case "evidence": {
+      const recap: Recap = { text: screen.message, kind: "question", detail: [screen.fields.map((field) => field.label).join(" · ")] };
+      return {
+        recap: screen.message,
+        body: (
+          <EvidenceForm
+            key={`${screen.channel}-${screen.retry}`}
+            screen={screen}
+            t={t}
+            onSubmit={(values) => reply(recap, evidenceSummary(values), { kind: "evidence", link: values.link?.trim() || undefined, sender: values.sender?.trim() || undefined, content: values.content?.trim() || undefined })}
+          />
+        ),
+        replies: [{ label: t("skipEvidence"), run: () => reply(recap, t("skipEvidence"), { kind: "skip_evidence" }), icon: <SkipForward className="size-4" aria-hidden /> }],
+      };
+    }
     case "unlock": {
       const choose = (granted: boolean, label: string): Reply => ({
         label,
         primary: granted,
-        run: () => reply(`${t("unlockTitle")} ${screen.what}`, label, { kind: "consent", signal: screen.signal, granted }),
+        run: () => reply({ text: `${t("unlockTitle")} ${screen.what}`, kind: "question", detail: [screen.why, screen.limit, screen.ifRefused] }, label, { kind: "consent", signal: screen.signal, granted }),
       });
       return {
         recap: screen.what,
@@ -793,7 +1059,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const step = (outcome: "done" | "not_possible", label: string, primary: boolean): Reply => ({
         label,
         primary,
-        run: () => reply(screen.step.title, label, { kind: "rescue", stepId: screen.step.id, outcome }),
+        run: () => reply({ text: screen.step.title, kind: "step" }, label, { kind: "rescue", stepId: screen.step.id, outcome }),
       });
       return {
         recap: screen.step.title,
@@ -811,8 +1077,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         recap,
         body: <HandoffCard screen={screen} state={state} t={t} />,
         replies: [
-          { label: t("approve"), primary: true, run: () => handoff(recap, t("approve"), true) },
-          { label: t("dontShare"), run: () => handoff(recap, t("dontShare"), false) },
+          { label: t("approve"), primary: true, run: () => handoff({ text: recap, kind: "card", detail: screen.details ? [...screen.details.facts, screen.details.reason] : screen.summary }, t("approve"), true) },
+          { label: t("dontShare"), run: () => handoff({ text: recap, kind: "card", detail: screen.details ? [...screen.details.facts, screen.details.reason] : screen.summary }, t("dontShare"), false) },
         ],
       };
     }
@@ -838,10 +1104,12 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       // The result is shown one card at a time, so each part gets the user's attention.
       // "info" cards are confirmed with "I understand". Each action step is its own card that
       // waits for Done, I don't want to, or Can't do this.
-      const cards: { title: string; recap: string; node: ReactNode; action?: boolean }[] = [];
+      // detail: the card's lines as text, kept in the chat history after the card is gone.
+      const cards: { title: string; recap: string; node: ReactNode; action?: boolean; detail?: string[] }[] = [];
       cards.push({
         title: t("incidentSummary"),
         recap: `${t("incidentSummary")}: ${screen.statusLabel}${type ? ` · ${type.title}` : ""}`,
+        detail: [`${t("risk")}: ${t(RISK_TEXT[state.risk])} · ${t("urgency")}: ${t(URGENCY_TEXT[state.urgency])}`, story.attempted, ...response.summary],
         node: (
           <section aria-labelledby="summary-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.4s_ease-out]">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -876,6 +1144,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         cards.push({
           title: t("eachCase"),
           recap: t("eachCase"),
+          detail: screen.branches.flatMap((branch) => [branch.condition, ...branch.steps.map((step) => `– ${step}`)]),
           node: (
             <Panel tone="warning" icon={<TriangleAlert className="size-4" aria-hidden />} title={t("eachCase")}>
               {screen.branches.map((branch) => (
@@ -904,15 +1173,20 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         });
       }
       if (done.length > 0) {
-        cards.push({ title: t("storyDone"), recap: t("storyDone"), node: <DoneCard title={t("storyDone")} items={done} /> });
+        cards.push({ title: t("storyDone"), recap: t("storyDone"), detail: done, node: <DoneCard title={t("storyDone")} items={done} /> });
       }
-      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), node: <PreventCard title={t("storyPrevent")} tips={story.prevent} /> });
+      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), detail: story.prevent, node: <PreventCard title={t("storyPrevent")} tips={story.prevent} /> });
       if (needsBank || needsOperator || needsPolice) {
         const bank = providerById("bank", providers.bank);
         const operator = providerById("operator", providers.operator);
         cards.push({
           title: t("contactTitle"),
           recap: t("contactTitle"),
+          detail: [
+            ...(needsBank ? [`${bank?.name ?? t("bank")} · ${t("cardBlocking")} ${CARD_BLOCKING.display}`] : []),
+            ...(needsOperator ? [operator?.name ?? t("operator_support_agent")] : []),
+            ...(needsPolice ? [`${t("police")} · ${t("policeReport")}`] : []),
+          ],
           node: (
             <Panel tone="calm" icon={<Phone className="size-4" aria-hidden />} title={t("contactTitle")}>
               {needsBank && (
@@ -937,7 +1211,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           ),
         });
       }
-      cards.push({ title: t("wrapTitle"), recap: t("wrapTitle"), node: <WrapCard t={t} person={needsPerson} /> });
+      const wrapDetail = [t("wrapIntro"), t("wrapChanged"), t("wrapQuestion"), t("wrapNew"), ...(needsPerson ? [t("wrapPerson")] : [])];
+      cards.push({ title: t("wrapTitle"), recap: t("wrapTitle"), detail: wrapDetail, node: <WrapCard t={t} person={needsPerson} /> });
 
       const shown = Math.min(stage, cards.length - 1);
       const extras = [
@@ -983,11 +1258,13 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       let replies: Reply[];
       const current = cards[shown]!;
       const atContact = current.title === t("contactTitle");
+      // The card as the chat history keeps it: an action step, or a card with its lines.
+      const cardRecap: Recap = { text: current.recap, kind: current.action ? "step" : "card", detail: current.detail };
       if (current.action) {
         replies = [
-          { label: t("done"), primary: true, run: () => advance(current.recap, t("done")), icon: <Check className="size-4" aria-hidden /> },
-          { label: t("skipStep"), run: () => advance(current.recap, t("skipStep")), icon: <SkipForward className="size-4" aria-hidden /> },
-          { label: t("notPossible"), run: () => advance(current.recap, t("notPossible")), icon: <Ban className="size-4" aria-hidden /> },
+          { label: t("done"), primary: true, run: () => advance(cardRecap, t("done")), icon: <Check className="size-4" aria-hidden /> },
+          { label: t("skipStep"), run: () => advance(cardRecap, t("skipStep")), icon: <SkipForward className="size-4" aria-hidden /> },
+          { label: t("notPossible"), run: () => advance(cardRecap, t("notPossible")), icon: <Ban className="size-4" aria-hidden /> },
           ...(needsPerson ? [talk(current.recap)] : []),
         ];
       } else if (atContact && needsBank && !providers.bank) {
@@ -995,12 +1272,12 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       } else if (atContact && needsOperator && !providers.operator) {
         replies = [...OPERATORS.map((operator) => ({ label: operator.name, icon: <ProviderLogo src={operator.logo} small />, run: () => choose("operator", operator.id) })), { label: t("otherProvider"), run: () => choose("operator", "other") }];
       } else if (shown < cards.length - 1) {
-        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
+        replies = [{ label: t("understand"), primary: true, run: () => advance(cardRecap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
       } else {
         const stillLive = live && !closed;
         replies = [
           ...(stillLive ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),
-          { label: t("finishChat"), primary: !stillLive, run: () => (finish ? finish(t("wrapTitle"), t("finishChat")) : restart()), icon: <Check className="size-4" aria-hidden /> },
+          { label: t("finishChat"), primary: !stillLive, run: () => (finish ? finish(cardRecap, t("finishChat")) : restart()), icon: <Check className="size-4" aria-hidden /> },
           ...(revealed.includes("why") ? [] : [{ label: t("investigate"), run: () => reveal("why"), icon: <Search className="size-4" aria-hidden /> }]),
           ...(revealed.includes("details") ? [] : [{ label: t("details"), run: () => reveal("details"), icon: <FileText className="size-4" aria-hidden /> }]),
           ...(needsPerson ? [talk(recap)] : []),

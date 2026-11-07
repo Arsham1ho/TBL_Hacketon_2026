@@ -30,7 +30,7 @@ import { nextSample, sampleText } from "@/lib/samples";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
 import { LoginPage } from "./login-page";
-import { AssessmentNote, agentTurn, screenTurn, type Reply } from "./turns";
+import { AssessmentNote, PastItem, agentTurn, screenTurn, type Reply } from "./turns";
 import { guessProvider, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { Btn, SecretNote, StepMark } from "./ui";
 import { UserProfileModal } from "./user-profile-modal";
@@ -38,7 +38,7 @@ import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { ReportView } from "./report-view";
-import { clearHistory, newConversationId, saveConversation, type Conversation, type SavedReport } from "@/lib/history";
+import { clearHistory, newConversationId, recapItem, recapText, saveConversation, type Conversation, type HistoryItem, type Recap, type SavedReport } from "@/lib/history";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -262,7 +262,7 @@ export const RICH_BUSINESS_SCENARIOS: AttackScenario[] = [
 ];
 
 // What has been said so far.
-type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
+type Item = HistoryItem;
 
 const SettingsGroup = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="grid gap-1">
@@ -363,6 +363,8 @@ export function SafeStepApp() {
   const [revealed, setRevealed] = useState<("why" | "details")[]>([]);
   const [providers, setProviders] = useState<ProviderChoice>({});
   const lastStatus = useRef<string | null>(null);
+  // Link and sender checks already shown, so each appears in the chat once.
+  const shownChecks = useRef(new Set<string>());
   const log = useRef<HTMLDivElement>(null);
   const latest = useRef<HTMLDivElement>(null);
   const options = useRef<HTMLDialogElement>(null);
@@ -501,6 +503,13 @@ export function SafeStepApp() {
       setItems((previous) => [...previous, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
     }
     lastStatus.current = status ?? lastStatus.current;
+    // A new link or sender check appears in the chat as its own card, before the next step.
+    const checks = [next.linkCheck, next.senderCheck].filter((check): check is NonNullable<typeof check> => Boolean(check));
+    const fresh = checks.filter((check) => !shownChecks.current.has(`${check.subject}|${check.display}|${check.verdict}`));
+    if (fresh.length > 0) {
+      fresh.forEach((check) => shownChecks.current.add(`${check.subject}|${check.display}|${check.verdict}`));
+      setItems((previous) => [...previous, ...fresh.map((check) => ({ from: "safestep" as const, text: check.title, link: check }))]);
+    }
     setResponse(next);
   }
 
@@ -519,13 +528,13 @@ export function SafeStepApp() {
 
   const record = (...next: Item[]) => setItems((previous) => [...previous, ...next]);
 
-  function reply(recap: string, label: string, request: ApiRequest) {
-    record({ from: "safestep", text: recap }, { from: "user", text: label });
+  function reply(recap: Recap, label: string, request: ApiRequest) {
+    record(recapItem(recap), { from: "user", text: label });
     void send(request);
   }
 
-  async function handoff(recap: string, label: string, approved: boolean) {
-    record({ from: "safestep", text: recap }, { from: "user", text: label });
+  async function handoff(recap: Recap, label: string, approved: boolean) {
+    record(recapItem(recap), { from: "user", text: label });
     const request: ApiRequest = { kind: "handoff", approved };
     setBusy(true);
     setFailed(null);
@@ -543,8 +552,8 @@ export function SafeStepApp() {
 
   // Ends the session on the server and shows the end screen. The chat stays on screen and in
   // History; anything typed after this starts a new chat.
-  async function finish(recap: string, label: string) {
-    record({ from: "safestep", text: recap }, { from: "user", text: label });
+  async function finish(recap: Recap, label: string) {
+    record(recapItem(recap), { from: "user", text: label });
     setBusy(true);
     setFailed(null);
     // The report needs the live session, so it's fetched before the session is cleared.
@@ -606,6 +615,7 @@ export function SafeStepApp() {
     setAgent(null);
     setItems([]);
     lastStatus.current = null;
+    shownChecks.current = new Set();
     setClosed(false);
     setEnded(false);
     setFailed(null);
@@ -857,25 +867,25 @@ export function SafeStepApp() {
     t,
     business: !consumer,
     reply,
-    handoff: (recap: string, label: string, approved: boolean) => void handoff(recap, label, approved),
+    handoff: (recap: Recap, label: string, approved: boolean) => void handoff(recap, label, approved),
     restart: () => void restart(),
     closed,
-    close: (recap: string, label: string) => {
-      record({ from: "safestep", text: recap }, { from: "user", text: label });
+    close: (recap: Recap, label: string) => {
+      record(recapItem(recap), { from: "user", text: label });
       setClosed(true);
     },
     stage,
     confirmed,
-    advance: (recap: string, label: string) => {
-      record({ from: "safestep", text: recap }, { from: "user", text: label });
-      if (label === t("done")) setConfirmed((steps) => [...steps, recap]);
+    advance: (recap: Recap, label: string) => {
+      record(recapItem(recap), { from: "user", text: label });
+      if (label === t("done")) setConfirmed((steps) => [...steps, recapText(recap)]);
       setStage((value) => value + 1);
     },
     revealed,
     reveal: (part: "why" | "details") => setRevealed((value) => [...value, part]),
     providers,
     choose,
-    finish: (recap: string, label: string) => void finish(recap, label),
+    finish: (recap: Recap, label: string) => void finish(recap, label),
     ended,
     openReport: report ? () => setReportOpen(true) : undefined,
   };
@@ -939,11 +949,8 @@ export function SafeStepApp() {
                 {item.text}
               </p>
             ) : (
-              // Earlier SafeStep steps, as a compact timeline.
-              <p key={index} className="flex max-w-[92%] items-start gap-2.5 text-sm text-muted-foreground">
-                <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
-                {item.text}
-              </p>
+              // Earlier SafeStep steps: questions, actions, and cards folded to one line.
+              <PastItem key={index} item={item} t={t} />
             ),
           )}
           {response?.secretWarning && <SecretNote text={response.secretWarning} />}
@@ -1039,7 +1046,7 @@ export function SafeStepApp() {
                 if (!followUp.trim()) return;
                 const text = followUp.trim();
                 setFollowUp("");
-                reply(askScreen.question, maskSecrets(text).text, { kind: "ai_answer", id: askScreen.id, text });
+                reply({ text: askScreen.question, kind: "question" }, maskSecrets(text).text, { kind: "ai_answer", id: askScreen.id, text });
               }}
             />
           </div>
@@ -1114,7 +1121,7 @@ export function SafeStepApp() {
                 const text = followUp.trim();
                 setFollowUp("");
                 // The server reads the whole reply, so details beyond yes or no aren't lost.
-                reply(flipScreen.question, maskSecrets(text).text, {
+                reply({ text: flipScreen.question, kind: "question", detail: [...(flipScreen.context ?? []), flipScreen.why] }, maskSecrets(text).text, {
                   kind: "answer_text",
                   topic: flipScreen.topic,
                   text,

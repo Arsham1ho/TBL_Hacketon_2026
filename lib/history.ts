@@ -1,11 +1,25 @@
 import type { ApiResponse } from "../engine/screens";
 import type { DecisionReport } from "../engine/report";
+import type { LinkCheck } from "../engine/link-check";
 import type { Audience, Language, Risk, Status } from "../engine/types";
 
 // Past chats, kept only in this browser. Nothing here is sent anywhere. Messages are stored
 // exactly as the chat shows them, which already has codes and passwords masked.
 
-export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
+// kind and detail keep what SafeStep showed, not just its title: a question with its context,
+// an action step, or a card with its lines, so History can show the whole conversation.
+export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; kind?: "question" | "step" | "card"; detail?: string[]; link?: LinkCheck };
+
+// What SafeStep said before a reply: plain text, or the text with its kind and lines.
+export type Recap = string | { text: string; kind?: HistoryItem["kind"]; detail?: string[] };
+
+export function recapItem(recap: Recap): HistoryItem {
+  if (typeof recap === "string") return { from: "safestep", text: recap };
+  const detail = recap.detail?.map((line) => line.trim()).filter(Boolean);
+  return { from: "safestep", text: recap.text, ...(recap.kind ? { kind: recap.kind } : {}), ...(detail?.length ? { detail } : {}) };
+}
+
+export const recapText = (recap: Recap) => (typeof recap === "string" ? recap : recap.text);
 
 // The decision report saved with a finished chat, plus the risk after each update in the chat.
 export type SavedReport = DecisionReport & { timeline: Risk[] };

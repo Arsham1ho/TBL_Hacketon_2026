@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { randomUUID } from "node:crypto";
-import { extractFacts, interpretInterviewAnswer, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
+import { extractFacts, interpretInterviewAnswer, llmAvailable, nextQuestion, phraseQuestion, rankQuestions, readLink } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
 import { isTriage, pickFlip } from "../../../engine/question-picker";
 import { UNCLEAR } from "../../../engine/situations";
@@ -29,6 +29,8 @@ const Rescue = z.strictObject({ kind: z.literal("rescue"), sessionId: z.string()
 const Route = z.enum(["bank", "police", "operator_support_agent", "security_specialist", "business_security_support", "human_advisor"]);
 const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.string().uuid(), route: Route.optional() });
 const Handoff = z.strictObject({ kind: z.literal("handoff"), sessionId: z.string().uuid(), approved: z.boolean() });
+const Evidence = z.strictObject({ kind: z.literal("evidence"), sessionId: z.string().uuid(), link: z.string().max(2000).optional(), sender: z.string().max(200).optional(), content: z.string().max(5000).optional() });
+const SkipEvidence = z.strictObject({ kind: z.literal("skip_evidence"), sessionId: z.string().uuid() });
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -39,21 +41,23 @@ export async function POST(request: Request) {
     try {
       const llm = llmAvailable();
       const demo = demoSignalsFor(start.data.demoScenario ?? "none");
-      const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
+      const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, linkReader: llm ? readLink : undefined, askForLink: true, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
       const sessionId = createJourneySession(journey as Journey);
       return NextResponse.json({ ...(await respond(sessionId, journey, response)), sessionId });
     } catch {
       return NextResponse.json({ error: "analysis_failed" }, { status: 503 });
     }
   }
-  const event = z.union([Answer, AnswerText, AddDetails, AiAnswer, Continue, Consent, Rescue, Handoff, Talk]).safeParse(body);
+  const event = z.union([Answer, AnswerText, AddDetails, AiAnswer, Continue, Consent, Rescue, Handoff, Talk, Evidence, SkipEvidence]).safeParse(body);
   if (event.success) {
     const session = getSession(event.data.sessionId);
     if (!session?.journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
     try {
       const { sessionId, ...payload } = event.data;
       const llm = llmAvailable();
-      const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
+      const next = payload.kind === "evidence" ? { ...payload, linkReader: llm ? readLink : undefined, extractor: llm ? extractFacts : undefined, sentToLlm: llm }
+        : payload.kind === "add_details" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm, linkReader: llm ? readLink : undefined }
+        : payload.kind === "answer_text" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
       if (journey && payload.kind === "ai_answer" && llm && (payload.answer === "yes" || payload.answer === "no")) {
         const last = journey.interview?.at(-1);

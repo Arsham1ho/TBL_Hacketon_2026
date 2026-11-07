@@ -1,4 +1,5 @@
 import type { IncidentCategory, IncidentStory } from "./incident-category";
+import type { EvidenceChannel, EvidenceField, LinkCheck } from "./link-check";
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
 
 // The contract between the engine and the UI. The API returns these and the UI only
@@ -26,6 +27,9 @@ export type Screen =
   | { type: "describe"; reason: "greeting" | "off_topic" | "link_context"; message: string; hint: string }
   // A live follow-up question written by the LLM for an unclear report. Answers become facts.
   | { type: "ask"; id: string; question: string }
+  // Asks for what the user received, with fields that fit it: a link, the sender and the message
+  // text, or for a call the number and what was said. All optional. retry: the link couldn't be read.
+  | { type: "evidence"; channel: EvidenceChannel; message: string; hint: string; fields: EvidenceField[]; retry: boolean }
   | { type: "unlock"; signal: GatedSignal; what: string; why: string; limit: string; ifRefused: string }
   | {
       type: "result";
@@ -77,6 +81,10 @@ export type ApiResponse = {
   };
   summary: string[];
   secretWarning: string | null;
+  // The latest check of a link the user received, shown once in the chat when it arrives.
+  linkCheck: LinkCheck | null;
+  // The latest check of who sent the message or made the call.
+  senderCheck: LinkCheck | null;
   notice: string;
   dataReceipt: DataReceipt;
 };
@@ -91,5 +99,7 @@ export type ApiRequest =
   | { kind: "add_details"; text: string }
   | { kind: "ai_answer"; id: string; answer?: "yes" | "no" | "unsure"; text?: string }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
+  | { kind: "evidence"; link?: string; sender?: string; content?: string }
+  | { kind: "skip_evidence" }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
   | { kind: "handoff"; approved: boolean };

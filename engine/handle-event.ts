@@ -20,15 +20,20 @@ import { guardInput } from "./input-guard";
 import type { InterruptionKind } from "./interruption";
 import type { ApiResponse, HandoffDetails, Screen, SupportRoute } from "./screens";
 import { linkContextCopy } from "./link-context";
+import { checkSender, evidenceForm, findUrl, mentionsLink, parseLink, runLinkCheck, verdictSignal, type EvidenceChannel, type LinkCheck, type LinkReader } from "./link-check";
 import { contextualQuestion } from "./contextual-question";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; flipHistory?: { topic: Topic; question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean; linkContextAsked?: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; flipHistory?: { topic: Topic; question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean; linkContextAsked?: boolean; linkCheck?: LinkCheck | null; senderCheck?: LinkCheck | null; evidenceAsked?: boolean; evidenceRetry?: boolean };
 export type Event =
-  | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
+  // askForLink: the app can take what the user received (link, sender, message). Evaluation
+  // harnesses can't, so it's off by default.
+  | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario; linkReader?: LinkReader; askForLink?: boolean }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "answer_text"; topic: Topic; text: string; extractor?: Extractor; sentToLlm?: boolean }
-  | { kind: "add_details"; text: string; extractor?: Extractor; sentToLlm?: boolean }
+  | { kind: "add_details"; text: string; extractor?: Extractor; sentToLlm?: boolean; linkReader?: LinkReader }
+  | { kind: "evidence"; link?: string; sender?: string; content?: string; linkReader?: LinkReader; extractor?: Extractor; sentToLlm?: boolean }
+  | { kind: "skip_evidence" }
   | { kind: "ai_answer"; id: string; answer?: "yes" | "no" | "unsure"; text?: string; extractor?: Extractor; sentToLlm?: boolean }
   | { kind: "continue"; extractor?: Extractor; sentToLlm?: boolean }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
@@ -54,6 +59,10 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
     const result = await intake(event.input, danger ? undefined : event.extractor);
     journey = { item: result.item, asked: 0, secretFound: result.secretsFound.length > 0, sentToLlm: !danger && event.sentToLlm && result.extractedBy === "primary", stopSeen: false, consent: {}, used: [], rescueIndex: 0, rescueOutcomes: {}, handoffDone: false, handoffApproved: false, demoScenario: event.demoScenario ?? "none", fastStop: danger, input: event.input };
     if (!danger) journey.awaitingDetails = needsDetails(event.input.openingMessage, journey.item, Boolean(event.input.incidentContent?.trim()));
+    if (!event.askForLink) journey.evidenceAsked = true;
+    // A link already in the message is checked straight away, so nobody has to paste it twice.
+    const url = danger ? null : findUrl(event.input.openingMessage) ?? findUrl(event.input.incidentContent);
+    if (url) await applyLink(journey, url, event.linkReader);
     return { journey, response: present(sessionId, journey) };
   } else {
     if (!current) throw new Error("session_expired");
@@ -118,6 +127,9 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       journey.phrased = {};
       noteTypedText(journey, event);
       journey.awaitingDetails = journey.fastStop ? undefined : needsDetails(journey.input?.openingMessage ?? event.text, journey.item, Boolean(journey.input?.incidentContent?.trim()));
+      // A link typed into the chat later is checked too.
+      const url = findUrl(event.text);
+      if (url && url !== journey.linkCheck?.display) await applyLink(journey, url, event.linkReader);
       const after = assess(journey.item, journey.asked).decision;
       // New details that change the advice start the guidance again. Answered questions
       // are never asked twice, but a question the new facts raise can now be asked.
@@ -127,6 +139,27 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
         journey.rescueOutcomes = {};
         if (!journey.personRequested) journey.handoffDone = false;
       }
+    }
+    if (event.kind === "evidence") {
+      if (active.type !== "evidence") throw new Error("invalid_event_order");
+      const link = event.link?.trim();
+      const sender = event.sender?.trim();
+      const content = event.content?.trim();
+      // A link that can't be read asks again before anything else is used.
+      if (link && !parseLink(link)) journey.evidenceRetry = true;
+      else {
+        if (content) await readReceived(journey, content, event.extractor, event.sentToLlm);
+        const url = link || findUrl(content);
+        if (url) await applyLink(journey, url, event.linkReader);
+        if (sender) applySender(journey, sender);
+        journey.evidenceAsked = true;
+        journey.evidenceRetry = false;
+      }
+    }
+    if (event.kind === "skip_evidence") {
+      if (active.type !== "evidence") throw new Error("invalid_event_order");
+      journey.evidenceAsked = true;
+      journey.evidenceRetry = false;
     }
     if (event.kind === "consent") {
       if (active.type !== "unlock") throw new Error("invalid_event_order");
@@ -222,6 +255,80 @@ async function readInterview(journey: Journey, extractor?: Extractor): Promise<C
   const read = validateFacts(raw, answerSource);
   if (!read) return current;
   return { ...current, facts: { ...mergeFacts(read, current.facts), language: current.language }, conflicts: [...new Set([...(current.conflicts ?? []), ...conflictingTopics(read, current.facts)])], mentions: [...new Set([...(current.mentions ?? []), ...detectMentions(guarded.userText)])] };
+}
+
+// Checks a received link and feeds the verdict to the rules as the link signal, exactly as a
+// DNA link check would. Text that isn't a web address asks again.
+async function applyLink(journey: Journey, raw: string, reader?: LinkReader) {
+  const result = await runLinkCheck(raw, journey.item.language, reader);
+  if (!result) return;
+  journey.linkCheck = result;
+  // A pasted link is something to assess, even without a story around it.
+  journey.awaitingDetails = undefined;
+  if (result.usedAi) journey.sentToLlm = true;
+  // A check never lowers a verdict that DNA's own signals already gave: the stricter one wins.
+  const SEVERITY = { clean: 0, unknown: 1, suspicious: 2, malicious: 3 } as const;
+  const current = journey.item.signals.linkVerdict;
+  const checked = verdictSignal(result.verdict);
+  const linkVerdict = current && SEVERITY[current] > SEVERITY[checked] ? current : checked;
+  journey.item = { ...journey.item, signals: { ...journey.item.signals, hasLink: true, linkVerdict } };
+}
+
+// The message or call itself is evidence: it is read like pasted content, never as instructions,
+// and it adds facts the user's own words may have left out, such as what the message asks for.
+async function readReceived(journey: Journey, content: string, extractor?: Extractor, sentToLlm?: boolean) {
+  if (!journey.input) return;
+  const channel = evidenceChannel(journey);
+  journey.input = { ...journey.input, incidentContent: content, incidentChannel: channel === "web" ? journey.input.incidentChannel : channel };
+  const result = await intake(journey.input, extractor);
+  if (result.secretsFound.length > 0) journey.secretFound = true;
+  if (extractor && sentToLlm && result.extractedBy === "primary") journey.sentToLlm = true;
+  const current = journey.item;
+  journey.item = {
+    ...current,
+    facts: { ...mergeFacts(result.item.facts, current.facts), language: current.language },
+    signals: { ...current.signals, hasLink: current.signals.hasLink || result.item.signals.hasLink },
+    mentions: [...new Set([...(current.mentions ?? []), ...(result.item.mentions ?? [])])],
+  };
+}
+
+// Who sent it, checked by rules. A caller that looks fake feeds the call-warning signal, as a
+// DNA network warning would. Other senders are shown to the user but don't change the decision.
+function applySender(journey: Journey, raw: string) {
+  const claim = journey.item.facts.pretendsToBe;
+  const claims = Boolean(journey.linkCheck?.brand) || (claim !== null && claim !== "none" && claim !== "family" && claim !== "other");
+  const channel = evidenceChannel(journey);
+  const result = checkSender(raw, channel, journey.item.language, claims);
+  if (!result) return;
+  journey.senderCheck = result;
+  if (channel === "call" && result.verdict === "avoid" && journey.item.signals.callWarning !== "suspected_scam") {
+    journey.item = { ...journey.item, signals: { ...journey.item.signals, callWarning: "suspected_scam" } };
+  }
+}
+
+// Where it came from decides which details to ask for.
+function evidenceChannel(journey: Journey): EvidenceChannel {
+  const { incidentType } = journey.item.facts;
+  const mentions = journey.item.mentions ?? [];
+  if (incidentType === "phone_call" || incidentType === "missed_call" || (mentions.includes("call") && !mentions.includes("sms") && !mentions.includes("email"))) return "call";
+  if (mentions.includes("email")) return "email";
+  if (mentions.includes("sms")) return "sms";
+  return "web";
+}
+
+const RECEIVED_TYPES = ["message_or_notice", "link_or_site", "payment_request", "payment_detail_change", "unexpected_order_or_bill", "suspicious_attachment", "phone_call", "missed_call", "unrequested_reset", "data_breach_notice"];
+
+// Someone who got a message, link or call is asked once for what they received. Content they
+// already pasted, a live danger, or harm that needs action now means there's no need to ask:
+// evidence must never delay urgent steps. A link can still be pasted in the chat later.
+function needsEvidence(journey: Journey, decision: { status: string }): boolean {
+  if (journey.evidenceAsked || journey.fastStop || journey.input?.incidentContent?.trim()) return false;
+  // Only confirmed harm skips it: a cautious worst case while a question is open isn't harm yet.
+  if (decision.status === "incident_occurred") return false;
+  const mentions = journey.item.mentions ?? [];
+  const { facts } = journey.item;
+  return mentionsLink(journey.input?.openingMessage ?? "") || mentions.includes("sms") || mentions.includes("email")
+    || RECEIVED_TYPES.includes(facts.incidentType ?? "") || facts.userAlreadyDid.includes("opened_link");
 }
 
 // Typed text can reveal live danger, and is sent to the LLM when one is used.
@@ -329,6 +436,10 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (journey.noIncident) screen = { type: "end", message: approved.offTopic[item.language].none };
   else if (journey.awaitingDetails === "greeting") screen = { type: "describe", reason: "greeting", ...approved.describe[item.language] };
   else if (journey.awaitingDetails === "off_topic") screen = { type: "describe", reason: "off_topic", message: approved.offTopic[item.language].message, hint: approved.offTopic[item.language].hint };
+  else if (needsEvidence(journey, decision)) {
+    const form = evidenceForm(evidenceChannel(journey), item.language);
+    screen = { type: "evidence", channel: evidenceChannel(journey), message: form.message, hint: journey.evidenceRetry ? form.retry : form.hint, fields: form.fields, retry: Boolean(journey.evidenceRetry) };
+  }
   else if (!journey.linkContextAsked && matchSituation(item).id === "link_opened" && item.facts.asksFor.length === 0 && item.facts.asksNothing !== true && !item.answers.card_details_entered && !item.answers.credentials_entered) screen = { type: "describe", reason: "link_context", ...linkContextCopy[item.language] };
   else if (journey.pendingAsk) screen = { type: "ask", ...journey.pendingAsk };
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: contextualQuestion(flip.topic, item), why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [], ...(isTriage(flip) ? { context: triageContext(item, journey.asked) } : {}) };
@@ -337,7 +448,7 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language, item.audience, item), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, linkCheck: journey.linkCheck ?? null, senderCheck: journey.senderCheck ?? null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }
 
 // The summary's parts: what the user said, why it matters, and the steps done and not done.

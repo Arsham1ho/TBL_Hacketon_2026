@@ -1,0 +1,363 @@
+{
+  "_review": {
+    "en": "draft: needs team review",
+    "fi": "draft: needs native speaker review",
+    "sv": "draft: needs native speaker review"
+  },
+  "verdict": {
+    "safe": {
+      "en": {
+        "title": "Looks like the official site",
+        "advice": "The address belongs to {brand}. Still, never give codes or passwords on a page you reached from a message: open the service's own app when you can."
+      },
+      "fi": {
+        "title": "Näyttää viralliselta sivustolta",
+        "advice": "Osoite kuuluu palvelulle {brand}. Älä silti koskaan anna koodeja tai salasanoja sivulla, jolle tulit viestin kautta: avaa mieluummin palvelun oma sovellus."
+      },
+      "sv": {
+        "title": "Ser ut som den officiella webbplatsen",
+        "advice": "Adressen tillhör {brand}. Ge ändå aldrig koder eller lösenord på en sida du kom till från ett meddelande: öppna hellre tjänstens egen app."
+      }
+    },
+    "risky": {
+      "en": {
+        "title": "Risky: we can't confirm this site",
+        "advice": "Don't enter any details on it. If it claims to be a service you use, open that service's own app or type its address yourself."
+      },
+      "fi": {
+        "title": "Riskialtis: emme voi vahvistaa sivustoa",
+        "advice": "Älä syötä sille mitään tietoja. Jos se väittää olevansa käyttämäsi palvelu, avaa palvelun oma sovellus tai kirjoita osoite itse."
+      },
+      "sv": {
+        "title": "Riskabel: vi kan inte bekräfta webbplatsen",
+        "advice": "Ange inga uppgifter på den. Om den påstår sig vara en tjänst du använder, öppna tjänstens egen app eller skriv in adressen själv."
+      }
+    },
+    "avoid": {
+      "en": {
+        "title": "Avoid: don't open this link",
+        "advice": "It shows clear signs of a scam. Delete the message, and don't enter anything if you already opened it."
+      },
+      "fi": {
+        "title": "Vältä: älä avaa tätä linkkiä",
+        "advice": "Siinä on selviä huijauksen merkkejä. Poista viesti, äläkä syötä mitään, jos jo avasit sen."
+      },
+      "sv": {
+        "title": "Undvik: öppna inte länken",
+        "advice": "Den har tydliga tecken på bedrägeri. Radera meddelandet, och ange inget om du redan har öppnat den."
+      }
+    }
+  },
+  "signs": {
+    "official_domain": {
+      "en": "The address is the official domain of {brand}.",
+      "fi": "Osoite on palvelun {brand} virallinen verkkotunnus.",
+      "sv": "Adressen är den officiella domänen för {brand}."
+    },
+    "lookalike": {
+      "en": "It uses the name {brand} but isn't {brand}'s real address.",
+      "fi": "Se käyttää nimeä {brand}, mutta ei ole palvelun {brand} oikea osoite.",
+      "sv": "Den använder namnet {brand} men är inte {brand}s riktiga adress."
+    },
+    "impersonation": {
+      "en": "It looks made to imitate {brand}.",
+      "fi": "Se näyttää tehdyn jäljittelemään palvelua {brand}.",
+      "sv": "Den verkar gjord för att efterlikna {brand}."
+    },
+    "ip_address": {
+      "en": "It points to a bare number address instead of a named site, which real services don't use.",
+      "fi": "Se osoittaa pelkkään numero-osoitteeseen eikä nimettyyn sivustoon, mitä oikeat palvelut eivät käytä.",
+      "sv": "Den pekar på en ren sifferadress i stället för en namngiven webbplats, vilket riktiga tjänster inte använder."
+    },
+    "punycode": {
+      "en": "It contains look-alike letters that can disguise the real address.",
+      "fi": "Siinä on samannäköisiä merkkejä, joilla oikea osoite voidaan naamioida.",
+      "sv": "Den innehåller likadana tecken som kan dölja den riktiga adressen."
+    },
+    "userinfo": {
+      "en": "It hides the real address after an @ sign.",
+      "fi": "Se piilottaa oikean osoitteen @-merkin taakse.",
+      "sv": "Den döljer den riktiga adressen efter ett @-tecken."
+    },
+    "shortener": {
+      "en": "It's a shortened link, so the real destination is hidden.",
+      "fi": "Se on lyhennetty linkki, joten todellinen kohde on piilossa.",
+      "sv": "Det är en förkortad länk, så det verkliga målet är dolt."
+    },
+    "download_file": {
+      "en": "It downloads a program or app file, which can take over your device.",
+      "fi": "Se lataa ohjelma- tai sovellustiedoston, joka voi ottaa laitteesi hallintaan.",
+      "sv": "Den laddar ner en program- eller appfil som kan ta över din enhet."
+    },
+    "suspicious_tld": {
+      "en": "It ends in a web ending that scams use often.",
+      "fi": "Sen pääte on sellainen, jota huijaukset käyttävät usein.",
+      "sv": "Den slutar på en ändelse som bedrägerier ofta använder."
+    },
+    "login_or_payment": {
+      "en": "The address points to a sign-in or payment page.",
+      "fi": "Osoite vie kirjautumis- tai maksusivulle.",
+      "sv": "Adressen leder till en inloggnings- eller betalningssida."
+    },
+    "not_https": {
+      "en": "It doesn't use a secure connection (https).",
+      "fi": "Se ei käytä suojattua yhteyttä (https).",
+      "sv": "Den använder inte en säker anslutning (https)."
+    },
+    "many_subdomains": {
+      "en": "It has an unusually long chain of names before the real site.",
+      "fi": "Siinä on epätavallisen pitkä nimiketju ennen varsinaista sivustoa.",
+      "sv": "Den har en ovanligt lång kedja av namn före den riktiga webbplatsen."
+    },
+    "random_characters": {
+      "en": "The address is made of random-looking characters.",
+      "fi": "Osoite koostuu satunnaisen näköisistä merkeistä.",
+      "sv": "Adressen består av slumpmässiga tecken."
+    },
+    "unknown_site": {
+      "en": "It isn't on our list of official sites, so we can't confirm who runs it.",
+      "fi": "Se ei ole virallisten sivustojen listallamme, joten emme voi vahvistaa, kuka sitä ylläpitää.",
+      "sv": "Den finns inte på vår lista över officiella webbplatser, så vi kan inte bekräfta vem som driver den."
+    }
+  },
+  "checkedBy": {
+    "rules": {
+      "en": "Checked by SafeStep's link rules. We never open the link.",
+      "fi": "Tarkistettu SafeStepin linkkisäännöillä. Emme koskaan avaa linkkiä.",
+      "sv": "Kontrollerad med SafeSteps länkregler. Vi öppnar aldrig länken."
+    },
+    "rules_ai": {
+      "en": "Checked by SafeStep's link rules and AI reading of the address. We never open the link.",
+      "fi": "Tarkistettu SafeStepin linkkisäännöillä ja tekoälyn lukemalla osoitteella. Emme koskaan avaa linkkiä.",
+      "sv": "Kontrollerad med SafeSteps länkregler och AI-läsning av adressen. Vi öppnar aldrig länken."
+    },
+    "sender": {
+      "en": "Checked by SafeStep's sender rules.",
+      "fi": "Tarkistettu SafeStepin lähettäjäsäännöillä.",
+      "sv": "Kontrollerad med SafeSteps avsändarregler."
+    }
+  },
+  "evidence": {
+    "en": {
+      "message": "Show us what you received, and we'll check it.",
+      "message_call": "Tell us about the call, and we'll check it.",
+      "hint": "Fill in what you have, everything is optional. We only read it, never open links, and codes or passwords are hidden automatically.",
+      "retry": "We couldn't read that as a web address. Check the link, or leave it empty.",
+      "fields": {
+        "link": {
+          "label": "Link",
+          "placeholder": "https://…"
+        },
+        "sender_email": {
+          "label": "Sender's email address",
+          "placeholder": "name@example.com"
+        },
+        "sender_sms": {
+          "label": "Sender (number or name)",
+          "placeholder": "+358 40… or Posti"
+        },
+        "sender_call": {
+          "label": "Caller's number",
+          "placeholder": "+358 40…"
+        },
+        "content_email": {
+          "label": "The email text",
+          "placeholder": "Paste the email here…"
+        },
+        "content_sms": {
+          "label": "The message text",
+          "placeholder": "Paste the message here…"
+        },
+        "content_call": {
+          "label": "What did the caller say or ask for?",
+          "placeholder": "For example: said they were from the bank and asked for a code…"
+        },
+        "content_web": {
+          "label": "The message the link came in",
+          "placeholder": "Paste the message here…"
+        }
+      }
+    },
+    "fi": {
+      "message": "Näytä meille, mitä sait, niin tarkistamme sen.",
+      "message_call": "Kerro puhelusta, niin tarkistamme sen.",
+      "hint": "Täytä se, mitä sinulla on – kaikki on vapaaehtoista. Luemme vain tekstin, emme avaa linkkejä, ja koodit tai salasanat piilotetaan automaattisesti.",
+      "retry": "Emme pystyneet lukemaan tätä verkko-osoitteena. Tarkista linkki tai jätä kenttä tyhjäksi.",
+      "fields": {
+        "link": {
+          "label": "Linkki",
+          "placeholder": "https://…"
+        },
+        "sender_email": {
+          "label": "Lähettäjän sähköpostiosoite",
+          "placeholder": "nimi@esimerkki.fi"
+        },
+        "sender_sms": {
+          "label": "Lähettäjä (numero tai nimi)",
+          "placeholder": "+358 40… tai Posti"
+        },
+        "sender_call": {
+          "label": "Soittajan numero",
+          "placeholder": "+358 40…"
+        },
+        "content_email": {
+          "label": "Sähköpostin teksti",
+          "placeholder": "Liitä sähköposti tähän…"
+        },
+        "content_sms": {
+          "label": "Viestin teksti",
+          "placeholder": "Liitä viesti tähän…"
+        },
+        "content_call": {
+          "label": "Mitä soittaja sanoi tai pyysi?",
+          "placeholder": "Esimerkiksi: sanoi olevansa pankista ja pyysi koodia…"
+        },
+        "content_web": {
+          "label": "Viesti, jossa linkki tuli",
+          "placeholder": "Liitä viesti tähän…"
+        }
+      }
+    },
+    "sv": {
+      "message": "Visa oss vad du fick, så kontrollerar vi det.",
+      "message_call": "Berätta om samtalet, så kontrollerar vi det.",
+      "hint": "Fyll i det du har – allt är frivilligt. Vi läser bara texten, öppnar aldrig länkar, och koder eller lösenord döljs automatiskt.",
+      "retry": "Vi kunde inte läsa det som en webbadress. Kontrollera länken eller lämna fältet tomt.",
+      "fields": {
+        "link": {
+          "label": "Länk",
+          "placeholder": "https://…"
+        },
+        "sender_email": {
+          "label": "Avsändarens e-postadress",
+          "placeholder": "namn@exempel.fi"
+        },
+        "sender_sms": {
+          "label": "Avsändare (nummer eller namn)",
+          "placeholder": "+358 40… eller Posti"
+        },
+        "sender_call": {
+          "label": "Uppringarens nummer",
+          "placeholder": "+358 40…"
+        },
+        "content_email": {
+          "label": "E-postens text",
+          "placeholder": "Klistra in e-posten här…"
+        },
+        "content_sms": {
+          "label": "Meddelandets text",
+          "placeholder": "Klistra in meddelandet här…"
+        },
+        "content_call": {
+          "label": "Vad sa eller bad uppringaren om?",
+          "placeholder": "Till exempel: sa att de var från banken och bad om en kod…"
+        },
+        "content_web": {
+          "label": "Meddelandet länken kom i",
+          "placeholder": "Klistra in meddelandet här…"
+        }
+      }
+    }
+  },
+  "senderVerdict": {
+    "safe": {
+      "en": {
+        "title": "Sender matches the official address",
+        "advice": "Sender details can still be faked, so check anything important in {brand}'s own app or on a number you already know."
+      },
+      "fi": {
+        "title": "Lähettäjä vastaa virallista osoitetta",
+        "advice": "Lähettäjän tiedot voidaan silti väärentää, joten tarkista tärkeät asiat palvelun {brand} omasta sovelluksesta tai numerosta, jonka jo tiedät."
+      },
+      "sv": {
+        "title": "Avsändaren stämmer med den officiella adressen",
+        "advice": "Avsändaruppgifter kan ändå förfalskas, så kontrollera viktiga saker i {brand}s egen app eller på ett nummer du redan känner till."
+      }
+    },
+    "risky": {
+      "en": {
+        "title": "We can't confirm this sender",
+        "advice": "Don't reply or act on it. Contact the service through its own app or a number you already know."
+      },
+      "fi": {
+        "title": "Emme voi vahvistaa lähettäjää",
+        "advice": "Älä vastaa äläkä toimi sen pohjalta. Ota yhteyttä palveluun sen oman sovelluksen tai tutun numeron kautta."
+      },
+      "sv": {
+        "title": "Vi kan inte bekräfta avsändaren",
+        "advice": "Svara inte och agera inte på det. Kontakta tjänsten via dess egen app eller ett nummer du redan känner till."
+      }
+    },
+    "avoid": {
+      "en": {
+        "title": "This sender looks fake",
+        "advice": "Don't reply, call back or open anything in it. Delete it, or report it as a scam."
+      },
+      "fi": {
+        "title": "Lähettäjä näyttää väärennetyltä",
+        "advice": "Älä vastaa, soita takaisin tai avaa mitään siitä. Poista se tai ilmoita se huijauksena."
+      },
+      "sv": {
+        "title": "Avsändaren ser falsk ut",
+        "advice": "Svara inte, ring inte tillbaka och öppna inget i det. Radera det eller anmäl det som bedrägeri."
+      }
+    }
+  },
+  "senderSigns": {
+    "official_sender": {
+      "en": "The address is on the official domain of {brand}.",
+      "fi": "Osoite on palvelun {brand} virallisessa verkkotunnuksessa.",
+      "sv": "Adressen ligger på den officiella domänen för {brand}."
+    },
+    "free_mail": {
+      "en": "It comes from a free email account, which a bank, operator, authority or company wouldn't use.",
+      "fi": "Se tulee ilmaisesta sähköpostitilistä, jota pankki, operaattori, viranomainen tai yritys ei käyttäisi.",
+      "sv": "Det kommer från ett gratis e-postkonto, som en bank, operatör, myndighet eller ett företag inte skulle använda."
+    },
+    "lookalike": {
+      "en": "It uses the name {brand} but isn't {brand}'s real address.",
+      "fi": "Se käyttää nimeä {brand}, mutta ei ole palvelun {brand} oikea osoite.",
+      "sv": "Den använder namnet {brand} men är inte {brand}s riktiga adress."
+    },
+    "display_mismatch": {
+      "en": "The name shown doesn't match the real address behind it.",
+      "fi": "Näkyvä nimi ei vastaa sen takana olevaa oikeaa osoitetta.",
+      "sv": "Namnet som visas stämmer inte med den riktiga adressen bakom."
+    },
+    "unknown_domain": {
+      "en": "The address isn't on our list of official senders.",
+      "fi": "Osoite ei ole virallisten lähettäjien listallamme.",
+      "sv": "Adressen finns inte på vår lista över officiella avsändare."
+    },
+    "foreign_number": {
+      "en": "It's a foreign number, though it claims to be a Finnish service.",
+      "fi": "Se on ulkomainen numero, vaikka se väittää olevansa suomalainen palvelu.",
+      "sv": "Det är ett utländskt nummer, fast det påstår sig vara en finsk tjänst."
+    },
+    "foreign_number_plain": {
+      "en": "It's a foreign number.",
+      "fi": "Se on ulkomainen numero.",
+      "sv": "Det är ett utländskt nummer."
+    },
+    "hidden_number": {
+      "en": "The number was hidden or unknown.",
+      "fi": "Numero oli piilotettu tai tuntematon.",
+      "sv": "Numret var dolt eller okänt."
+    },
+    "mobile_claiming": {
+      "en": "Banks and authorities don't contact you from a personal mobile number.",
+      "fi": "Pankit ja viranomaiset eivät ota yhteyttä henkilökohtaisesta matkapuhelinnumerosta.",
+      "sv": "Banker och myndigheter kontaktar dig inte från ett privat mobilnummer."
+    },
+    "name_sender": {
+      "en": "Sender names in text messages can be faked, even in the same thread as real messages.",
+      "fi": "Tekstiviestin lähettäjän nimen voi väärentää, jopa samaan ketjuun aitojen viestien kanssa.",
+      "sv": "Avsändarnamn i sms kan förfalskas, till och med i samma tråd som riktiga meddelanden."
+    },
+    "caller_id": {
+      "en": "A caller's number can be faked to look like a real one.",
+      "fi": "Soittajan numeron voi väärentää näyttämään oikealta.",
+      "sv": "Uppringarens nummer kan förfalskas så att det ser äkta ut."
+    }
+  }
+}

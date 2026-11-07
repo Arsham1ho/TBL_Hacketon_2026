@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { readAnswerOffline } from "@/engine/answer-reader";
+import { findUrl } from "@/engine/link-check";
 import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse, Screen } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
@@ -10,7 +11,7 @@ import { createClient } from "@/lib/client";
 import { translator, type Translate } from "@/lib/ui-text";
 import type { ProviderChoice, ProviderKind } from "@/lib/providers";
 import { Mic as Microphone, Speaker, voiceApi } from "@/lib/voice";
-import { newConversationId, saveConversation, type HistoryItem } from "@/lib/history";
+import { newConversationId, recapItem, recapText, saveConversation, type HistoryItem, type Recap } from "@/lib/history";
 import { DescriptionComposer } from "./composer";
 import { SiriOrb } from "./siri-orb";
 import { screenTurn, type Turn } from "./turns";
@@ -38,6 +39,7 @@ const VOICE_TEXT = {
     sayDone: "Say done when you've finished, or say you can't do it.",
     step: "Step {n} of {total}.",
     unlockAsk: "May I check this? Say yes or no.",
+    linkSkip: "Read out the message or what the caller said, or say skip.",
     shareAsk: "Shall I share this summary with {name}? Say yes or no.",
     stopAsk: "Tell me when you have done this.",
     whatToDo: "What to do now:",
@@ -68,6 +70,7 @@ const VOICE_TEXT = {
     sayDone: "Sano valmis, kun olet tehnyt sen, tai sano, jos et voi.",
     step: "Vaihe {n}/{total}.",
     unlockAsk: "Saanko tarkistaa tämän? Sano kyllä tai ei.",
+    linkSkip: "Lue viesti ääneen tai kerro, mitä soittaja sanoi, tai sano ohita.",
     shareAsk: "Jaanko tämän yhteenvedon: {name}? Sano kyllä tai ei.",
     stopAsk: "Kerro, kun olet tehnyt tämän.",
     whatToDo: "Tee nyt näin:",
@@ -98,6 +101,7 @@ const VOICE_TEXT = {
     sayDone: "Säg klart när du är färdig, eller säg om du inte kan.",
     step: "Steg {n} av {total}.",
     unlockAsk: "Får jag kontrollera det här? Säg ja eller nej.",
+    linkSkip: "Läs upp meddelandet eller vad uppringaren sa, eller säg hoppa över.",
     shareAsk: "Ska jag dela sammanfattningen med {name}? Säg ja eller nej.",
     stopAsk: "Säg till när du har gjort det här.",
     whatToDo: "Gör så här nu:",
@@ -119,12 +123,13 @@ const VOICE_TEXT = {
 type VoiceText = (typeof VOICE_TEXT)["en"];
 
 // Spoken words that pick a fixed reply. Checked before the yes/no reader.
+const SKIP = /^\s*(skip|ohita|hoppa över|hoppa)\b/iu;
 const TALK = /talk to (a |an )?(person|human|someone)|speak (to|with) (a |an )?(person|human|someone)|ihmisen kanssa|puhua ihmiselle|asiakaspalvelijan|prata med (en )?(person|människa)|tala med (en )?(person|människa)/iu;
 const CANT = /can'?t|cannot|not possible|unable|won'?t|skip|en voi|en pysty|ei onnistu|ohita|kan inte|går inte|hoppa över/iu;
 const DONE = /\b(done|did it|finished|completed|ok|okay)\b|valmis|tehty|hoidettu|klart?\b|gjort|färdig/iu;
 
 // Screens where SafeStep is waiting for an answer, so the mic opens on its own after speaking.
-const AWAITS: Screen["type"][] = ["stop", "flip", "ask", "describe", "unlock", "rescue", "handoff"];
+const AWAITS: Screen["type"][] = ["stop", "flip", "ask", "describe", "evidence", "unlock", "rescue", "handoff"];
 
 const sentence = (text: string) => {
   const trimmed = text.trim();
@@ -143,6 +148,8 @@ export function speechFor(screen: Screen, t: Translate, v: VoiceText): string {
       return say(screen.question);
     case "describe":
       return say(screen.message, screen.hint);
+    case "evidence":
+      return say(screen.message, v.linkSkip);
     case "unlock":
       return say(`${t("unlockTitle")} ${screen.what}`, screen.why, screen.limit, v.unlockAsk);
     case "rescue":
@@ -174,6 +181,11 @@ export function requestFor(screen: Screen | null, text: string, language: Langua
       return { kind: "ai_answer", id: screen.id, text };
     case "describe":
       return { kind: "add_details", text };
+    // Spoken words are what the message or caller said, and a spoken web address is checked.
+    // "Skip" moves on without anything.
+    case "evidence":
+      if (SKIP.test(text)) return { kind: "skip_evidence" };
+      return { kind: "evidence", content: text, link: findUrl(text) ?? undefined };
     case "unlock": {
       const read = answer();
       return read === "unsure" ? "retry" : { kind: "consent", signal: screen.signal, granted: read === "yes" };
@@ -241,8 +253,8 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
   const conversation = useRef<{ id: string; startedAt: number } | null>(null);
   const lastStatus = useRef<string | null>(null);
   // What SafeStep asked, then what the user answered, in the chat's own words.
-  const record = (recap: string | undefined, answer: string) =>
-    setLog((items) => [...items, ...(recap ? [{ from: "safestep" as const, text: recap }] : []), { from: "user" as const, text: answer }]);
+  const record = (recap: Recap | undefined, answer: string) =>
+    setLog((items) => [...items, ...(recap ? [recapItem(recap)] : []), { from: "user" as const, text: answer }]);
 
   const client = useRef(createClient());
   const screenRef = useRef<Screen | null>(null);
@@ -296,29 +308,29 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
   const actions = {
     t,
     business: p.audience !== "consumer",
-    reply: (recap: string, label: string, request: ApiRequest) => {
+    reply: (recap: Recap, label: string, request: ApiRequest) => {
       record(recap, label);
       setHeard(label);
       void send(request);
     },
-    handoff: (recap: string, label: string, approved: boolean) => {
+    handoff: (recap: Recap, label: string, approved: boolean) => {
       record(recap, label);
       setHeard(label);
       void send({ kind: "handoff", approved });
     },
     restart: () => void restart(),
     closed: caseClosed,
-    close: (recap: string, label: string) => {
+    close: (recap: Recap, label: string) => {
       record(recap, label);
       setHeard(label);
       setCaseClosed(true);
     },
     stage,
     confirmed,
-    advance: (recap: string, label: string) => {
+    advance: (recap: Recap, label: string) => {
       record(recap, label);
       setHeard(label);
-      if (label === t("done")) setConfirmed((steps) => [...steps, recap]);
+      if (label === t("done")) setConfirmed((steps) => [...steps, recapText(recap)]);
       setStage((value) => value + 1);
     },
     revealed,

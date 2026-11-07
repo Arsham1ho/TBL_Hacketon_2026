@@ -1308,5 +1308,60 @@
     "en": "SafeStep decision report",
     "fi": "SafeStep-päätösraportti",
     "sv": "SafeStep beslutsrapport"
+  },
+  "linkCheckLabel": {
+    "en": "Link check",
+    "fi": "Linkin tarkistus",
+    "sv": "Länkkontroll"
+  },
+  "linkVerdictSafe": {
+    "en": "Looks safe",
+    "fi": "Näyttää turvalliselta",
+    "sv": "Ser säker ut"
+  },
+  "linkVerdictRisky": {
+    "en": "Risky",
+    "fi": "Riskialtis",
+    "sv": "Riskabel"
+  },
+  "linkVerdictAvoid": {
+    "en": "Avoid",
+    "fi": "Vältä",
+    "sv": "Undvik"
+  },
+  "linkAddress": {
+    "en": "Address",
+    "fi": "Osoite",
+    "sv": "Adress"
+  },
+  "linkWhy": {
+    "en": "Why",
+    "fi": "Miksi",
+    "sv": "Varför"
+  },
+  "linkWhatToDo": {
+    "en": "What to do",
+    "fi": "Mitä tehdä",
+    "sv": "Vad du ska göra"
+  },
+  "checkEvidence": {
+    "en": "Check it",
+    "fi": "Tarkista",
+    "sv": "Kontrollera"
+  },
+  "skipEvidence": {
+    "en": "Skip, I don't have it",
+    "fi": "Ohita, minulla ei ole sitä",
+    "sv": "Hoppa över, jag har det inte"
+  },
+  "senderCheckLabel": {
+    "en": "Sender check",
+    "fi": "Lähettäjän tarkistus",
+    "sv": "Avsändarkontroll"
+  },
+  "senderLabel": {
+    "en": "Sender",
+    "fi": "Lähettäjä",
+    "sv": "Avsändare"
   }
 }

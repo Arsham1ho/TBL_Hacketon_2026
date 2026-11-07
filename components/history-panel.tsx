@@ -6,7 +6,7 @@ import type { Language, Status } from "@/engine/types";
 import { clearHistory, deleteConversation, loadHistory, type Conversation } from "@/lib/history";
 import { cn } from "@/lib/utils";
 import type { Translate } from "@/lib/ui-text";
-import { AssessmentNote } from "./turns";
+import { AssessmentNote, PastItem } from "./turns";
 import { Btn, StatusLabel } from "./ui";
 
 // The same column as the live chat.
@@ -255,10 +255,7 @@ function Transcript({ conversation, t }: { conversation: Conversation; t: Transl
             {item.text}
           </p>
         ) : (
-          <p key={index} className="flex max-w-[92%] items-start gap-2.5 text-sm text-muted-foreground">
-            <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
-            {item.text}
-          </p>
+          <PastItem key={index} item={item} open t={t} />
         ),
       )}
       {conversation.status && conversation.statusLabel && (
