@@ -44,7 +44,7 @@ describe("session flow", () => {
   });
 
   it("does not access an optional signal after refusal", async () => {
-    const started = await handleEvent("test", null, { kind: "start", input: { ...input("My number is being transferred to another operator. I did not request it."), consent: { requires: ["subscription.recent_events"], preGranted: [] } }, sentToLlm: false });
+    const started = await handleEvent("test", null, { kind: "start", input: { ...input("I logged in from my new laptop myself, but got an unknown login alert."), consent: { requires: ["operator_account.recent_logins"], preGranted: [] } }, demoScenario: "unknown_login", sentToLlm: false });
     let journey = started.journey!;
     let screen = started.response.screen;
     if (screen.type === "flip") {
@@ -58,6 +58,41 @@ describe("session flow", () => {
       expect(refused.response.dataReceipt.refused).toContain(screen.signal);
       expect(refused.response.dataReceipt.used).not.toContain(screen.signal);
     }
+  });
+
+  it("uses a consented login finding to change the action path", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: { ...input("I logged in from my new laptop myself, but got an unknown login alert."), consent: { requires: ["operator_account.recent_logins"], preGranted: [] } }, demoScenario: "unknown_login", sentToLlm: false });
+    expect(started.response.screen.type).toBe("unlock");
+    const granted = await handleEvent("test", started.journey, { kind: "consent", signal: "operator_account.recent_logins", granted: true });
+    expect(granted.response.dataReceipt.used).toContain("operator_account.recent_logins");
+    expect(granted.response.summary.some(line => line.includes("simulated account check"))).toBe(true);
+    expect(granted.response.state.urgency).toBe("immediate");
+    expect(granted.response.state.destination).toBe("security_specialist");
+  });
+
+  it("rejects consent for a signal that was not requested", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("help"), sentToLlm: false });
+    await expect(handleEvent("test", started.journey, { kind: "consent", signal: "credential_exposure", granted: true })).rejects.toThrow("invalid_event_order");
+  });
+
+  it.each([
+    ["sim_change", "An operator called and asked for a code. I did not give it.", "subscription.recent_events"],
+    ["device_issue", "I gave a caller remote access to my computer, but entered no credentials.", "device.security_findings"],
+    ["business_access", "A former employee left but still has access to our business accounts.", "business.staff_accounts"],
+  ] as const)("uses consent only when %s changes the response", async (demoScenario, message, expectedSignal) => {
+    let flow = await handleEvent("test", null, { kind: "start", input: { ...input(message), audience: demoScenario === "business_access" ? "small_business" : "consumer", consent: { requires: [expectedSignal], preGranted: [] } }, demoScenario, sentToLlm: false });
+    for (let i = 0; i < 3 && flow.response.screen.type !== "unlock"; i++) {
+      const screen = flow.response.screen;
+      if (screen.type === "stop") flow = await handleEvent("test", flow.journey, { kind: "continue" });
+      else if (screen.type === "flip") flow = await handleEvent("test", flow.journey, { kind: "answer", topic: screen.topic, answer: "no" });
+      else break;
+    }
+    expect(flow.response.screen.type).toBe("unlock");
+    if (flow.response.screen.type !== "unlock") return;
+    const before = flow.response.state;
+    const after = await handleEvent("test", flow.journey, { kind: "consent", signal: flow.response.screen.signal, granted: true });
+    expect(after.response.dataReceipt.used).toContain(expectedSignal);
+    expect([after.response.state.urgency, after.response.state.destination]).not.toEqual([before.urgency, before.destination]);
   });
 
   it("blocks an out-of-order rescue event", async () => {

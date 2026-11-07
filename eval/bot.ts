@@ -5,6 +5,8 @@ import type { Case } from "../engine/case";
 import type { Topic } from "../engine/types";
 import { cachedExtractor } from "./cached-extractor";
 import { toCaseInput, toSubmission } from "./to-submission";
+import { interpretConsentedSignal } from "../adapters/signals";
+import { GatedSignal } from "../engine/types";
 
 // Multi-turn bot for the Python simulator: one JSON object per line.
 let raw: any = null;
@@ -63,7 +65,14 @@ lines.on("line", async (line) => {
     const signal = pendingConsent;
     pendingConsent = null;
     consentHandled.push(signal);
-    if (event.granted?.includes(signal) && Object.hasOwn(event.signals ?? {}, signal)) consentUsed.push(signal);
+    if (event.granted?.includes(signal) && Object.hasOwn(event.signals ?? {}, signal)) {
+      const parsed = GatedSignal.safeParse(signal);
+      if (parsed.success) {
+        const finding = interpretConsentedSignal(parsed.data, event.signals[signal]);
+        item = { ...item!, gatedFindings: { ...item!.gatedFindings, [signal]: finding } };
+        consentUsed.push(signal);
+      }
+    }
     reply = next();
   } else {
     reply = { type: "final", answer: toSubmission(raw, item!, assess(item!, 99), { requested: consentRequested, used: consentUsed }) };

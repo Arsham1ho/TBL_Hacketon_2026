@@ -66,6 +66,7 @@ const NOTHING_DONE = re(String.raw`hung up|i did(n't| not) (do|click|open|pay|gi
 
 // Covers "I didn't type it" and "they asked me to type it", which are not actions taken.
 const NEGATED = re(String.raw`\b(didn't|did not|haven't|have not|never|asked (me )?to|wants? me to|told me to|en |et |emme |inte |aldrig |pyysi|pyytää|bad mig)`);
+const NEGATED_OBJECT = re(String.raw`\b(typed|entered|gave|installed|opened|paid)\s+(no|not|nothing)\b`);
 
 const ATTACHMENT = re(String.raw`attachment|\.zip|\.docm|liite|liitteen|bilaga`);
 
@@ -144,7 +145,9 @@ export function offlineExtract(input: ExtractionInput): Facts {
     // "I didn't type my card" must not read as "I typed my card".
     const pattern = DID.find(([value]) => value === action)![1];
     const start = pattern.exec(userText)?.index ?? 0;
-    return !NEGATED.test(userText.slice(Math.max(0, start - 16), start + 3));
+    const match = pattern.exec(userText);
+    return !NEGATED.test(userText.slice(Math.max(0, start - 16), start + 3))
+      && !NEGATED_OBJECT.test(match?.[0] ?? "");
   });
   const nothing = first(NOTHING_DONE, userText);
   if (nothing && did.length === 0) {

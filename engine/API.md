@@ -25,6 +25,7 @@ Send only the event that corresponds to the current screen. A Stop screen advanc
 
 After an approved handoff, `GET /api/sessions?sessionId=...` returns the simulated Agent View (`destination`, reviewed `summary`, and `omitted`). Before approval it returns `403`. A declined handoff never exposes this view.
 
-The optional `demoScenario` on start can be `flagged_link`, `warned_call`, `sim_change`, `unknown_login`, `device_issue`, or `business_access`. These are synthetic. `demoSignals` can additionally list consent-gated paths from `engine/types.ts`. The current gated provider returns an inconclusive result and never treats a missing warning as proof of safety.
+The optional `demoScenario` on start can be `flagged_link`, `warned_call`, `sim_change`, `unknown_login`, `device_issue`, or `business_access`. These are synthetic. `demoSignals` can additionally list consent-gated paths from `engine/types.ts`. A missing or inconclusive signal never proves safety.
+Signal Unlock appears only when a simulated finding would change the action, urgency, or handoff. A granted check enters the case as `consented_signal`; refusal leaves that finding unknown. The demo findings are invented for the prototype and must be labeled as simulated in the UI.
 
 The route returns `400` for malformed input, `404` for an expired session, `409` for an event that does not match the current screen, and `503` if start fails. The Gemini key is read from `.env.local` on the server; without it, the offline extractor runs.

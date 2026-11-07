@@ -5,15 +5,15 @@ import { confidenceBand } from "./confidence";
 import { fallbackScreen, stopScreen } from "./fallback";
 import { fastDanger } from "./fast-danger";
 import { safeScreen } from "./output-guard";
-import { readSimulatedSignal } from "../adapters/signals";
+import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters/signals";
 import { handoffPreview } from "../adapters/handoff";
 import type { Case } from "./case";
 import type { ApiResponse, Screen } from "./screens";
 import type { GatedSignal, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; handoffDone: boolean; handoffApproved: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario };
 export type Event =
-  | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean }
+  | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "continue" }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
@@ -36,7 +36,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
   if (event.kind === "start") {
     const danger = fastDanger(event.input.openingMessage);
     const result = await intake(event.input, danger ? undefined : event.extractor);
-    journey = { item: result.item, asked: 0, secretFound: result.secretsFound.length > 0, sentToLlm: !danger && event.sentToLlm && result.extractedBy === "primary", stopSeen: false, consent: {}, used: [], rescueIndex: 0, handoffDone: false, handoffApproved: false };
+    journey = { item: result.item, asked: 0, secretFound: result.secretsFound.length > 0, sentToLlm: !danger && event.sentToLlm && result.extractedBy === "primary", stopSeen: false, consent: {}, used: [], rescueIndex: 0, handoffDone: false, handoffApproved: false, demoScenario: event.demoScenario ?? "none" };
     return { journey, response: present(sessionId, journey, danger ? stopScreen(danger, journey.item.language) : undefined) };
   } else {
     if (!current) throw new Error("session_expired");
@@ -56,7 +56,8 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       if (pendingSignal(journey) !== event.signal) throw new Error("invalid_signal");
       journey.consent = { ...journey.consent, [event.signal]: event.granted ? "granted" : "refused" };
       if (event.granted) {
-        readSimulatedSignal(event.signal);
+        const { finding } = readSimulatedSignal(event.signal, journey.demoScenario);
+        journey.item = { ...journey.item, gatedFindings: { ...journey.item.gatedFindings, [event.signal]: finding } };
         journey.used = [...journey.used, event.signal];
       }
     }
@@ -79,7 +80,16 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
 }
 
 function pendingSignal(journey: Journey): GatedSignal | null {
-  return assess(journey.item, journey.asked).outcome.wantsSignals.find(s => journey.item.availableSignals.includes(s) && !journey.consent[s]) ?? null;
+  const current = assess(journey.item, journey.asked);
+  return current.outcome.wantsSignals.find(signal => {
+    if (!journey.item.availableSignals.includes(signal) || journey.consent[signal]) return false;
+    const { finding } = readSimulatedSignal(signal, journey.demoScenario);
+    if (finding === "unknown") return false;
+    const hypothetical = assess({ ...journey.item, gatedFindings: { ...journey.item.gatedFindings, [signal]: finding } }, journey.asked);
+    return hypothetical.decision.primaryAction !== current.decision.primaryAction
+      || hypothetical.decision.urgency !== current.decision.urgency
+      || hypothetical.decision.destination !== current.decision.destination;
+  }) ?? null;
 }
 
 function rescueSteps(journey: Journey) {
@@ -93,12 +103,12 @@ function present(sessionId: string, journey: Journey, override?: Screen): ApiRes
   const { decision, outcome, composed, flip } = result;
   const signal = pendingSignal(journey);
   const recovery = rescueSteps(journey);
-  const summary = [...result.confirmedFacts.map(f => f.text), ...journey.used.map(() => screenText[item.language].signalUnknown)];
+  const summary = result.confirmedFacts.map(f => f.text);
   let screen: Screen;
   if (override) screen = override;
   else if (result.interruption && !journey.stopSeen) screen = stopScreen(result.interruption, item.language);
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: composed.question, why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [] };
-  else if (signal) screen = { type: "unlock", signal, what: signal, why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
+  else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
   else if (decision.destination && !journey.handoffDone) screen = { type: "handoff", ...handoffPreview(decision.destination, result.confirmedFacts, item.language), summary };
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics, sources: outcome.guidance.map(id => ({ id, title: id })) };
