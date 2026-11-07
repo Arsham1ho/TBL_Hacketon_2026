@@ -210,3 +210,66 @@
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
+
+/* Printing the report (and saving it as PDF) shows only the report, at full length, always in
+   the light palette. Defining page margin boxes also replaces the browser's own date and URL
+   header with a clean footer and page numbers. */
+@page {
+  size: A4;
+  margin: 14mm 12mm 16mm;
+  @bottom-left {
+    content: "SafeStep · Synthetic prototype. Not a live DNA service.";
+    font: 8pt system-ui, sans-serif;
+    color: #777;
+  }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font: 8pt system-ui, sans-serif;
+    color: #777;
+  }
+}
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body:has(> .print-report) > :not(.print-report) {
+    display: none !important;
+  }
+  .print-report {
+    position: static !important;
+    height: auto !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    color-scheme: light;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.22 0 0);
+    --card: oklch(1 0 0);
+    --primary: oklch(0.3 0 0);
+    --primary-foreground: oklch(0.99 0 0);
+    --muted: oklch(0.955 0 0);
+    --muted-foreground: oklch(0.46 0 0);
+    --accent: oklch(0.955 0 0);
+    --destructive: oklch(0.5 0.19 25);
+    --danger-deep: oklch(0.38 0.14 25);
+    --danger-soft: oklch(0.95 0.03 25);
+    --warning: oklch(0.5 0.12 65);
+    --warning-soft: oklch(0.96 0.05 85);
+    --success: oklch(0.45 0.1 155);
+    --success-soft: oklch(0.95 0.04 155);
+    --navy: oklch(0.22 0 0);
+    --border: oklch(0.91 0 0);
+    --border-strong: oklch(0.85 0 0);
+  }
+  .print-report section,
+  .print-report tr,
+  .print-report li {
+    break-inside: avoid;
+  }
+  .print-report h2 {
+    break-after: avoid;
+  }
+}

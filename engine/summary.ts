@@ -49,7 +49,7 @@ export function confirmedFacts(item: Case): ConfirmedFact[] {
   return facts;
 }
 
-const UNCLEAR_CEILING = 0.3;
+export const UNCLEAR_CEILING = 0.3;
 
 // Counts distinct supported facts, so two extractors agreeing doesn't double the
 // evidence. An unclear case can never read as confident, however much was extracted.

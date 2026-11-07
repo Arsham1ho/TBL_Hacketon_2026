@@ -9,7 +9,8 @@ import { UNCLEAR } from "../../../engine/situations";
 import type { Topic as TopicId } from "../../../engine/types";
 import { guardInput } from "../../../engine/input-guard";
 import type { ApiResponse } from "../../../engine/screens";
-import { handleEvent, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
+import { buildReport } from "../../../engine/report";
+import { handleEvent, handoffDetails, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
 import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
@@ -155,9 +156,12 @@ export async function GET(request: Request) {
   if (!sessionId || !z.string().uuid().safeParse(sessionId).success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   const journey = getSession(sessionId)?.journey;
   if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
+  // The user's own decision report. It holds only what this session already has, with
+  // secrets masked, so it needs no handoff approval.
+  if (new URL(request.url).searchParams.get("view") === "report") return NextResponse.json(buildReport(journey));
   if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403 });
   const result = assess(journey.item, journey.asked);
   const destination = journeyDestination(journey);
   if (!destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
-  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
+  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)), details: handoffDetails(journey, result.confirmedFacts.map(fact => fact.text)) });
 }

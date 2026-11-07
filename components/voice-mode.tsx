@@ -10,6 +10,7 @@ import { createClient } from "@/lib/client";
 import { translator, type Translate } from "@/lib/ui-text";
 import type { ProviderChoice, ProviderKind } from "@/lib/providers";
 import { Mic as Microphone, Speaker, voiceApi } from "@/lib/voice";
+import { newConversationId, saveConversation, type HistoryItem } from "@/lib/history";
 import { DescriptionComposer } from "./composer";
 import { SiriOrb } from "./siri-orb";
 import { screenTurn, type Turn } from "./turns";
@@ -235,6 +236,13 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
   const [revealed, setRevealed] = useState<Part[]>([]);
   const [caseClosed, setCaseClosed] = useState(false);
   const [providers, setProviders] = useState<ProviderChoice>({});
+  // The conversation as the chat would have recorded it, saved to the browser's history.
+  const [log, setLog] = useState<HistoryItem[]>([]);
+  const conversation = useRef<{ id: string; startedAt: number } | null>(null);
+  const lastStatus = useRef<string | null>(null);
+  // What SafeStep asked, then what the user answered, in the chat's own words.
+  const record = (recap: string | undefined, answer: string) =>
+    setLog((items) => [...items, ...(recap ? [{ from: "safestep" as const, text: recap }] : []), { from: "user" as const, text: answer }]);
 
   const client = useRef(createClient());
   const screenRef = useRef<Screen | null>(null);
@@ -288,23 +296,27 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
   const actions = {
     t,
     business: p.audience !== "consumer",
-    reply: (_recap: string, label: string, request: ApiRequest) => {
+    reply: (recap: string, label: string, request: ApiRequest) => {
+      record(recap, label);
       setHeard(label);
       void send(request);
     },
-    handoff: (_recap: string, label: string, approved: boolean) => {
+    handoff: (recap: string, label: string, approved: boolean) => {
+      record(recap, label);
       setHeard(label);
       void send({ kind: "handoff", approved });
     },
     restart: () => void restart(),
     closed: caseClosed,
-    close: (_recap: string, label: string) => {
+    close: (recap: string, label: string) => {
+      record(recap, label);
       setHeard(label);
       setCaseClosed(true);
     },
     stage,
     confirmed,
     advance: (recap: string, label: string) => {
+      record(recap, label);
       setHeard(label);
       if (label === t("done")) setConfirmed((steps) => [...steps, recap]);
       setStage((value) => value + 1);
@@ -418,6 +430,26 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Saved as it goes, so the chat is in History even if voice mode is closed mid-way.
+  useEffect(() => {
+    if (log.length === 0) return;
+    conversation.current ??= { id: newConversationId(), startedAt: Date.now() };
+    const first = log.find((item) => item.from === "user" && !item.assessment);
+    saveConversation({
+      ...conversation.current,
+      updatedAt: Date.now(),
+      audience: p.audience,
+      language,
+      title: (first?.text ?? "").slice(0, 120) || t("history"),
+      items: log,
+      status: response?.state.status,
+      statusLabel: response?.state.statusLabel,
+      likelyType: response?.state.likelyType,
+      voice: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [log, response]);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && p.onClose();
     window.addEventListener("keydown", onKey);
@@ -508,6 +540,11 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
     if (closed.current) return;
     screenRef.current = next.screen;
     languageRef.current = next.language;
+    const status = next.state?.status;
+    if (status && status !== lastStatus.current && (status !== "needs_verification" || lastStatus.current) && next.screen.type !== "result") {
+      setLog((items) => [...items, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
+    }
+    lastStatus.current = status ?? lastStatus.current;
     setStage(0);
     setRevealed([]);
     setConfirmed([]);
@@ -557,6 +594,7 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
     const screen = screenRef.current;
     if (screen?.type === "result" && !TALK.test(text) && answerCard(text)) return setPhaseBoth(resting());
     const request = requestFor(screen, text, languageRef.current);
+    if (request !== "retry") record(request === "start" ? undefined : turnRef.current?.recap, maskSecrets(text).text);
     if (request === "retry") {
       const prompt = screen?.type === "rescue" ? v.sayDone : v.sayYesNo;
       setNotice(prompt);
@@ -576,6 +614,9 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
     recognition.current?.abort();
     await client.current.end().catch(() => null);
     screenRef.current = null;
+    conversation.current = null;
+    lastStatus.current = null;
+    setLog([]);
     setResponse(null);
     setHeard("");
     setNotice("");

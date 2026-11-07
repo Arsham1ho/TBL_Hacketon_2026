@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import type { ApiRequest, ApiResponse, DataReceipt, SupportRoute } from "@/engine/screens";
+import type { ApiRequest, ApiResponse, DataReceipt, Screen, SupportRoute } from "@/engine/screens";
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,12 @@ type Actions = {
   reveal: (part: "why" | "details") => void;
   providers: ProviderChoice;
   choose: (kind: ProviderKind, id: string) => void;
+  // Ends the session from the last result card. Without it, Finish starts over.
+  finish?: (recap: string, label: string) => void;
+  // True once the user finished the chat, so the end screen says so.
+  ended?: boolean;
+  // Opens the full decision report, when one was made for this chat.
+  openReport?: () => void;
 };
 
 const RISK_TEXT: Record<Risk, TextKey> = { none: "riskNone", low: "riskLow", medium: "riskMedium", high: "riskHigh", critical: "riskCritical" };
@@ -125,16 +131,46 @@ const STEP_ICON: Record<StepKind, typeof Zap> = {
   delete: Trash, password: KeyRound, device: WifiOff, check: Eye, other: Zap,
 };
 
-// Buttons that let the user act on a step straight away.
+const domain = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+
+// A contact the user can act on straight away: the provider's logo or an icon, its name, where
+// the link goes, and an arrow for a website or a phone for a call.
+function ActionLink({ href, title, detail, logo, icon }: { href: string; title: string; detail: string; logo?: string; icon?: ReactNode }) {
+  const call = href.startsWith("tel:");
+  return (
+    <a
+      href={href}
+      target={call ? undefined : "_blank"}
+      rel="noopener noreferrer"
+      className="group flex min-w-[min(100%,15rem)] flex-1 items-center gap-3 rounded-xl border border-border-strong bg-card p-2.5 pr-3 transition-[border-color,box-shadow] hover:border-foreground/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logo} alt="" width={40} height={40} className="size-10 shrink-0 rounded-lg border border-border bg-white object-contain p-1" />
+      ) : (
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-foreground" aria-hidden>{icon}</span>
+      )}
+      <span className="grid min-w-0 flex-1 leading-tight">
+        <span className="truncate font-semibold">{title}</span>
+        <span className="truncate text-xs text-muted-foreground">{detail}</span>
+      </span>
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-foreground transition-transform group-hover:translate-x-0.5" aria-hidden>
+        {call ? <Phone className="size-4" /> : <ArrowUpRight className="size-4" />}
+      </span>
+    </a>
+  );
+}
+
+// Links that let the user act on a step straight away.
 function quickButtons(step: string, t: Translate, providers: ProviderChoice): ReactNode[] {
   const kind = stepKind(step);
   const bank = providerById("bank", providers.bank);
   const operator = providerById("operator", providers.operator);
   return [
-    ...(kind === "card" ? [<LinkButton key="block" href={`tel:${CARD_BLOCKING.tel}`}>{t("call")} {CARD_BLOCKING.display}</LinkButton>] : []),
-    ...((kind === "card" || kind === "bank") && bank ? [<LinkButton key="bank" href={bank.website}>{bank.name}</LinkButton>] : []),
-    ...(kind === "police" ? [<LinkButton key="police" href={POLICE.website}>{t("policeReport")}</LinkButton>] : []),
-    ...(kind === "operator" && operator ? [<LinkButton key="operator" href={operator.website}>{operator.name}</LinkButton>] : []),
+    ...(kind === "card" ? [<ActionLink key="block" href={`tel:${CARD_BLOCKING.tel}`} title={`${t("call")} ${CARD_BLOCKING.display}`} detail={t("cardBlocking")} icon={<CreditCard className="size-5" />} />] : []),
+    ...((kind === "card" || kind === "bank") && bank ? [<ActionLink key="bank" href={bank.website} title={bank.name} detail={`${t("officialWebsite")} · ${domain(bank.website)}`} logo={bank.logo} />] : []),
+    ...(kind === "police" ? [<ActionLink key="police" href={POLICE.website} title={t("policeReport")} detail={domain(POLICE.website)} icon={<Siren className="size-5" />} />] : []),
+    ...(kind === "operator" && operator ? [<ActionLink key="operator" href={operator.website} title={operator.name} detail={`${t("officialWebsite")} · ${domain(operator.website)}`} logo={operator.logo} />] : []),
   ];
 }
 
@@ -271,6 +307,152 @@ function DoneCard({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+// One way to get more help, with its own icon, as a row of the closing cards.
+const HelpRow = ({ icon, text }: { icon: ReactNode; text: string }) => (
+  <li className="flex items-center gap-3 rounded-xl bg-accent p-3">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-card text-foreground" aria-hidden>{icon}</span>
+    <span className="text-sm leading-snug font-medium">{text}</span>
+  </li>
+);
+
+// The last result card: says the advice is complete and where to go for more help.
+// A person is offered only when the case needs one.
+function WrapCard({ t, person }: { t: Translate; person: boolean }) {
+  return (
+    <section className="grid gap-3 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-full bg-success text-background" aria-hidden>
+          <Check className="size-6" strokeWidth={3} />
+        </span>
+        <div className="grid gap-0.5">
+          <h2 className="text-base font-semibold">{t("wrapTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("wrapIntro")}</p>
+        </div>
+      </div>
+      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{t("needMoreHelp")}</span>
+      <ul className="grid gap-2">
+        <HelpRow icon={<PenLine className="size-5" />} text={t("wrapChanged")} />
+        <HelpRow icon={<MessageCircleQuestionMark className="size-5" />} text={t("wrapQuestion")} />
+        <HelpRow icon={<SquarePen className="size-5" />} text={t("wrapNew")} />
+        {person && <HelpRow icon={<Headset className="size-5" />} text={t("wrapPerson")} />}
+      </ul>
+    </section>
+  );
+}
+
+// A short label above each part of a card.
+const PartLabel = ({ children }: { children: ReactNode }) => <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{children}</span>;
+
+// The handoff review: who receives it, the assessment, and each part of the summary in its
+// own block, so the user can check exactly what is shared before approving.
+function HandoffCard({ screen, state, t }: { screen: Extract<Screen, { type: "handoff" }>; state: ApiResponse["state"]; t: Translate }) {
+  const details = screen.details;
+  return (
+    <section aria-labelledby="handoff-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-foreground" aria-hidden>
+          <Headset className="size-6" />
+        </span>
+        <div className="grid gap-0.5">
+          <h1 id="handoff-title" tabIndex={-1} className="text-base font-semibold focus:outline-none">{t("handoffTitle")}</h1>
+          <p className="text-sm text-muted-foreground">{t("handoffIntro")}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-xl bg-accent p-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-card" aria-hidden>
+          <Send className="size-4" />
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5">
+          <PartLabel>{t("handoffTo")}</PartLabel>
+          <span className="truncate font-semibold">{t(screen.route)}</span>
+        </div>
+        <span className="shrink-0 rounded-full border border-border-strong px-2.5 py-0.5 text-xs font-medium text-muted-foreground">{t("simulatedHandoff")}</span>
+      </div>
+
+      <div className="grid gap-2">
+        {state.statusLabel && (
+          <div className="grid gap-1 rounded-xl bg-accent px-3 py-2.5">
+            <PartLabel>{t("situation")}</PartLabel>
+            <StatusLabel status={state.status} label={state.statusLabel} />
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Tile icon={<TriangleAlert className="size-4" aria-hidden />} label={t("risk")} value={t(RISK_TEXT[state.risk])} />
+          <Tile icon={<Clock className="size-4" aria-hidden />} label={t("urgency")} value={t(URGENCY_TEXT[state.urgency])} />
+        </div>
+      </div>
+
+      {details ? (
+        <>
+          {details.facts.length > 0 && (
+            <div className="grid gap-2">
+              <PartLabel>{t("handoffFacts")}</PartLabel>
+              <ul className="flex flex-wrap gap-1.5">
+                {details.facts.map((fact) => (
+                  <li key={fact} className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium">{fact}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <DetailRow icon={<Info className="size-4" aria-hidden />} label={t("handoffReason")}>{details.reason}</DetailRow>
+          {details.completed.length > 0 && (
+            <div className="grid gap-2">
+              <PartLabel>{t("storyDone")}</PartLabel>
+              <ul className="grid gap-1.5">
+                {details.completed.map((step) => (
+                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-success-soft/60 px-3 py-2.5 text-sm leading-snug font-medium">
+                    <CircleCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {details.unable.length > 0 && (
+            <div className="grid gap-2">
+              <PartLabel>{t("handoffUnable")}</PartLabel>
+              <ul className="grid gap-1.5">
+                {details.unable.map((step) => (
+                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-warning-soft px-3 py-2.5 text-sm leading-snug font-medium">
+                    <Ban className="mt-px size-4 shrink-0 text-warning" aria-hidden />
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : (
+        <ul className="grid gap-1 text-sm">
+          {screen.summary.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+
+      <p className="flex items-start gap-2 rounded-xl border border-dashed border-border-strong p-3 text-xs text-muted-foreground">
+        <ShieldCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
+        <span>
+          <span className="font-semibold text-foreground">{t("neverShared")}:</span> {screen.omitted.join(", ")}
+        </span>
+      </p>
+    </section>
+  );
+}
+
+// A clear line in the chat where the conversation ended.
+const EndedDivider = ({ text }: { text: string }) => (
+  <div className="flex items-center gap-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase" role="separator">
+    <span className="h-px flex-1 bg-border-strong" aria-hidden />
+    <span className="flex items-center gap-1.5">
+      <CircleCheck className="size-3.5" aria-hidden />
+      {text}
+    </span>
+    <span className="h-px flex-1 bg-border-strong" aria-hidden />
+  </div>
+);
+
 const KeepChatting = ({ text }: { text: string }) => (
   <p className="flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs text-muted-foreground">
     <PenLine className="size-3.5" aria-hidden />
@@ -387,31 +569,141 @@ const Heading = ({ children }: { children: ReactNode }) => (
   </h1>
 );
 
-export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t }: Actions, onContinue: () => void): Turn {
-  return {
-    recap: t(agent.route),
-    body: (
-      <>
-        <Heading>
-          {t("agentView")}: {t(agent.route)}
-        </Heading>
-        <p className="text-sm text-muted-foreground">
-          {t("risk")}: {t(RISK_TEXT[state.risk])} · {t("urgency")}: {t(URGENCY_TEXT[state.urgency])}
-        </p>
-        <ul className="grid gap-1">
+// The priority banner's look for each risk level: colour, plus an icon so it's never colour alone.
+const PRIORITY: Record<Risk, { box: string; badge: string; Icon: typeof Siren }> = {
+  critical: { box: "border-destructive/40 bg-danger-soft", badge: "bg-destructive text-alert-foreground", Icon: Siren },
+  high: { box: "border-destructive/30 bg-danger-soft", badge: "bg-destructive text-alert-foreground", Icon: TriangleAlert },
+  medium: { box: "border-warning/30 bg-warning-soft", badge: "bg-warning text-background", Icon: TriangleAlert },
+  low: { box: "border-success/30 bg-success-soft", badge: "bg-success text-background", Icon: ShieldCheck },
+  none: { box: "border-success/30 bg-success-soft", badge: "bg-success text-background", Icon: ShieldCheck },
+};
+
+// What the support agent receives, drawn as a case ticket: who has it, how urgent it is, what
+// the customer reported, why, and what is already done. Each part is its own block.
+function AgentCard({ agent, state, t }: { agent: AgentPreview; state: ApiResponse["state"]; t: Translate }) {
+  const details = agent.details;
+  const priority = PRIORITY[state.risk];
+  return (
+    <section aria-labelledby="agent-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+          <Headset className="size-6" />
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5">
+          <PartLabel>{t("agentView")}</PartLabel>
+          <h1 id="agent-title" tabIndex={-1} className="truncate text-base font-semibold focus:outline-none">{t(agent.route)}</h1>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 text-xs font-semibold text-success">
+          <CircleCheck className="size-3.5" aria-hidden />
+          {t("caseReceived")}
+        </span>
+      </div>
+
+      <div className={cn("flex items-center gap-3 rounded-xl border p-3", priority.box)}>
+        <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", priority.badge)} aria-hidden>
+          <priority.Icon className="size-5" />
+        </span>
+        <div className="grid min-w-0 flex-1 gap-0.5">
+          <PartLabel>{t("agentPriority")}</PartLabel>
+          <span className="text-lg leading-tight font-bold">
+            {t(RISK_TEXT[state.risk])} <span className="text-muted-foreground">·</span> {t(URGENCY_TEXT[state.urgency])}
+          </span>
+        </div>
+        {state.statusLabel && (
+          <span className="hidden sm:block">
+            <StatusLabel status={state.status} label={state.statusLabel} />
+          </span>
+        )}
+      </div>
+
+      {details ? (
+        <>
+          {details.facts.length > 0 && (
+            <div className="grid gap-2">
+              <PartLabel>{t("agentReported")}</PartLabel>
+              <ul className="flex flex-wrap gap-1.5">
+                {details.facts.map((fact) => (
+                  <li key={fact} className="flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning-soft px-3 py-1.5 text-sm font-semibold">
+                    <TriangleAlert className="size-3.5 shrink-0 text-warning" aria-hidden />
+                    {fact.replace(/\.$/, "")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-start gap-3 rounded-xl border-l-4 border-foreground bg-accent p-3">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div className="grid gap-0.5">
+              <PartLabel>{t("handoffReason")}</PartLabel>
+              <p className="text-[15px] leading-snug font-medium">{details.reason}</p>
+            </div>
+          </div>
+
+          {details.completed.length > 0 && (
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <PartLabel>{t("storyDone")}</PartLabel>
+                <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success tabular-nums">
+                  {details.completed.length}/{details.completed.length + details.unable.length}
+                </span>
+              </div>
+              <ul className="grid gap-1.5">
+                {details.completed.map((step) => (
+                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-success-soft/60 px-3 py-2.5 text-sm leading-snug font-medium">
+                    <CircleCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {details.unable.length > 0 && (
+            <div className="grid gap-2">
+              <PartLabel>{t("handoffUnable")}</PartLabel>
+              <ul className="grid gap-1.5">
+                {details.unable.map((step) => (
+                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-warning-soft px-3 py-2.5 text-sm leading-snug font-medium">
+                    <Ban className="mt-px size-4 shrink-0 text-warning" aria-hidden />
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : (
+        <ul className="grid gap-1 text-sm">
           {agent.summary.map((line) => (
             <li key={line}>{line}</li>
           ))}
         </ul>
-      </>
-    ),
+      )}
+
+      <p className="flex items-start gap-2 rounded-xl border border-dashed border-border-strong p-3 text-xs text-muted-foreground">
+        <ShieldCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
+        <span>
+          <span className="font-semibold text-foreground">{t("neverShared")}:</span> {agent.omitted.join(", ")}
+        </span>
+      </p>
+    </section>
+  );
+}
+
+export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t }: Actions, onContinue: () => void): Turn {
+  return {
+    recap: t(agent.route),
+    body: <AgentCard agent={agent} state={state} t={t} />,
     replies: [{ label: t("continue"), primary: true, run: onContinue }],
   };
 }
 
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
-  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose } = actions;
+  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport } = actions;
   const { screen, state } = response;
+  // A person is offered only when the risk is critical, or the rules found the case needs
+  // one. Lower risks are handled in the chat. Fallback and failed steps offer one anyway.
+  const needsPerson = state.risk === "critical" || Boolean(state.destination);
   const talk = (recap: string): Reply => ({ label: t("talk"), icon: <Headset className="size-4" aria-hidden />, run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
   const contact = (recap: string, route: SupportRoute, label = t("contactRoute").replace("{name}", t(route))): Reply => ({
     label,
@@ -435,7 +727,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
             ))}
           </div>
         ),
-        replies: [{ label, primary: true, run: () => reply(screen.message, label, { kind: "continue" }) }, talk(screen.message)],
+        replies: [{ label, primary: true, run: () => reply(screen.message, label, { kind: "continue" }) }, ...(needsPerson ? [talk(screen.message)] : [])],
       };
     }
     case "flip": {
@@ -509,7 +801,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies: [
           { ...step("done", t("done"), true), icon: <Check className="size-4" aria-hidden /> },
           { ...step("not_possible", t("notPossible"), false), icon: <Ban className="size-4" aria-hidden /> },
-          ...(state.risk === "high" || state.risk === "critical" ? [talk(screen.step.title)] : []),
+          ...(needsPerson ? [talk(screen.step.title)] : []),
         ],
       };
     }
@@ -517,22 +809,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const recap = t("handoffTitle");
       return {
         recap,
-        body: (
-          <>
-            <Heading>{recap}</Heading>
-            <p className="text-sm text-muted-foreground">
-              {t("simulatedHandoff")}: {t(screen.route)}
-            </p>
-            <ul className="grid gap-1">
-              {screen.summary.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <p className="text-sm text-muted-foreground">
-              {t("leftOut")}: {screen.omitted.join(", ")}
-            </p>
-          </>
-        ),
+        body: <HandoffCard screen={screen} state={state} t={t} />,
         replies: [
           { label: t("approve"), primary: true, run: () => handoff(recap, t("approve"), true) },
           { label: t("dontShare"), run: () => handoff(recap, t("dontShare"), false) },
@@ -543,7 +820,6 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const safe = state.status === "safe";
       const live = state.status === "threat_in_progress";
       const urgent = !safe && (state.urgency === "immediate" || state.status === "incident_occurred" || live);
-      const sensitive = state.risk === "high" || state.risk === "critical";
       const { story } = screen;
       const toDo = screen.steps.filter((step) => !screen.completed.includes(step));
       const done = [
@@ -661,6 +937,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           ),
         });
       }
+      cards.push({ title: t("wrapTitle"), recap: t("wrapTitle"), node: <WrapCard t={t} person={needsPerson} /> });
 
       const shown = Math.min(stage, cards.length - 1);
       const extras = [
@@ -701,8 +978,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           : []),
       ];
 
-      // Replies: "Next" until every card is shown, then a provider question if the contact
-      // card needs one, then the closing options. A person only for high or critical risk.
+      // Replies: a provider question if the contact card needs one, "I understand" until every
+      // card is shown, then the closing options. A person only when the case needs one.
       let replies: Reply[];
       const current = cards[shown]!;
       const atContact = current.title === t("contactTitle");
@@ -711,20 +988,22 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           { label: t("done"), primary: true, run: () => advance(current.recap, t("done")), icon: <Check className="size-4" aria-hidden /> },
           { label: t("skipStep"), run: () => advance(current.recap, t("skipStep")), icon: <SkipForward className="size-4" aria-hidden /> },
           { label: t("notPossible"), run: () => advance(current.recap, t("notPossible")), icon: <Ban className="size-4" aria-hidden /> },
-          ...(sensitive ? [talk(current.recap)] : []),
+          ...(needsPerson ? [talk(current.recap)] : []),
         ];
-      } else if (shown < cards.length - 1) {
-        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
       } else if (atContact && needsBank && !providers.bank) {
         replies = [...BANKS.map((bank) => ({ label: bank.name, icon: <ProviderLogo src={bank.logo} small />, run: () => choose("bank", bank.id) })), { label: t("otherProvider"), run: () => choose("bank", "other") }];
       } else if (atContact && needsOperator && !providers.operator) {
         replies = [...OPERATORS.map((operator) => ({ label: operator.name, icon: <ProviderLogo src={operator.logo} small />, run: () => choose("operator", operator.id) })), { label: t("otherProvider"), run: () => choose("operator", "other") }];
+      } else if (shown < cards.length - 1) {
+        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
       } else {
+        const stillLive = live && !closed;
         replies = [
-          ...(live && !closed ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),
+          ...(stillLive ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),
+          { label: t("finishChat"), primary: !stillLive, run: () => (finish ? finish(t("wrapTitle"), t("finishChat")) : restart()), icon: <Check className="size-4" aria-hidden /> },
           ...(revealed.includes("why") ? [] : [{ label: t("investigate"), run: () => reveal("why"), icon: <Search className="size-4" aria-hidden /> }]),
           ...(revealed.includes("details") ? [] : [{ label: t("details"), run: () => reveal("details"), icon: <FileText className="size-4" aria-hidden /> }]),
-          ...(sensitive ? [talk(recap)] : []),
+          ...(needsPerson ? [talk(recap)] : []),
         ];
       }
       const spoken =
@@ -738,7 +1017,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
                 ? [current.title, ...done]
                 : current.title === t("eachCase")
                   ? [current.title, ...(screen.branches ?? []).flatMap((branch) => [branch.condition, ...branch.steps])]
-                  : [current.recap];
+                  : current.title === t("wrapTitle")
+                    ? [t("wrapTitle"), t("wrapIntro"), t("needMoreHelp"), t("wrapChanged"), t("wrapNew"), ...(needsPerson ? [t("wrapPerson")] : [])]
+                    : [current.recap];
       return {
         recap,
         say: spoken.map((line) => line.trim().replace(/([^.!?:])$/, "$1.")).join(" "),
@@ -755,7 +1036,6 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
               </p>
             )}
             {extras}
-            {shown === cards.length - 1 && <KeepChatting text={t("keepChatting")} />}
           </>
         ),
         replies,
@@ -775,16 +1055,21 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies: [talk(screen.message), { label: t("startAgain"), run: restart }],
       };
     case "end":
-      // Not a dead end: the box below starts a new case and the chat history stays.
+      // A finished chat gets a clear end line. Either way, the box below or New chat starts
+      // a new case, so it's never a dead end.
       return {
         recap: screen.message,
         body: (
           <>
+            {ended && <EndedDivider text={t("chatEnded")} />}
             <Heading>{screen.message}</Heading>
-            <KeepChatting text={t("keepChatting")} />
+            <KeepChatting text={t(ended ? "endedHelp" : "keepChatting")} />
           </>
         ),
-        replies: [{ label: t("newConversation"), run: restart }],
+        // New chat is in the top bar, so the end offers the report to view (and save from there). Without one, New chat stays here.
+        replies: openReport
+          ? [{ label: t("downloadReport"), primary: true, run: openReport, icon: <FileText className="size-4" aria-hidden /> }]
+          : [{ label: t("newChat"), primary: true, run: restart, icon: <SquarePen className="size-4" aria-hidden /> }],
       };
   }
 }

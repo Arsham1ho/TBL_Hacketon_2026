@@ -1,10 +1,14 @@
 import type { ApiResponse } from "../engine/screens";
-import type { Audience, Language, Status } from "../engine/types";
+import type { DecisionReport } from "../engine/report";
+import type { Audience, Language, Risk, Status } from "../engine/types";
 
 // Past chats, kept only in this browser. Nothing here is sent anywhere. Messages are stored
 // exactly as the chat shows them, which already has codes and passwords masked.
 
 export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
+
+// The decision report saved with a finished chat, plus the risk after each update in the chat.
+export type SavedReport = DecisionReport & { timeline: Risk[] };
 
 export type Conversation = {
   id: string;
@@ -18,6 +22,10 @@ export type Conversation = {
   status?: Status;
   statusLabel?: string;
   likelyType?: string | null;
+  // Held in voice mode rather than typed.
+  voice?: boolean;
+  // Saved when the chat is finished, so the report can be opened again from History.
+  report?: SavedReport;
 };
 
 const KEY = "safestep-history";

@@ -823,5 +823,490 @@
     "en": "Earlier",
     "fi": "Aiemmin",
     "sv": "Tidigare"
+  },
+  "voiceChat": {
+    "en": "Voice chat",
+    "fi": "Puhekeskustelu",
+    "sv": "Röstchatt"
+  },
+  "newChat": {
+    "en": "New chat",
+    "fi": "Uusi keskustelu",
+    "sv": "Ny chatt"
+  },
+  "finishChat": {
+    "en": "Finish chat",
+    "fi": "Lopeta keskustelu",
+    "sv": "Avsluta chatten"
+  },
+  "wrapTitle": {
+    "en": "That's everything for now",
+    "fi": "Siinä kaikki tältä erää",
+    "sv": "Det var allt för nu"
+  },
+  "wrapIntro": {
+    "en": "You've been through all the advice for this case.",
+    "fi": "Olet käynyt läpi kaikki tämän tapauksen ohjeet.",
+    "sv": "Du har gått igenom alla råd för det här fallet."
+  },
+  "needMoreHelp": {
+    "en": "Need more help?",
+    "fi": "Tarvitsetko lisää apua?",
+    "sv": "Behöver du mer hjälp?"
+  },
+  "wrapChanged": {
+    "en": "If something new happens, or they contact you again, describe it in the box below.",
+    "fi": "Jos jotain uutta tapahtuu tai sinuun otetaan uudelleen yhteyttä, kerro siitä alla olevaan kenttään.",
+    "sv": "Om något nytt händer eller de kontaktar dig igen, beskriv det i rutan nedan."
+  },
+  "wrapQuestion": {
+    "en": "Questions about these steps? Ask in the same box.",
+    "fi": "Kysyttävää ohjeista? Kysy samassa kentässä.",
+    "sv": "Frågor om stegen? Fråga i samma ruta."
+  },
+  "wrapNew": {
+    "en": "Something else? Finish this chat and start a new one.",
+    "fi": "Jokin muu asia? Lopeta tämä keskustelu ja aloita uusi.",
+    "sv": "Något annat? Avsluta chatten och starta en ny."
+  },
+  "wrapPerson": {
+    "en": "This case is serious. If the steps don't solve it, talk to a person.",
+    "fi": "Tilanne on vakava. Jos ohjeet eivät auta, puhu ihmisen kanssa.",
+    "sv": "Fallet är allvarligt. Om stegen inte löser det, prata med en person."
+  },
+  "chatEnded": {
+    "en": "Chat ended",
+    "fi": "Keskustelu päättyi",
+    "sv": "Chatten avslutades"
+  },
+  "endedHelp": {
+    "en": "Need help with something else? Start a new chat from the top, or describe it below.",
+    "fi": "Tarvitsetko apua muuhun? Aloita uusi keskustelu ylhäältä tai kerro asiasta alla.",
+    "sv": "Behöver du hjälp med något annat? Starta en ny chatt längst upp eller beskriv det nedan."
+  },
+  "handoffIntro": {
+    "en": "Nothing is sent until you approve.",
+    "fi": "Mitään ei lähetetä ennen kuin hyväksyt.",
+    "sv": "Inget skickas innan du godkänner."
+  },
+  "handoffTo": {
+    "en": "Goes to",
+    "fi": "Vastaanottaja",
+    "sv": "Mottagare"
+  },
+  "handoffFacts": {
+    "en": "What you told us",
+    "fi": "Mitä kerroit meille",
+    "sv": "Det du berättade"
+  },
+  "handoffReason": {
+    "en": "Why a person should look at this",
+    "fi": "Miksi ihmisen kannattaa katsoa tätä",
+    "sv": "Varför en person bör titta på det här"
+  },
+  "handoffUnable": {
+    "en": "Couldn't be done",
+    "fi": "Ei onnistunut",
+    "sv": "Gick inte att göra"
+  },
+  "neverShared": {
+    "en": "Never shared",
+    "fi": "Ei koskaan jaeta",
+    "sv": "Delas aldrig"
+  },
+  "continueChat": {
+    "en": "Continue this chat",
+    "fi": "Jatka keskustelua",
+    "sv": "Fortsätt chatten"
+  },
+  "backToChat": {
+    "en": "Back to chat",
+    "fi": "Takaisin keskusteluun",
+    "sv": "Tillbaka till chatten"
+  },
+  "resumedNote": {
+    "en": "Saved chat. Your update is checked together with what you first told us.",
+    "fi": "Tallennettu keskustelu. Päivityksesi tarkistetaan yhdessä alkuperäisen kuvauksesi kanssa.",
+    "sv": "Sparad chatt. Din uppdatering kontrolleras tillsammans med det du först berättade."
+  },
+  "continueHint": {
+    "en": "Add an update or ask a question...",
+    "fi": "Lisää päivitys tai kysy jotain...",
+    "sv": "Lägg till en uppdatering eller ställ en fråga..."
+  },
+  "reportTitle": {
+    "en": "Full report",
+    "fi": "Koko raportti",
+    "sv": "Fullständig rapport"
+  },
+  "downloadReport": {
+    "en": "View full report",
+    "fi": "Näytä koko raportti",
+    "sv": "Visa hela rapporten"
+  },
+  "viewReport": {
+    "en": "Report",
+    "fi": "Raportti",
+    "sv": "Rapport"
+  },
+  "downloadPdf": {
+    "en": "Download PDF",
+    "fi": "Lataa PDF",
+    "sv": "Ladda ner PDF"
+  },
+  "downloadData": {
+    "en": "Data (JSON)",
+    "fi": "Tiedot (JSON)",
+    "sv": "Data (JSON)"
+  },
+  "reportIntro": {
+    "en": "How SafeStep reached its advice: what it read, what the rules decided and how sure it is.",
+    "fi": "Miten SafeStep päätyi ohjeisiinsa: mitä se luki, mitä säännöt päättivät ja kuinka varma se on.",
+    "sv": "Hur SafeStep kom fram till sina råd: vad den läste, vad reglerna beslutade och hur säker den är."
+  },
+  "reportOverview": {
+    "en": "Overview",
+    "fi": "Yhteenveto",
+    "sv": "Översikt"
+  },
+  "reportAction": {
+    "en": "Main action",
+    "fi": "Päätoimenpide",
+    "sv": "Huvudåtgärd"
+  },
+  "reportRiskTimeline": {
+    "en": "Risk during the conversation",
+    "fi": "Riski keskustelun aikana",
+    "sv": "Risk under samtalet"
+  },
+  "reportRiskTimelineNote": {
+    "en": "The AI's risk level after each update in the chat.",
+    "fi": "Tekoälyn arvioima riskitaso jokaisen päivityksen jälkeen.",
+    "sv": "AI:ns risknivå efter varje uppdatering i chatten."
+  },
+  "reportUpdate": {
+    "en": "Update",
+    "fi": "Päivitys",
+    "sv": "Uppdatering"
+  },
+  "reportConfidence": {
+    "en": "How confidence was calculated",
+    "fi": "Miten varmuus laskettiin",
+    "sv": "Hur säkerheten beräknades"
+  },
+  "reportConfidenceNote": {
+    "en": "Confidence comes from evidence only. How serious the case is never raises it.",
+    "fi": "Varmuus perustuu vain näyttöön. Tilanteen vakavuus ei koskaan nosta sitä.",
+    "sv": "Säkerheten bygger bara på bevis. Hur allvarligt fallet är höjer den aldrig."
+  },
+  "confStart": {
+    "en": "Starting point",
+    "fi": "Lähtötaso",
+    "sv": "Utgångsläge"
+  },
+  "confConfirmed": {
+    "en": "Confirmed facts",
+    "fi": "Vahvistetut tiedot",
+    "sv": "Bekräftade uppgifter"
+  },
+  "confUnknown": {
+    "en": "Unknown deciding facts",
+    "fi": "Ratkaisevat tuntemattomat tiedot",
+    "sv": "Okända avgörande uppgifter"
+  },
+  "confLimit": {
+    "en": "Limit applied",
+    "fi": "Raja käytössä",
+    "sv": "Gräns tillämpad"
+  },
+  "confFinal": {
+    "en": "Final confidence",
+    "fi": "Lopullinen varmuus",
+    "sv": "Slutlig säkerhet"
+  },
+  "reportEvidence": {
+    "en": "Evidence by source",
+    "fi": "Näyttö lähteittäin",
+    "sv": "Bevis per källa"
+  },
+  "reportEvidenceNote": {
+    "en": "Where each confirmed fact came from.",
+    "fi": "Mistä kukin vahvistettu tieto tuli.",
+    "sv": "Var varje bekräftad uppgift kom ifrån."
+  },
+  "srcUserWords": {
+    "en": "Your words",
+    "fi": "Omat sanasi",
+    "sv": "Dina ord"
+  },
+  "srcAnswer": {
+    "en": "Your answers",
+    "fi": "Vastauksesi",
+    "sv": "Dina svar"
+  },
+  "srcVisible": {
+    "en": "Visible signals",
+    "fi": "Näkyvät signaalit",
+    "sv": "Synliga signaler"
+  },
+  "srcConsented": {
+    "en": "Data you allowed",
+    "fi": "Sallimasi tiedot",
+    "sv": "Data du tillät"
+  },
+  "reportFacts": {
+    "en": "What the AI read",
+    "fi": "Mitä tekoäly luki",
+    "sv": "Vad AI:n läste"
+  },
+  "reportFactsNote": {
+    "en": "The language model only extracts facts. A fact without a quote from your own words is dropped.",
+    "fi": "Kielimalli vain poimii tietoja. Tieto, jota omat sanasi eivät tue, hylätään.",
+    "sv": "Språkmodellen plockar bara ut uppgifter. En uppgift utan citat ur dina egna ord tas bort."
+  },
+  "reportField": {
+    "en": "Field",
+    "fi": "Kenttä",
+    "sv": "Fält"
+  },
+  "reportValue": {
+    "en": "Value",
+    "fi": "Arvo",
+    "sv": "Värde"
+  },
+  "reportQuotes": {
+    "en": "Supporting quotes",
+    "fi": "Tukevat lainaukset",
+    "sv": "Stödjande citat"
+  },
+  "reportQuestions": {
+    "en": "Questions and answers",
+    "fi": "Kysymykset ja vastaukset",
+    "sv": "Frågor och svar"
+  },
+  "qDecisive": {
+    "en": "Deciding question",
+    "fi": "Ratkaiseva kysymys",
+    "sv": "Avgörande fråga"
+  },
+  "qFollowUp": {
+    "en": "Follow-up",
+    "fi": "Tarkentava kysymys",
+    "sv": "Följdfråga"
+  },
+  "reportDecision": {
+    "en": "The decision",
+    "fi": "Päätös",
+    "sv": "Beslutet"
+  },
+  "reportDecisionNote": {
+    "en": "Decided by fixed safety rules, not by the language model.",
+    "fi": "Päätöksen tekevät kiinteät turvasäännöt, ei kielimalli.",
+    "sv": "Beslutet fattas av fasta säkerhetsregler, inte av språkmodellen."
+  },
+  "reportWhy": {
+    "en": "Why this advice",
+    "fi": "Miksi tämä ohje",
+    "sv": "Varför det här rådet"
+  },
+  "reportSteps": {
+    "en": "Recommended steps",
+    "fi": "Suositellut toimet",
+    "sv": "Rekommenderade steg"
+  },
+  "reportRoutes": {
+    "en": "Who can help",
+    "fi": "Kuka voi auttaa",
+    "sv": "Vem kan hjälpa"
+  },
+  "reportSafety": {
+    "en": "Safety checks",
+    "fi": "Turvatarkistukset",
+    "sv": "Säkerhetskontroller"
+  },
+  "safeSecrets": {
+    "en": "Codes, passwords or card numbers were masked before analysis",
+    "fi": "Koodit, salasanat tai korttinumerot peitettiin ennen analyysia",
+    "sv": "Koder, lösenord eller kortnummer maskerades före analysen"
+  },
+  "safeNoSecrets": {
+    "en": "No codes, passwords or card numbers were found",
+    "fi": "Koodeja, salasanoja tai korttinumeroita ei löytynyt",
+    "sv": "Inga koder, lösenord eller kortnummer hittades"
+  },
+  "safeLive": {
+    "en": "Live danger detected, so a stop warning came first",
+    "fi": "Käynnissä oleva vaara havaittiin, joten pysäytysvaroitus näytettiin ensin",
+    "sv": "Pågående fara upptäcktes, så en stoppvarning visades först"
+  },
+  "safeNoLive": {
+    "en": "No live danger detected",
+    "fi": "Käynnissä olevaa vaaraa ei havaittu",
+    "sv": "Ingen pågående fara upptäcktes"
+  },
+  "safeRules": {
+    "en": "The decision passed the action contract check",
+    "fi": "Päätös läpäisi toimenpidesääntöjen tarkistuksen",
+    "sv": "Beslutet klarade kontrollen mot åtgärdsreglerna"
+  },
+  "safeLlm": {
+    "en": "Masked text was sent to the language model to read facts",
+    "fi": "Peitetty teksti lähetettiin kielimallille tietojen lukemista varten",
+    "sv": "Maskerad text skickades till språkmodellen för att läsa uppgifter"
+  },
+  "safeNoLlm": {
+    "en": "Read by the keyword reader only. Nothing was sent to a language model",
+    "fi": "Luettu vain avainsanalukijalla. Mitään ei lähetetty kielimallille",
+    "sv": "Lästes bara av nyckelordsläsaren. Inget skickades till en språkmodell"
+  },
+  "safeShared": {
+    "en": "Summary shared with a person after your approval: {name}",
+    "fi": "Yhteenveto jaettiin hyväksynnälläsi: {name}",
+    "sv": "Sammanfattningen delades efter ditt godkännande: {name}"
+  },
+  "safeNotShared": {
+    "en": "Nothing was shared with a person",
+    "fi": "Mitään ei jaettu kenellekään",
+    "sv": "Inget delades med någon person"
+  },
+  "reportNone": {
+    "en": "None",
+    "fi": "Ei mitään",
+    "sv": "Inget"
+  },
+  "caseReceived": {
+    "en": "Case received",
+    "fi": "Tapaus vastaanotettu",
+    "sv": "Ärendet mottaget"
+  },
+  "agentPriority": {
+    "en": "Priority",
+    "fi": "Prioriteetti",
+    "sv": "Prioritet"
+  },
+  "agentReported": {
+    "en": "Reported by the customer",
+    "fi": "Asiakkaan ilmoittamat",
+    "sv": "Rapporterat av kunden"
+  },
+  "action.no_action_needed": {
+    "en": "No action needed",
+    "fi": "Ei toimenpiteitä",
+    "sv": "Ingen åtgärd behövs"
+  },
+  "action.do_not_interact_and_delete": {
+    "en": "Don't respond, and delete it",
+    "fi": "Älä vastaa, ja poista viesti",
+    "sv": "Svara inte, och radera det"
+  },
+  "action.verify_via_official_channel": {
+    "en": "Check it through an official channel",
+    "fi": "Tarkista virallista kautta",
+    "sv": "Kontrollera via en officiell kanal"
+  },
+  "action.contact_operator_support": {
+    "en": "Contact your operator",
+    "fi": "Ota yhteys operaattoriin",
+    "sv": "Kontakta din operatör"
+  },
+  "action.change_password_and_enable_mfa": {
+    "en": "Change the password and turn on two-step login",
+    "fi": "Vaihda salasana ja ota kaksivaiheinen tunnistus käyttöön",
+    "sv": "Byt lösenord och slå på tvåstegsinloggning"
+  },
+  "action.isolate_device_and_scan": {
+    "en": "Disconnect the device and get it checked",
+    "fi": "Irrota laite verkosta ja tarkistuta se",
+    "sv": "Koppla från enheten och låt kontrollera den"
+  },
+  "action.contact_bank_and_block_cards": {
+    "en": "Contact your bank and block cards",
+    "fi": "Ota yhteys pankkiin ja sulje kortit",
+    "sv": "Kontakta banken och spärra korten"
+  },
+  "action.report_to_authority": {
+    "en": "Report it to the authorities",
+    "fi": "Ilmoita viranomaisille",
+    "sv": "Anmäl till myndigheterna"
+  },
+  "action.escalate_to_human": {
+    "en": "Pass it to a person",
+    "fi": "Siirrä ihmiselle",
+    "sv": "Lämna över till en person"
+  },
+  "action.decline_out_of_scope": {
+    "en": "Outside what SafeStep can help with",
+    "fi": "SafeStepin tukemien asioiden ulkopuolella",
+    "sv": "Utanför vad SafeStep kan hjälpa med"
+  },
+  "confBand.low": {
+    "en": "Low",
+    "fi": "Matala",
+    "sv": "Låg"
+  },
+  "confBand.medium": {
+    "en": "Medium",
+    "fi": "Keskitaso",
+    "sv": "Medel"
+  },
+  "confBand.high": {
+    "en": "High",
+    "fi": "Korkea",
+    "sv": "Hög"
+  },
+  "reportKeyFindings": {
+    "en": "Key findings",
+    "fi": "Tärkeimmät havainnot",
+    "sv": "Viktigaste fynden"
+  },
+  "reportNextStep": {
+    "en": "Most important step",
+    "fi": "Tärkein toimenpide",
+    "sv": "Viktigaste steget"
+  },
+  "reportRiskLevel": {
+    "en": "Risk level",
+    "fi": "Riskitaso",
+    "sv": "Risknivå"
+  },
+  "reportConfidenceShort": {
+    "en": "Confidence",
+    "fi": "Varmuus",
+    "sv": "Säkerhet"
+  },
+  "reportQuestionsShort": {
+    "en": "Questions asked",
+    "fi": "Kysymyksiä",
+    "sv": "Frågor ställda"
+  },
+  "reportStepsShort": {
+    "en": "Steps advised",
+    "fi": "Suositeltuja toimia",
+    "sv": "Råd om steg"
+  },
+  "reportIntervention": {
+    "en": "Action strength",
+    "fi": "Toimenpiteen vahvuus",
+    "sv": "Åtgärdens styrka"
+  },
+  "reportInterventionNote": {
+    "en": "How strong the main action is, from 0 (nothing to do) to 4 (act now).",
+    "fi": "Kuinka vahva päätoimenpide on, 0 (ei tehtävää) – 4 (toimi heti).",
+    "sv": "Hur stark huvudåtgärden är, från 0 (inget att göra) till 4 (agera nu)."
+  },
+  "reportSupportedBy": {
+    "en": "Supported by",
+    "fi": "Perustuu",
+    "sv": "Stöds av"
+  },
+  "reportNoData": {
+    "en": "No extra data about you was used. SafeStep worked from what you wrote.",
+    "fi": "Sinusta ei käytetty lisätietoja. SafeStep toimi kirjoittamasi perusteella.",
+    "sv": "Ingen extra data om dig användes. SafeStep utgick från det du skrev."
+  },
+  "reportPage": {
+    "en": "SafeStep decision report",
+    "fi": "SafeStep-päätösraportti",
+    "sv": "SafeStep beslutsrapport"
   }
 }

@@ -47,9 +47,12 @@ export type Screen =
       supportRoutes: SupportRoute[];
     }
   | { type: "rescue"; step: RescueStep; position: number; total: number }
-  | { type: "handoff"; destination: Destination; route: SupportRoute; summary: string[]; omitted: string[] }
+  // details: the same summary split into its parts, so the review can lay each one out.
+  | { type: "handoff"; destination: Destination; route: SupportRoute; summary: string[]; omitted: string[]; details?: HandoffDetails }
   | { type: "fallback"; message: string; actions: string[] }
   | { type: "end"; message: string };
+
+export type HandoffDetails = { facts: string[]; reason: string; completed: string[]; unable: string[] };
 
 export type DataReceipt = {
   used: GatedSignal[];

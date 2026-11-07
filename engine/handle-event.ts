@@ -18,7 +18,7 @@ import { applyAnswer, topicValue, type Case } from "./case";
 import { mergeFacts, validateFacts } from "./fact-validator";
 import { guardInput } from "./input-guard";
 import type { InterruptionKind } from "./interruption";
-import type { ApiResponse, Screen, SupportRoute } from "./screens";
+import type { ApiResponse, HandoffDetails, Screen, SupportRoute } from "./screens";
 import { linkContextCopy } from "./link-context";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
@@ -309,7 +309,7 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   const confirmedSummary = result.confirmedFacts.map(f => f.text);
   const destination = journeyDestination(journey);
   const stopKind = liveStop(result.interruption ?? journey.fastStop ?? null, item);
-  const handoffScreen = (target: Destination): Screen => ({ type: "handoff", destination: target, route: journey.personRoute ?? target, summary: handoffSummary(journey, confirmedSummary), omitted: handoffPreview(target, result.confirmedFacts, item.language).omitted });
+  const handoffScreen = (target: Destination): Screen => ({ type: "handoff", destination: target, route: journey.personRoute ?? target, summary: handoffSummary(journey, confirmedSummary), details: handoffDetails(journey, confirmedSummary), omitted: handoffPreview(target, result.confirmedFacts, item.language).omitted });
   let screen: Screen;
   if (override) screen = override;
   else if (journey.personRequested && destination && !journey.handoffDone) screen = handoffScreen(destination);
@@ -326,6 +326,14 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language, item.audience), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
   return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+}
+
+// The summary's parts: what the user said, why it matters, and the steps done and not done.
+export function handoffDetails(journey: Journey, facts: string[]): HandoffDetails {
+  const result = assess(journey.item, journey.asked);
+  const stepTexts = result.composed.steps;
+  const stepsWith = (outcome: "done" | "not_possible") => Object.entries(journey.rescueOutcomes).filter(([, value]) => value === outcome).map(([id]) => stepTexts[Number(id)]).filter((value): value is string => Boolean(value));
+  return { facts, reason: reasonText(result.outcome, journey.item.language, journey.item.audience), completed: stepsWith("done"), unable: stepsWith("not_possible") };
 }
 
 export function handoffSummary(journey: Journey, facts: string[]): string[] {

@@ -12,6 +12,7 @@ import {
   Building2,
   KeyRound,
   SlidersHorizontal,
+  SquarePen,
   User,
   X,
 } from "lucide-react";
@@ -36,7 +37,8 @@ import { UserProfileModal } from "./user-profile-modal";
 import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
-import { clearHistory, newConversationId, saveConversation } from "@/lib/history";
+import { ReportView } from "./report-view";
+import { clearHistory, newConversationId, saveConversation, type Conversation, type SavedReport } from "@/lib/history";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -342,8 +344,18 @@ export function SafeStepApp() {
   // This chat's place in the browser history. A new id each time the user starts over.
   const [historyOpen, setHistoryOpen] = useState(false);
   const closeHistory = useCallback(() => setHistoryOpen(false), []);
-  const conversation = useRef<{ id: string; startedAt: number } | null>(null);
+  const conversation = useRef<{ id: string; startedAt: number; voice?: boolean } | null>(null);
+  // A saved chat brought back from History. Its server session has ended, so the next message
+  // starts a new one with the original description, and the chat keeps its place in History.
+  const [resumed, setResumed] = useState<Conversation | null>(null);
+  const skipSave = useRef(false);
   const [closed, setClosed] = useState(false);
+  // Set when the user finishes the chat, so the end screen marks where it ended.
+  const [ended, setEnded] = useState(false);
+  // The decision report, fetched as the chat finishes, and whether it's open.
+  const [report, setReport] = useState<SavedReport | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const closeReport = useCallback(() => setReportOpen(false), []);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
   const [stage, setStage] = useState(0);
@@ -411,6 +423,11 @@ export function SafeStepApp() {
   // Each chat is saved in this browser as it goes, so it can be read again from History.
   useEffect(() => {
     if (items.length === 0) return;
+    // Only opening a saved chat isn't new activity, so it keeps its date and place in History.
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
     conversation.current ??= { id: newConversationId(), startedAt: Date.now() };
     const first = items.find((item) => item.from === "user" && !item.assessment);
     saveConversation({
@@ -420,12 +437,14 @@ export function SafeStepApp() {
       language: shown,
       title: (first?.text ?? "").slice(0, 120) || t("history"),
       items,
-      status: response?.state.status,
-      statusLabel: response?.state.statusLabel,
-      likelyType: response?.state.likelyType,
+      status: response?.state.status ?? resumed?.status,
+      statusLabel: response?.state.statusLabel ?? resumed?.statusLabel,
+      likelyType: response ? response.state.likelyType : resumed?.likelyType,
+      voice: conversation.current.voice,
+      report: report ?? resumed?.report,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, response]);
+  }, [items, response, report]);
 
   // Remembered on this device, or taken from the logged-in profile.
   useEffect(() => {
@@ -522,14 +541,73 @@ export function SafeStepApp() {
     }
   }
 
+  // Ends the session on the server and shows the end screen. The chat stays on screen and in
+  // History; anything typed after this starts a new chat.
+  async function finish(recap: string, label: string) {
+    record({ from: "safestep", text: recap }, { from: "user", text: label });
+    setBusy(true);
+    setFailed(null);
+    // The report needs the live session, so it's fetched before the session is cleared.
+    const data = await client.report().catch(() => null);
+    const last = await client.end().catch(() => null);
+    setBusy(false);
+    if (data) {
+      // The risk after each update in the chat, ending with the final decision.
+      const timeline = [...items.flatMap((item) => (item.assessment ? [item.assessment.risk] : [])), data.decision.risk];
+      setReport({ ...data, timeline });
+    }
+    setStage(0);
+    setRevealed([]);
+    setConfirmed([]);
+    setAgent(null);
+    setEnded(true);
+    setResponse((previous) => last ?? (previous ? { ...previous, screen: { type: "end", message: t("chatEnded") } } : previous));
+  }
+
+  // Brings a saved chat back into the main view. The live chat is just shown again.
+  async function resume(saved: Conversation) {
+    setHistoryOpen(false);
+    if (saved.id === conversation.current?.id) return;
+    await client.end().catch(() => null);
+    conversation.current = { id: saved.id, startedAt: saved.startedAt, voice: saved.voice };
+    skipSave.current = true;
+    setItems(saved.items);
+    setResumed(saved);
+    setReport(null);
+    setReportOpen(false);
+    setAudience(saved.audience);
+    setChoice(saved.language);
+    lastStatus.current = saved.status ?? null;
+    setResponse(null);
+    setAgent(null);
+    setClosed(false);
+    setEnded(false);
+    setFailed(null);
+    setFollowUp("");
+  }
+
+  // The first message of a resumed chat: the original description plus the update, so the
+  // assessment starts from the whole story.
+  function continueSaved(text: string) {
+    if (!resumed) return;
+    record({ from: "user", text: maskSecrets(text).text });
+    const story = resumed.items.find((item) => item.from === "user" && !item.assessment)?.text ?? "";
+    setResumed(null);
+    void send({ kind: "start", audience, language: choice, fallbackLanguage: browserLanguage, message: story ? `${story}\n${text}` : text });
+  }
+
   async function restart() {
     conversation.current = null;
+    setResumed(null);
+    setReport(null);
+    setReportOpen(false);
     await client.end().catch(() => null);
     setResponse(null);
     setAgent(null);
     setItems([]);
     lastStatus.current = null;
     setClosed(false);
+    setEnded(false);
     setFailed(null);
     setMessage("");
     setFollowUp("");
@@ -563,7 +641,22 @@ export function SafeStepApp() {
       >
         <History className="size-5" aria-hidden />
       </button>
-      <HistoryPanel open={historyOpen} onClose={closeHistory} t={t} language={shown} />
+      <HistoryPanel
+        open={historyOpen}
+        onClose={closeHistory}
+        onNewChat={() => {
+          closeHistory();
+          void restart();
+        }}
+        onContinue={(saved) => void resume(saved)}
+        onOpenReport={(saved) => {
+          setReport(saved);
+          setReportOpen(true);
+        }}
+        activeId={items.length > 0 ? conversation.current?.id : null}
+        t={t}
+        language={shown}
+      />
     </>
   );
 
@@ -782,6 +875,9 @@ export function SafeStepApp() {
     reveal: (part: "why" | "details") => setRevealed((value) => [...value, part]),
     providers,
     choose,
+    finish: (recap: string, label: string) => void finish(recap, label),
+    ended,
+    openReport: report ? () => setReportOpen(true) : undefined,
   };
   const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
   const replies: Reply[] = failed
@@ -820,16 +916,18 @@ export function SafeStepApp() {
             <span>Log In</span>
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => void restart()}
-          aria-label={t("exit")}
-          title={t("exit")}
-          className="flex size-11 items-center justify-center rounded-lg bg-card/90 text-muted-foreground hover:bg-accent"
-        >
-          <X className="size-5" aria-hidden />
-        </button>
       </div>
+      {/* New chat sits beside History, where people look for it, and is always one tap away. */}
+      <button
+        type="button"
+        onClick={() => void restart()}
+        aria-label={t("newChat")}
+        title={t("newChat")}
+        className="fixed top-[max(0.5rem,env(safe-area-inset-top))] left-[3.75rem] z-40 flex size-11 items-center justify-center rounded-lg bg-card/90 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <SquarePen className="size-5" aria-hidden />
+      </button>
+      {reportOpen && report && <ReportView report={report} t={t} language={shown} onClose={closeReport} />}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <main ref={log} role="log" className={cn(WIDTH, "grid gap-4 pt-14 pb-4")}>
@@ -870,6 +968,41 @@ export function SafeStepApp() {
           <div ref={latest} />
         </main>
       </div>
+
+      {/* Quick replies sit above the text box, so the choices come first. */}
+      {replies.length > 0 && (
+        <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
+          {replies.map((option) => (
+            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1 gap-2">
+              {option.icon}
+              {option.label}
+            </Btn>
+          ))}
+        </div>
+      )}
+
+      {resumed && !response && !busy && (
+        <div className={WIDTH}>
+          <p className="mb-2 flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs text-muted-foreground">
+            <History className="size-3.5" aria-hidden />
+            {t("resumedNote")}
+          </p>
+          <DescriptionComposer
+            question=""
+            sample={t("continueHint")}
+            sendLabel={t("send")}
+            text={followUp}
+            disabled={busy}
+            onChange={setFollowUp}
+            onSend={() => {
+              if (!followUp.trim()) return;
+              const text = followUp.trim();
+              setFollowUp("");
+              continueSaved(text);
+            }}
+          />
+        </div>
+      )}
 
       {response?.screen.type === "describe" && (
         <div className={WIDTH}>
@@ -927,8 +1060,17 @@ export function SafeStepApp() {
               const text = followUp.trim();
               setFollowUp("");
               setMessage(text);
-              record({ from: "user", text: maskSecrets(text).text });
-              // A new case in the same chat: earlier messages stay on screen.
+              if (ended) {
+                // The last chat is finished and saved, so this starts a new one.
+                conversation.current = null;
+                lastStatus.current = null;
+                setEnded(false);
+                setClosed(false);
+                setItems([{ from: "user", text: maskSecrets(text).text }]);
+              } else {
+                // Nothing to assess last time, so the new case continues the same chat.
+                record({ from: "user", text: maskSecrets(text).text });
+              }
               void send({ kind: "start", audience, language: choice, fallbackLanguage: browserLanguage, message: text });
             }}
           />
@@ -982,17 +1124,6 @@ export function SafeStepApp() {
           </div>
         );
       })()}
-
-      {replies.length > 0 && (
-        <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
-          {replies.map((option) => (
-            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1 gap-2">
-              {option.icon}
-              {option.label}
-            </Btn>
-          ))}
-        </div>
-      )}
 
       {currentUser && (
         <UserProfileModal

@@ -1,14 +1,17 @@
-import type { ApiRequest, ApiResponse, SupportRoute } from "../engine/screens";
+import type { ApiRequest, ApiResponse, HandoffDetails, SupportRoute } from "../engine/screens";
 import type { Destination } from "../engine/types";
+import type { DecisionReport } from "../engine/report";
 
 // The UI's only connection to the engine. A configurable URL keeps a Capacitor app possible.
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export type AgentPreview = { destination: Destination; route: SupportRoute; summary: string[]; omitted: string[] };
+export type AgentPreview = { destination: Destination; route: SupportRoute; summary: string[]; omitted: string[]; details?: HandoffDetails };
 
 export type SafeStepClient = {
   send: (request: ApiRequest) => Promise<ApiResponse>;
   agentView: () => Promise<AgentPreview>;
+  // The full decision report for this session. Fetch it before ending the session.
+  report: () => Promise<DecisionReport | null>;
   end: () => Promise<ApiResponse | null>;
 };
 
@@ -34,6 +37,12 @@ export function createClient(request: typeof fetch = (...args) => fetch(...args)
     agentView: async () => {
       const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}`);
       if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+      return response.json();
+    },
+    report: async () => {
+      if (!sessionId) return null;
+      const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}&view=report`);
+      if (!response.ok) return null;
       return response.json();
     },
     // Ends the session on the server, so its data is cleared.

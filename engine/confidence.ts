@@ -6,12 +6,12 @@ export type ConfidenceEvidence = {
 
 export type ConfidenceBand = "low" | "medium" | "high";
 
-const BASE = 0.3;
-const PER_CONFIRMED_FACT = 0.1;
-const PER_UNKNOWN_FACT = 0.2;
+export const BASE = 0.3;
+export const PER_CONFIRMED_FACT = 0.1;
+export const PER_UNKNOWN_FACT = 0.2;
 const PER_CONFLICT = 0.2;
-const FLOOR = 0.1;
-const CEILING = 0.95;
+export const FLOOR = 0.1;
+export const CEILING = 0.95;
 
 // Takes evidence only. Severity is deliberately not an input, so a critical case
 // with little evidence stays low confidence.
