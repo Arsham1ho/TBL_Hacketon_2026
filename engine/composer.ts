@@ -68,6 +68,9 @@ const REASON_OF: Record<string, ReasonKey> = {
   flagged_link: "flagged_link",
   looks_genuine: "harmless",
   unclear: "unclear",
+  triage_device: "device_exposed",
+  triage_money: "money_or_card",
+  triage_live: "live_request",
 };
 
 export const reasonKeyFor = (situation: string): ReasonKey | undefined => REASON_OF[situation];

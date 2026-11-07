@@ -183,6 +183,20 @@
         "message": "Stopp. Betala inte och kontakta inte angriparna.",
         "action": "Koppla bort datorn från nätverket nu, även Wi-Fi. Låt den sedan vara som den är."
       }
+    },
+    "live_request": {
+      "en": {
+        "message": "Stop. Don't give them anything.",
+        "action": "End the contact now. Don't send money, codes or access, even if they say it is urgent."
+      },
+      "fi": {
+        "message": "Seis. Älä anna heille mitään.",
+        "action": "Lopeta yhteydenpito nyt. Älä anna rahaa, koodeja tai pääsyä, vaikka asiaa sanottaisiin kiireelliseksi."
+      },
+      "sv": {
+        "message": "Stopp. Ge dem ingenting.",
+        "action": "Avbryt kontakten nu. Ge inga pengar, koder eller åtkomst, även om de säger att det är bråttom."
+      }
     }
   },
   "fallback": {

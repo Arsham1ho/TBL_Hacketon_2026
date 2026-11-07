@@ -158,5 +158,10 @@
     "en": "One-ring calls try to get you to call back an expensive number.",
     "fi": "Yhden soiton puhelut houkuttelevat soittamaan takaisin kalliiseen numeroon.",
     "sv": "Samtal med en signal försöker få dig att ringa tillbaka till ett dyrt nummer."
+  },
+  "live_request": {
+    "en": "Someone pushing you to act right now is a common sign of a scam.",
+    "fi": "Painostus toimimaan heti on yleinen huijauksen merkki.",
+    "sv": "Att någon pressar dig att agera direkt är ett vanligt tecken på bedrägeri."
   }
 }

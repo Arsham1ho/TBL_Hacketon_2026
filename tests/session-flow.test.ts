@@ -28,7 +28,7 @@ describe("session flow", () => {
 
   it("rejects an answer to a question not asked", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: input("help"), sentToLlm: false });
-    await expect(handleEvent("test", started.journey, { kind: "answer", topic: "card_details_entered", answer: "yes" })).rejects.toThrow("invalid_event_order");
+    await expect(handleEvent("test", started.journey, { kind: "answer", topic: "card_details_entered", answer: "yes" })).rejects.toThrow("invalid_topic");
   });
 
   it("blocks unsafe output", () => {
@@ -136,5 +136,59 @@ describe("session flow", () => {
     const screen = done.response.screen as Extract<typeof done.response.screen, { type: "result" }>;
     expect(screen.unknowns.join(" ")).not.toMatch(/_/);
     expect(screen.sources.map((source) => source.title).join(" ")).not.toMatch(/guidance_/);
+  });
+
+  describe("vague messages", () => {
+    const answerAll = async (message: string, answers: ("yes" | "no" | "unsure")[]) => {
+      let { journey, response } = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+      const topics: string[] = [];
+      for (const answer of answers) {
+        const { screen } = response;
+        if (screen.type === "stop") ({ journey, response } = await handleEvent("test", journey, { kind: "continue" }));
+        const asked = response.screen;
+        if (asked.type !== "flip") break;
+        topics.push(asked.topic);
+        ({ journey, response } = await handleEvent("test", journey, { kind: "answer", topic: asked.topic, answer }));
+      }
+      return { journey, response, topics };
+    };
+
+    it.each(["help", "I got a suspicious message", "my account was hacked"])("asks instead of guessing: %s", async (message) => {
+      const { response } = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+      expect(response.screen).toMatchObject({ type: "flip", topic: "time_of_event" });
+      expect(response.state.risk).toBe("medium");
+    });
+
+    it("stops the user when it is happening now", async () => {
+      const { response } = await answerAll("help", ["yes"]);
+      expect(response.screen).toMatchObject({ type: "stop", message: "Stop. Don't give them anything." });
+    });
+
+    it("sends shared details to the bank", async () => {
+      const { response, topics } = await answerAll("help", ["no", "yes"]);
+      expect(topics).toEqual(["time_of_event", "account_affected"]);
+      expect(response.state.externalContacts).toContain("bank");
+      expect(response.state.status).toBe("incident_occurred");
+      expect(response.screen.type).toBe("rescue");
+    });
+
+    it("treats device access as a device incident", async () => {
+      const { response } = await answerAll("help", ["no", "no", "no", "yes"]);
+      expect(response.state.destination).toBe("security_specialist");
+    });
+
+    it("gives a calm result when every answer is no", async () => {
+      const { response, topics } = await answerAll("help", ["no", "no", "no", "no"]);
+      expect(topics).toHaveLength(4);
+      expect(response.screen.type).toBe("result");
+      expect(response.state).toMatchObject({ status: "needs_verification", risk: "medium" });
+    });
+
+    it("keeps Not sure unknown but covers the worse answer", async () => {
+      const { response } = await answerAll("help", ["no", "unsure", "no", "no"]);
+      expect(response.screen).toMatchObject({ type: "result" });
+      expect(response.state.status).toBe("needs_verification");
+      expect(response.state.externalContacts).toContain("bank");
+    });
   });
 });

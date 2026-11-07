@@ -4,7 +4,7 @@ import { checkDecision } from "./contract";
 import { guardInput } from "./input-guard";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
-import { decide, MAX_FLIPS, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
+import { decide, flipLimit, isTriage, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
 import { UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
 import { mergeFacts, validateFacts } from "./fact-validator";
@@ -105,8 +105,10 @@ export function withinContract(item: Case, outcome: Outcome, unknownTopics: Topi
 export function assess(item: Case, asked = 0): Assessment {
   // Running out of questions doesn't answer them: an unasked fact stays unknown.
   const undecided = pickFlip(item);
-  const open = asked < MAX_FLIPS ? undecided : null;
-  const pending = undecided ?? unresolvedFlip(item);
+  const open = asked < flipLimit(undecided) ? undecided : null;
+  // A triage question is only a broad check, so an unanswered one must not raise the
+  // case to its worst outcome. "help" alone isn't an emergency. "Not sure" still counts.
+  const pending = (isTriage(undecided) ? null : undecided) ?? unresolvedFlip(item);
   const unknownTopics = pending ? [pending.topic] : [];
   const { outcome, decision } = withinContract(item, pending ? worstCase(pending) : decide(item), unknownTopics);
 
@@ -115,7 +117,7 @@ export function assess(item: Case, asked = 0): Assessment {
     decision,
     flip: open,
     unknownTopics,
-    interruption: interruptionFor(item.facts),
+    interruption: interruptionFor(item.facts) ?? (item.answers.time_of_event === "yes" ? "live_request" : null),
     confidence: caseConfidence(item, unknownTopics.length, outcome.situation === "unclear"),
     confirmedFacts: confirmedFacts(item),
     composed: compose(outcome, item.language, open, pending?.topic ?? null),

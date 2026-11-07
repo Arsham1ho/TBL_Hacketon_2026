@@ -10,7 +10,8 @@ export type InterruptionKind =
   | "card"
   | "login"
   | "bank_change"
-  | "ransomware";
+  | "ransomware"
+  | "live_request";
 
 // Personal safety comes first because the usual stop advice can make it worse.
 // Most dangerous request first, because only one stop message is shown.

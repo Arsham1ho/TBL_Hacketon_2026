@@ -874,8 +874,37 @@ export const SITUATIONS: Situation[] = [
   {
     id: "unclear",
     when: () => true,
-    then: () =>
-      outcome(
+    // When nothing is recognised, a few plain questions find what matters.
+    flips: ["time_of_event", "account_affected", "money_transferred", "remote_access_given"],
+    then: (c) => {
+      // Exposed money or details comes first, so the user reaches the bank without more questions.
+      if (yes(c, "account_affected") || yes(c, "money_transferred")) {
+        return bankIncident("triage_money", c, ["guidance_asking_for_evidence", "guidance_handing_off"], true);
+      }
+      if (yes(c, "remote_access_given")) {
+        return outcome(
+          "triage_device",
+          "isolate_device_and_scan",
+          "incident_occurred",
+          "critical",
+          "immediate",
+          ["disconnect_device", "avoid_banking_on_device", "remove_app_or_profile", "get_device_checked"],
+          ["guidance_remote_access", "guidance_device_compromise"],
+          { destination: person(c, "security_specialist"), rescue: true },
+        );
+      }
+      if (yes(c, "time_of_event")) {
+        return outcome(
+          "triage_live",
+          "do_not_interact_and_delete",
+          "threat_in_progress",
+          "high",
+          "today",
+          ["hang_up_dont_call_back", "dont_share_codes", "dont_pay_or_transfer"],
+          ["guidance_asking_for_evidence", "guidance_handing_off"],
+        );
+      }
+      return outcome(
         "unclear",
         "verify_via_official_channel",
         "needs_verification",
@@ -883,7 +912,8 @@ export const SITUATIONS: Situation[] = [
         "today",
         ["verify_official_channel", "dont_open_link", "dont_share_codes"],
         ["guidance_asking_for_evidence", "guidance_handing_off"],
-      ),
+      );
+    },
   },
 ];
 

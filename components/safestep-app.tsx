@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
+import { maskSecrets } from "@/engine/input-guard";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
 import { client, type AgentPreview } from "@/lib/client";
@@ -10,21 +11,8 @@ import { translator, type TextKey } from "@/lib/ui-text";
 import { cn } from "@/lib/utils";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
-import {
-  AgentViewScreen,
-  BusyDots,
-  EndScreen,
-  FallbackScreen,
-  FlipScreen,
-  HandoffScreen,
-  LoadingScreen,
-  ReceiptScreen,
-  RescueScreen,
-  ResultScreen,
-  StopScreen,
-  UnlockScreen,
-} from "./screens";
-import { Btn, SecretBanner } from "./ui";
+import { agentTurn, screenTurn, type Reply } from "./turns";
+import { Btn, SecretNote, StepMark } from "./ui";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -44,8 +32,10 @@ const BUSINESS_CHOICES: { label: TextKey; text: TextKey }[] = [
   { label: "quickBusiness", text: "quickBusinessText" },
 ];
 
-// Screens that aren't engine steps: they show data from the last response.
-type LocalView = "agent" | "receipt" | null;
+// What has been said so far.
+type Item = { from: "user" | "safestep"; text: string };
+
+const WIDTH = "mx-auto w-full max-w-[640px] px-4";
 
 export function SafeStepApp() {
   const [choice, setChoice] = useState<Language | "auto">("auto");
@@ -55,11 +45,12 @@ export function SafeStepApp() {
   const [incident, setIncident] = useState("");
   const [demo, setDemo] = useState<DemoScenario>("none");
   const [response, setResponse] = useState<ApiResponse | null>(null);
-  const [view, setView] = useState<LocalView>(null);
   const [agent, setAgent] = useState<AgentPreview | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
-  const main = useRef<HTMLElement>(null);
+  const log = useRef<HTMLDivElement>(null);
+  const latest = useRef<HTMLDivElement>(null);
   const options = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -73,27 +64,25 @@ export function SafeStepApp() {
 
   const shown = response?.language ?? (choice === "auto" ? browserLanguage : choice);
   const t = translator(shown);
-  const screen = response?.screen ?? null;
-  const onStop = screen?.type === "stop" && !view && !busy;
-  const onStart = !response && !busy && !failed;
+  const consumer = audience === "consumer";
+  const question = t(consumer ? "whatHappened" : "whatHappenedBusiness");
 
   useEffect(() => {
     document.documentElement.lang = shown;
   }, [shown]);
 
-  // Moves screen readers and keyboard users to each new step.
+  // Keeps the newest message in view, and moves keyboard and screen reader users to it.
   useEffect(() => {
-    if (busy) return;
-    window.scrollTo({ top: 0 });
-    main.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
-  }, [screen, view, busy]);
+    latest.current?.scrollIntoView({ block: "end" });
+    if (!busy) log.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+  }, [items, response, agent, busy]);
 
   async function send(request: ApiRequest) {
     setBusy(true);
     setFailed(null);
     try {
       setResponse(await client.send(request));
-      setView(null);
+      setAgent(null);
     } catch {
       setFailed(request);
     } finally {
@@ -101,7 +90,15 @@ export function SafeStepApp() {
     }
   }
 
-  async function chooseHandoff(approved: boolean) {
+  const record = (...next: Item[]) => setItems((previous) => [...previous, ...next]);
+
+  function reply(recap: string, label: string, request: ApiRequest) {
+    record({ from: "safestep", text: recap }, { from: "user", text: label });
+    void send(request);
+  }
+
+  async function handoff(recap: string, label: string, approved: boolean) {
+    record({ from: "safestep", text: recap }, { from: "user", text: label });
     const request: ApiRequest = { kind: "handoff", approved };
     setBusy(true);
     setFailed(null);
@@ -110,7 +107,6 @@ export function SafeStepApp() {
       const preview = approved ? await client.agentView() : null;
       setResponse(next);
       setAgent(preview);
-      setView(preview ? "agent" : null);
     } catch {
       setFailed(request);
     } finally {
@@ -118,30 +114,20 @@ export function SafeStepApp() {
     }
   }
 
-  function clear() {
+  async function restart() {
+    await client.end().catch(() => null);
     setResponse(null);
-    setView(null);
     setAgent(null);
+    setItems([]);
     setFailed(null);
     setMessage("");
     setIncident("");
     setDemo("none");
   }
 
-  async function restart() {
-    await client.end().catch(() => null);
-    clear();
-  }
-
-  async function endSession() {
-    const ended = await client.end().catch(() => null);
-    if (!ended) return clear();
-    setResponse(ended);
-    setView(null);
-  }
-
-  const talk = () => void send({ kind: "talk_to_person" });
-  const start = () =>
+  function start() {
+    // Masked here as well: the chat must never repeat a code or password the user typed.
+    record({ from: "user", text: maskSecrets(message.trim()).text });
     void send({
       kind: "start",
       audience,
@@ -150,52 +136,52 @@ export function SafeStepApp() {
       ...(incident.trim() ? { incident } : {}),
       ...(demo !== "none" ? { demoScenario: demo } : {}),
     });
+  }
 
-  function startScreen() {
-    const consumer = audience === "consumer";
-    const question = t(consumer ? "whatHappened" : "whatHappenedBusiness");
+  const prototypeLine = <p className="px-4 pb-[max(0.25rem,env(safe-area-inset-bottom))] text-center text-[11px] text-muted-foreground">{t("prototype")}</p>;
+
+  if (items.length === 0 && !response) {
     return (
-      <>
-        <div className="pointer-events-none fixed inset-0 flex items-center justify-center px-5">
-          <h1 tabIndex={-1} className="w-full max-w-[560px] text-center text-[1.75rem] leading-tight font-extrabold text-navy focus:outline-none lg:text-[2rem]">
+      <div className="flex h-dvh flex-col">
+        <button
+          type="button"
+          onClick={() => options.current?.showModal()}
+          aria-label={t("options")}
+          title={t("options")}
+          className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent"
+        >
+          <SlidersHorizontal className="size-5" aria-hidden />
+        </button>
+        <main ref={log} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <StepMark className="size-10 text-foreground" />
+          <h1 tabIndex={-1} className="text-2xl font-semibold focus:outline-none">
             {question}
           </h1>
+        </main>
+        <div className={WIDTH}>
+          <DescriptionComposer question={question} sample={t(consumer ? "sample" : "sampleBusiness")} sendLabel={t("send")} text={message} disabled={busy} onChange={setMessage} onSend={start} />
         </div>
-        <DescriptionComposer
-          question={question}
-          sample={t(consumer ? "sample" : "sampleBusiness")}
-          sendLabel={t("send")}
-          text={message}
-          disabled={busy}
-          onChange={setMessage}
-          onSend={start}
-        />
+        {prototypeLine}
         <dialog
           ref={options}
           aria-label={t("options")}
-          className="m-0 mx-auto mt-auto max-h-[85dvh] w-full max-w-[560px] rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-foreground backdrop:bg-navy/40"
+          className="m-0 mx-auto mt-auto max-h-[85dvh] w-full max-w-[640px] rounded-t-xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-foreground backdrop:bg-black/30"
         >
           <div className="grid gap-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-bold text-navy">{t("options")}</h2>
-              <button
-                type="button"
-                onClick={() => options.current?.close()}
-                aria-label={t("close")}
-                title={t("close")}
-                className="flex size-11 items-center justify-center rounded-full hover:bg-muted"
-              >
+              <h2 className="text-lg font-semibold">{t("options")}</h2>
+              <button type="button" onClick={() => options.current?.close()} aria-label={t("close")} title={t("close")} className="flex size-11 items-center justify-center rounded-lg hover:bg-accent">
                 <X className="size-5" aria-hidden />
               </button>
             </div>
-            <fieldset className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+            <fieldset className="grid grid-cols-2 gap-2">
               <legend className="sr-only">{t("audience")}</legend>
               {(["consumer", "small_business"] as const).map((value) => (
                 <label
                   key={value}
                   className={cn(
-                    "flex min-h-11 cursor-pointer items-center justify-center rounded-full px-3 text-center text-sm font-semibold has-focus-visible:outline-3 has-focus-visible:outline-ring",
-                    audience === value ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                    "flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-3 text-center text-sm font-medium has-focus-visible:outline-3 has-focus-visible:outline-ring",
+                    audience === value ? "border-primary bg-primary text-primary-foreground" : "border-border-strong",
                   )}
                 >
                   <input type="radio" name="audience" value={value} checked={audience === value} onChange={() => setAudience(value)} className="sr-only" />
@@ -204,15 +190,10 @@ export function SafeStepApp() {
               ))}
             </fieldset>
             <div className="grid gap-1">
-              <label htmlFor="language" className="text-sm font-semibold">
+              <label htmlFor="language" className="text-sm font-medium">
                 {t("language")}
               </label>
-              <select
-                id="language"
-                value={choice}
-                onChange={(event) => setChoice(event.target.value as Language | "auto")}
-                className="min-h-11 w-full rounded-2xl border border-border bg-card px-3 text-base"
-              >
+              <select id="language" value={choice} onChange={(event) => setChoice(event.target.value as Language | "auto")} className="min-h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-base">
                 <option value="auto">{t("auto")}</option>
                 {LANGUAGES.map(({ code, label }) => (
                   <option key={code} value={code}>
@@ -222,46 +203,33 @@ export function SafeStepApp() {
               </select>
             </div>
             <div className="grid gap-2">
-              <p className="text-sm font-semibold">{t("examples")}</p>
+              <p className="text-sm font-medium">{t("examples")}</p>
               <div className="flex flex-wrap gap-2">
                 {(consumer ? CONSUMER_CHOICES : BUSINESS_CHOICES).map((quick) => (
-                  <button
+                  <Btn
                     key={quick.label}
-                    type="button"
+                    className="min-h-11 text-sm"
                     onClick={() => {
                       setMessage(t(quick.text));
                       options.current?.close();
                     }}
-                    className="glass min-h-11 rounded-full px-4 py-2 text-sm font-semibold hover:bg-accent"
                   >
                     {t(quick.label)}
-                  </button>
+                  </Btn>
                 ))}
               </div>
             </div>
             <div className="grid gap-1">
-              <label htmlFor="incident" className="text-sm font-semibold">
+              <label htmlFor="incident" className="text-sm font-medium">
                 {t("pasteToggle")}
               </label>
-              <textarea
-                id="incident"
-                rows={3}
-                maxLength={10000}
-                value={incident}
-                onChange={(event) => setIncident(event.target.value)}
-                className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-base focus:border-primary focus:outline-none"
-              />
+              <textarea id="incident" rows={3} maxLength={10000} value={incident} onChange={(event) => setIncident(event.target.value)} className="w-full rounded-lg border border-border-strong px-3 py-2 text-base focus:border-primary focus:outline-none" />
             </div>
             <div className="grid gap-1">
-              <label htmlFor="demo" className="text-sm font-semibold">
+              <label htmlFor="demo" className="text-sm font-medium">
                 {t("demoLabel")}
               </label>
-              <select
-                id="demo"
-                value={demo}
-                onChange={(event) => setDemo(event.target.value as DemoScenario)}
-                className="min-h-11 w-full rounded-2xl border border-border bg-card px-3 text-base"
-              >
+              <select id="demo" value={demo} onChange={(event) => setDemo(event.target.value as DemoScenario)} className="min-h-11 w-full rounded-lg border border-border-strong bg-white px-3 text-base">
                 {DEMO_SCENARIOS.map((scenario) => (
                   <option key={scenario} value={scenario}>
                     {t(`demo${scenario}`)}
@@ -272,116 +240,77 @@ export function SafeStepApp() {
             <p className="text-sm text-muted-foreground">{t("safetyNote")}</p>
           </div>
         </dialog>
-      </>
+      </div>
     );
   }
 
-  function body() {
-    if (busy && !response) return <LoadingScreen text={t("loading")} />;
-    if (!response || !screen) return startScreen();
-
-    const { state } = response;
-    if (view === "agent" && agent) return <AgentViewScreen agent={agent} state={state} t={t} onContinue={() => setView(null)} />;
-    if (view === "receipt") return <ReceiptScreen receipt={response.dataReceipt} notice={response.notice} t={t} onEnd={() => void endSession()} />;
-
-    switch (screen.type) {
-      case "stop":
-        return <StopScreen screen={screen} t={t} business={audience === "small_business"} onContinue={() => void send({ kind: "continue" })} onTalk={talk} />;
-      case "flip":
-        return (
-          <FlipScreen
-            key={screen.topic}
-            screen={screen}
-            t={t}
-            busy={busy}
-            onAnswer={(answer) => void send({ kind: "answer", topic: screen.topic, answer })}
-          />
-        );
-      case "result":
-        return <ResultScreen screen={screen} status={state.status} t={t} onDone={() => setView("receipt")} onTalk={talk} />;
-      case "unlock":
-        return <UnlockScreen screen={screen} t={t} busy={busy} onChoose={(granted) => void send({ kind: "consent", signal: screen.signal, granted })} />;
-      case "rescue":
-        return (
-          <RescueScreen
-            screen={screen}
-            t={t}
-            busy={busy}
-            onStep={(outcome) => void send({ kind: "rescue", stepId: screen.step.id, outcome })}
-            onTalk={talk}
-          />
-        );
-      case "handoff":
-        return <HandoffScreen screen={screen} t={t} busy={busy} onChoose={(approved) => void chooseHandoff(approved)} />;
-      case "fallback":
-        return <FallbackScreen screen={screen} t={t} onTalk={talk} onRestart={() => void restart()} />;
-      case "end":
-        return <EndScreen screen={screen} t={t} onRestart={() => void restart()} />;
-    }
-  }
+  const actions = { t, business: !consumer, reply, handoff: (recap: string, label: string, approved: boolean) => void handoff(recap, label, approved), restart: () => void restart() };
+  const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
+  const replies: Reply[] = failed
+    ? [
+        { label: t("tryAgain"), primary: true, run: () => void send(failed) },
+        { label: t("startAgain"), run: () => void restart() },
+      ]
+    : (turn?.replies ?? []);
 
   return (
-    <div className={cn("min-h-dvh transition-colors", onStop && "on-danger bg-danger-deep")}>
-      {onStart ? (
-        <button
-          type="button"
-          onClick={() => options.current?.showModal()}
-          aria-label={t("options")}
-          title={t("options")}
-          className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5"
-        >
-          <SlidersHorizontal className="size-5" aria-hidden />
-        </button>
-      ) : (
-        response && (
-          <button
-            type="button"
-            onClick={() => void restart()}
-            aria-label={t("exit")}
-            title={t("exit")}
-            className={cn(
-              "fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-full hover:bg-black/10",
-              onStop ? "text-primary-foreground" : "text-muted-foreground",
-            )}
-          >
-            <X className="size-5" aria-hidden />
-          </button>
-        )
-      )}
+    <div className="flex h-dvh flex-col">
+      <button
+        type="button"
+        onClick={() => void restart()}
+        aria-label={t("exit")}
+        title={t("exit")}
+        className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-lg bg-white/90 text-muted-foreground hover:bg-accent"
+      >
+        <X className="size-5" aria-hidden />
+      </button>
 
-      <div className={cn("mx-auto w-full px-5 pt-16 pb-12", view === "agent" ? "max-w-3xl" : "max-w-[560px]")}>
-        {/* A transform here would pull the start screen's fixed composer out of place. */}
-        <main ref={main} key={`${screen?.type ?? "start"}-${view ?? ""}`} className={cn(response && screen?.type !== "flip" && "animate-rise")}>
-          {response?.secretWarning && (
-            <div className="mb-5">
-              <SecretBanner text={response.secretWarning} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <main ref={log} role="log" className={cn(WIDTH, "grid gap-4 pt-14 pb-4")}>
+          {items.map((item, index) =>
+            item.from === "user" ? (
+              <p key={index} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 leading-relaxed">
+                {item.text}
+              </p>
+            ) : (
+              <p key={index} className="max-w-[92%] text-muted-foreground">
+                {item.text}
+              </p>
+            ),
+          )}
+          {response?.secretWarning && <SecretNote text={response.secretWarning} />}
+          {turn && (
+            <div className="grid gap-2.5 leading-relaxed">
+              <StepMark className="size-5 text-foreground" />
+              {turn.body}
             </div>
           )}
-          {failed ? (
-            <div role="alert" className="flex flex-col gap-4">
-              <h1 tabIndex={-1} className="text-2xl font-bold text-navy focus:outline-none">
-                {t("failed")}
-              </h1>
-              <Btn onClick={() => void send(failed)}>{t("tryAgain")}</Btn>
-              <Btn variant="secondary" onClick={() => void restart()}>
-                {t("startAgain")}
-              </Btn>
-            </div>
-          ) : (
-            body()
+          {failed && (
+            <h1 tabIndex={-1} className="font-medium focus:outline-none">
+              {t("failed")}
+            </h1>
           )}
-          {!failed && busy && response && <BusyDots label={t("loading")} />}
+          {busy && (
+            <div role="status" aria-label={t("loading")} className="flex gap-1 py-2">
+              {[0, 150, 300].map((delay) => (
+                <span key={delay} className="size-1.5 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: `${delay}ms` }} />
+              ))}
+            </div>
+          )}
+          <div ref={latest} />
         </main>
       </div>
 
-      <p
-        className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-1 z-50 px-5 text-center text-[11px]",
-          onStop ? "text-primary-foreground" : "text-muted-foreground",
-        )}
-      >
-        {t("prototype")}
-      </p>
+      {replies.length > 0 && (
+        <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
+          {replies.map((option) => (
+            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="flex-1">
+              {option.label}
+            </Btn>
+          ))}
+        </div>
+      )}
+      {prototypeLine}
     </div>
   );
 }

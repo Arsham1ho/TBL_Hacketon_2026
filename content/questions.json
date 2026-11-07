@@ -138,5 +138,85 @@
       "ifRisky": "Om du inte är trygg just nu, ring 112 först.",
       "ifSafe": "Om du är trygg just nu:"
     }
+  },
+  "time_of_event": {
+    "en": {
+      "question": "Is someone asking you for money, a code or access right now?",
+      "why": "If it's happening now, stopping it comes first.",
+      "ifRisky": "If someone is asking right now:",
+      "ifSafe": "If nobody is asking right now:"
+    },
+    "fi": {
+      "question": "Pyytääkö joku sinulta juuri nyt rahaa, koodia tai pääsyä?",
+      "why": "Jos tämä tapahtuu nyt, pysäyttäminen tulee ensin.",
+      "ifRisky": "Jos joku pyytää juuri nyt:",
+      "ifSafe": "Jos kukaan ei pyydä juuri nyt:"
+    },
+    "sv": {
+      "question": "Ber någon dig just nu om pengar, en kod eller åtkomst?",
+      "why": "Om det händer nu måste det stoppas först.",
+      "ifRisky": "Om någon ber om det just nu:",
+      "ifSafe": "Om ingen ber om det just nu:"
+    }
+  },
+  "account_affected": {
+    "en": {
+      "question": "Did you give anyone a password, code or card details?",
+      "why": "Shared details can let someone act as you.",
+      "ifRisky": "If you gave details to anyone:",
+      "ifSafe": "If you gave nothing away:"
+    },
+    "fi": {
+      "question": "Annoitko kenellekään salasanan, koodin tai korttitietoja?",
+      "why": "Jaetuilla tiedoilla joku voi toimia nimissäsi.",
+      "ifRisky": "Jos annoit tietoja jollekulle:",
+      "ifSafe": "Jos et antanut mitään:"
+    },
+    "sv": {
+      "question": "Gav du någon ett lösenord, en kod eller kortuppgifter?",
+      "why": "Delade uppgifter kan låta någon agera som du.",
+      "ifRisky": "Om du gav uppgifter till någon:",
+      "ifSafe": "Om du inte gav något:"
+    }
+  },
+  "money_transferred": {
+    "en": {
+      "question": "Did you send any money?",
+      "why": "A bank can sometimes stop a payment if you act quickly.",
+      "ifRisky": "If you sent money:",
+      "ifSafe": "If you sent nothing:"
+    },
+    "fi": {
+      "question": "Lähetitkö rahaa?",
+      "why": "Pankki voi joskus pysäyttää maksun, jos toimit nopeasti.",
+      "ifRisky": "Jos lähetit rahaa:",
+      "ifSafe": "Jos et lähettänyt mitään:"
+    },
+    "sv": {
+      "question": "Skickade du några pengar?",
+      "why": "Banken kan ibland stoppa en betalning om du agerar snabbt.",
+      "ifRisky": "Om du skickade pengar:",
+      "ifSafe": "Om du inte skickade något:"
+    }
+  },
+  "remote_access_given": {
+    "en": {
+      "question": "Did you install an app or let someone control your device?",
+      "why": "Someone in your device can see what you do.",
+      "ifRisky": "If you installed something or gave access:",
+      "ifSafe": "If you did neither:"
+    },
+    "fi": {
+      "question": "Asensitko sovelluksen tai annoitko jonkun ohjata laitettasi?",
+      "why": "Laitteellasi oleva ulkopuolinen voi nähdä, mitä teet.",
+      "ifRisky": "Jos asensit jotain tai annoit pääsyn:",
+      "ifSafe": "Jos et tehnyt kumpaakaan:"
+    },
+    "sv": {
+      "question": "Installerade du en app eller lät någon styra din enhet?",
+      "why": "Någon i din enhet kan se vad du gör.",
+      "ifRisky": "Om du installerade något eller gav åtkomst:",
+      "ifSafe": "Om du inte gjorde något av det:"
+    }
   }
 }

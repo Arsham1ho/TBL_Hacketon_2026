@@ -4,6 +4,8 @@ import { matchSituation, safeIsBlocked, UNCLEAR, type Outcome } from "./situatio
 import type { Topic } from "./types";
 
 export const MAX_FLIPS = 2;
+// An unclear case starts from nothing, so it may need every triage question.
+const MAX_TRIAGE_FLIPS = UNCLEAR.flips?.length ?? MAX_FLIPS;
 
 const INTERVENTION = text.intervention as Record<string, number>;
 const RISKS = ["none", "low", "medium", "high", "critical"];
@@ -33,13 +35,19 @@ function flipFor(item: Case, topic: Topic): Flip | null {
 // Picks the unanswered fact whose Yes and No lead to different responses. If every
 // branch needs the same response, there is nothing to ask.
 export function pickFlip(item: Case): Flip | null {
-  for (const topic of matchSituation(item).flips ?? []) {
+  const match = matchSituation(item);
+  // A Safe outcome that the gate refuses is unclear, so it gets the same questions.
+  const blocked = match.then(item).status === "safe" && safeIsBlocked(item);
+  for (const topic of (blocked ? UNCLEAR : match).flips ?? []) {
     if (topicValue(item, topic) !== null || item.unsure.includes(topic)) continue;
     const flip = flipFor(item, topic);
     if (flip) return flip;
   }
   return null;
 }
+
+export const isTriage = (flip: Flip | null) => Boolean(flip && UNCLEAR.flips?.includes(flip.topic));
+export const flipLimit = (flip: Flip | null) => (isTriage(flip) ? MAX_TRIAGE_FLIPS : MAX_FLIPS);
 
 // A "Not sure" answer that still changes the response.
 export function unresolvedFlip(item: Case): Flip | null {
