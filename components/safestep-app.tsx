@@ -986,7 +986,7 @@ export function SafeStepApp() {
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
           {replies.map((option) => (
-            <Btn key={option.label} variant="primary" disabled={busy} onClick={option.run} className="min-w-[45%] flex-1 gap-2">
+            <Btn key={option.label} variant={option.primary ? "primary" : "plain"} disabled={busy} onClick={option.run} className="min-w-[45%] flex-1 gap-2">
               {option.icon}
               {option.label}
             </Btn>
