@@ -5,7 +5,7 @@ import { applyAnswer, type Case } from "../engine/case";
 import type { Topic } from "../engine/types";
 import { cachedExtractor } from "./cached-extractor";
 import { toCaseInput, toSubmission } from "./to-submission";
-import { interpretConsentedSignal } from "../adapters/signals";
+import { interpretConsentedSignal, signalLabel } from "../adapters/signals";
 import { GatedSignal } from "../engine/types";
 
 // Multi-turn bot for the Python simulator: one JSON object per line.
@@ -29,9 +29,11 @@ function next() {
   if (signal) {
     pendingConsent = signal;
     consentRequested.push(signal);
-    const prompt = item!.language === "fi" ? `Saanko tarkistaa simuloidun tiedon ${signal}? Voit kieltäytyä ja silti saada ohjeita.`
-      : item!.language === "sv" ? `Får jag kontrollera den simulerade uppgiften ${signal}? Du kan avstå och ändå få råd.`
-      : `May I check the simulated ${signal} signal to clarify this case? You can refuse and still get advice.`;
+    // The same plain label the app shows, so the user knows exactly what would be checked.
+    const label = signalLabel(signal, item!.language);
+    const prompt = item!.language === "fi" ? `Saanko tarkistaa tiedon "${label}" (simuloitu)? Käytän sitä vain tässä tapauksessa. Voit kieltäytyä ja saat silti ohjeet.`
+      : item!.language === "sv" ? `Får jag kontrollera "${label}" (simulerat)? Jag använder det bara i det här ärendet. Du kan avstå och ändå få råd.`
+      : `May I check "${label}" (simulated)? I'll use it only for this case. You can say no and still get advice.`;
     return { type: "consent_request", fields: [signal], text: prompt };
   }
   return { type: "final", answer: toSubmission(raw, item!, assessment, { requested: consentRequested, used: consentUsed }) };

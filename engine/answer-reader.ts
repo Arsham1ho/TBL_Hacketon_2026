@@ -29,10 +29,24 @@ const OPENS_YES: Record<Language, RegExp> = {
 const SAFE_NOW = new RegExp(fold(String.raw`not in danger|i'm safe|i am safe|en ole (juuri nyt |nyt )?vaarassa|olen turvassa|inte i fara|jag är trygg`), "iu");
 const CLAUSE_BREAK = /\s(?:but|mutta|men|vaan)\s/iu;
 
+// Some answers say yes or no without the words for it: "the invoice is still unpaid" is a no to
+// "has the payment gone?". These are read per topic, in every language, before the general words.
+const TOPIC_NO: Partial<Record<Topic, RegExp>> = {
+  payment_status: new RegExp(fold(String.raw`unpaid|not (yet )?(been )?paid|haven't paid|have not paid|not sent (it )?yet|maksamatta|en ole (vielä )?maksanut|ei ole (vielä )?maksettu|emme ole (vielä )?maksaneet|obetald|inte (har )?betalat|inte betald|har inte betalat`), "iu"),
+  money_transferred: new RegExp(fold(String.raw`unpaid|not (yet )?(been )?paid|haven't paid|have not paid|maksamatta|en ole (vielä )?maksanut|obetald|inte betalat|har inte betalat`), "iu"),
+};
+const TOPIC_YES: Partial<Record<Topic, RegExp>> = {
+  payment_status: new RegExp(fold(String.raw`already paid|paid it|we paid|maksoin|maksoimme|olen maksanut|on maksettu|betalade|har betalat|redan betalat`), "iu"),
+  money_transferred: new RegExp(fold(String.raw`already paid|paid it|maksoin|olen maksanut|betalade|har betalat|redan betalat`), "iu"),
+  business_access: new RegExp(fold(String.raw`ha(s|ve) access|on pääsy|pääsee|har åtkomst|kommer åt`), "iu"),
+};
+
 // Anything it can't read is unsure, which keeps the fact unknown.
 export function readAnswerOffline(reply: string, language: Language, topic?: Topic): ReadAnswer {
   const text = fold(reply);
   if (topic === "user_safety" && SAFE_NOW.test(text)) return "yes";
+  if (topic && TOPIC_NO[topic]?.test(text)) return "no";
+  if (topic && TOPIC_YES[topic]?.test(text)) return "yes";
   if (OPENS_YES[language].test(text)) return "yes";
   const clause = text.split(CLAUSE_BREAK)[0];
   if (UNSURE.test(clause)) return "unsure";
