@@ -157,3 +157,4 @@ export function setStoredUser(user: MockUser | null): void {
     // ignore local storage restrictions
   }
 }
+
