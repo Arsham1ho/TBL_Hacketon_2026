@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { POST as postSession } from "../../route";
 
-const actions = { answers: "answer", consent: "consent", rescue: "rescue", handoff: "handoff", continue: "continue" } as const;
+const actions = { answers: "answer", consent: "consent", rescue: "rescue", handoff: "handoff", continue: "continue", talk: "talk_to_person" } as const;
 
 export async function POST(request: Request, context: { params: Promise<{ id: string; action: string }> }) {
   const { id, action } = await context.params;

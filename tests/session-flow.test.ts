@@ -113,4 +113,28 @@ describe("session flow", () => {
     flow = await handleEvent("test", flow.journey, { kind: "handoff", approved: false });
     expect(flow.response.screen.type).toBe("result");
   });
+
+  it("offers a person from any step and then carries on", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text."), sentToLlm: false });
+    const asked = await handleEvent("test", started.journey, { kind: "talk_to_person" });
+    expect(asked.response.screen).toMatchObject({ type: "handoff", destination: "operator_support_agent" });
+    expect(asked.response.state.destination).toBe("operator_support_agent");
+    const declined = await handleEvent("test", asked.journey, { kind: "handoff", approved: false });
+    expect(declined.response.screen.type).toBe(started.response.screen.type);
+  });
+
+  it("sends a business user to business support", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: { ...input("help"), audience: "small_business" }, sentToLlm: false });
+    const asked = await handleEvent("test", started.journey, { kind: "talk_to_person" });
+    expect(asked.response.screen).toMatchObject({ type: "handoff", destination: "business_security_support" });
+  });
+
+  it("shows readable unknowns and sources, not internal ids", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text."), sentToLlm: false });
+    const done = await handleEvent("test", started.journey, { kind: "answer", topic: (started.response.screen as { topic: "card_details_entered" }).topic, answer: "unsure" });
+    expect(done.response.screen.type).toBe("result");
+    const screen = done.response.screen as Extract<typeof done.response.screen, { type: "result" }>;
+    expect(screen.unknowns.join(" ")).not.toMatch(/_/);
+    expect(screen.sources.map((source) => source.title).join(" ")).not.toMatch(/guidance_/);
+  });
 });

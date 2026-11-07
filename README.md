@@ -50,7 +50,9 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-The current page is a temporary test page that runs the real engine. It shows how each decision was made. Try the example buttons, then a Decision Flip with Yes, No and Not sure.
+Try a quick choice or describe what happened in Finnish, English or Swedish. To see Signal Unlock, open "Simulated DNA data for this demo" and pick a scenario before sending.
+
+In development, `?screen=` opens one screen with example data, such as `/?screen=fallback`. The options are `stop`, `flip`, `unlock`, `rescue`, `handoff`, `fallback`, `end`, `threat`, `unsure` and `safe`.
 
 ## Test and evaluate
 
@@ -91,9 +93,9 @@ Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned 
 |---|---|---|
 | 1 | Safety and product contract | Approved by the team. Three checks finish in later stages |
 | 2 | Decision rules, Decision Flip, fact extraction | Done |
-| 3 | Core user experience | Not started |
-| 4 | Signal Unlock, Rescue Mode, human handoff | Not started |
-| 5 | Held-out testing, safety review, demo | Not started |
+| 3 | Core user experience | Built and connected to the engine |
+| 4 | Signal Unlock, Rescue Mode, human handoff | Built and connected to the engine |
+| 5 | Held-out testing, safety review, demo | In progress |
 
 ## Known limits
 
@@ -101,7 +103,8 @@ Measured on the 588 development cases with `gpt-5.4-mini`. The rules were tuned 
 - Finnish and Swedish text still needs review by native speakers.
 - The free Gemini tier allows 15 requests a minute. Above that, the app falls back to the keyword extractor.
 - Masking can miss letter-and-number codes and codes with no code word nearby.
-- Consent is not interactive yet, and the test page has no simulated link or call signals.
+- Swedish source titles fall back to English, because the supplied guidance has no Swedish titles.
+- The frozen new-wording test scored 7 of 12 with the keyword extractor.
 
 ## Licence
 

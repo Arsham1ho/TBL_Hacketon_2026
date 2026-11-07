@@ -1,0 +1,222 @@
+{
+  "guidance_smishing_basics": {
+    "en": "Recognising a scam message",
+    "fi": "Huijausviestin tunnistaminen"
+  },
+  "guidance_parcel_scam": {
+    "en": "Parcel and customs fee messages",
+    "fi": "Paketti- ja tullimaksuviestit"
+  },
+  "guidance_sender_id_spoofing": {
+    "en": "Why a familiar message thread proves nothing",
+    "fi": "Miksi tuttu viestiketju ei todista mitään"
+  },
+  "guidance_bank_verification": {
+    "en": "Checking a message that claims to be from a bank",
+    "fi": "Pankin nimissä tulleen viestin tarkistaminen"
+  },
+  "guidance_operator_impersonation": {
+    "en": "Messages and calls in the name of your operator",
+    "fi": "Viestit ja puhelut operaattorisi nimissä"
+  },
+  "guidance_family_new_number": {
+    "en": "'Hi Mum, this is my new number'",
+    "fi": "'Moi äiti, tämä on uusi numeroni'"
+  },
+  "guidance_marketplace_scam": {
+    "en": "Selling online: 'buyer' sends a payment link",
+    "fi": "Myyt verkossa: 'ostaja' lähettää maksulinkin"
+  },
+  "guidance_qr_codes": {
+    "en": "QR codes on letters, stickers and parking notices",
+    "fi": "QR-koodit kirjeissä, tarroissa ja pysäköintilapuissa"
+  },
+  "guidance_investment_scam": {
+    "en": "Investment offers with celebrities or guaranteed returns",
+    "fi": "Sijoitustarjoukset julkkiksilla tai taatuilla tuotoilla"
+  },
+  "guidance_prompt_injection": {
+    "en": "Messages that try to instruct the assistant",
+    "fi": "Viestit, jotka yrittävät ohjata avustajaa"
+  },
+  "guidance_legitimate_notifications": {
+    "en": "What a genuine notification looks like",
+    "fi": "Miltä aito ilmoitus näyttää"
+  },
+  "guidance_link_opened_no_input": {
+    "en": "A link was opened but nothing was entered",
+    "fi": "Linkki avattiin, mutta mitään ei syötetty"
+  },
+  "guidance_card_details_entered": {
+    "en": "Card details were typed into a fake page",
+    "fi": "Korttitiedot syötettiin valesivulle"
+  },
+  "guidance_credential_compromise": {
+    "en": "After credentials have been disclosed",
+    "fi": "Kun tunnukset ovat paljastuneet"
+  },
+  "guidance_one_time_codes": {
+    "en": "One-time codes and PINs",
+    "fi": "Kertakäyttöiset koodit ja tunnusluvut"
+  },
+  "guidance_malicious_app": {
+    "en": "An app installed from a link",
+    "fi": "Linkistä asennettu sovellus"
+  },
+  "guidance_config_profile": {
+    "en": "Configuration profiles and 'certificates' from a link",
+    "fi": "Linkistä asennetut profiilit ja 'varmenteet'"
+  },
+  "guidance_device_compromise": {
+    "en": "When a device can no longer be trusted",
+    "fi": "Kun laitteeseen ei voi enää luottaa"
+  },
+  "guidance_remote_access": {
+    "en": "Remote access requests",
+    "fi": "Etäyhteyspyynnöt"
+  },
+  "guidance_spam_flag_meaning": {
+    "en": "What a call warning means",
+    "fi": "Mitä puheluvaroitus tarkoittaa"
+  },
+  "guidance_bank_impostor_call": {
+    "en": "Calls from 'the bank's security team'",
+    "fi": "Puhelut 'pankin turvallisuustiimistä'"
+  },
+  "guidance_police_impostor": {
+    "en": "Callers claiming to be the police",
+    "fi": "Poliisina esiintyvät soittajat"
+  },
+  "guidance_tech_support_fraud": {
+    "en": "Callers offering technical support",
+    "fi": "Teknistä tukea tarjoavat soittajat"
+  },
+  "guidance_voice_clone": {
+    "en": "An urgent call from a relative in trouble",
+    "fi": "Kiireellinen puhelu hädässä olevalta läheiseltä"
+  },
+  "guidance_wangiri": {
+    "en": "Missed calls from foreign numbers",
+    "fi": "Vastaamattomat puhelut ulkomaisista numeroista"
+  },
+  "guidance_sim_swap": {
+    "en": "SIM and eSIM changes you did not ask for",
+    "fi": "SIM- ja eSIM-muutokset, joita et pyytänyt"
+  },
+  "guidance_esim_own_change": {
+    "en": "An eSIM change you made yourself",
+    "fi": "Itse tehty eSIM-muutos"
+  },
+  "guidance_number_porting": {
+    "en": "Number porting requests you did not start",
+    "fi": "Numeronsiirtopyynnöt, joita et aloittanut"
+  },
+  "guidance_router_security": {
+    "en": "Home and office routers",
+    "fi": "Kodin ja toimiston reitittimet"
+  },
+  "guidance_mfa_fatigue": {
+    "en": "Repeated approval prompts",
+    "fi": "Toistuvat hyväksyntäpyynnöt"
+  },
+  "guidance_password_reset": {
+    "en": "Changing a password safely",
+    "fi": "Salasanan vaihtaminen turvallisesti"
+  },
+  "guidance_unrequested_reset": {
+    "en": "A password reset email you did not request",
+    "fi": "Salasanan palautusviesti, jota et pyytänyt"
+  },
+  "guidance_breach_response": {
+    "en": "Responding to a data breach notification",
+    "fi": "Tietovuotoilmoitukseen reagoiminen"
+  },
+  "guidance_password_reuse": {
+    "en": "Why reuse turns one breach into many",
+    "fi": "Miksi uudelleenkäyttö tekee yhdestä vuodosta monta"
+  },
+  "guidance_fake_breach_notice": {
+    "en": "Breach notifications that are themselves scams",
+    "fi": "Tietovuotoilmoitukset, jotka ovat itse huijauksia"
+  },
+  "guidance_unknown_login": {
+    "en": "A login from a country or device you do not recognise",
+    "fi": "Kirjautuminen tuntemattomasta maasta tai laitteesta"
+  },
+  "guidance_ceo_fraud": {
+    "en": "Payment requests that claim to come from a manager",
+    "fi": "Esihenkilön nimissä tulevat maksupyynnöt"
+  },
+  "guidance_invoice_fraud": {
+    "en": "Invoice and bank detail fraud",
+    "fi": "Lasku- ja tilinumeropetokset"
+  },
+  "guidance_payment_verification": {
+    "en": "Verifying a payment or bank detail change",
+    "fi": "Maksun tai tilinumeron muutoksen varmistaminen"
+  },
+  "guidance_shared_accounts": {
+    "en": "Shared accounts in a small business",
+    "fi": "Jaetut tunnukset pienyrityksessä"
+  },
+  "guidance_offboarding": {
+    "en": "Removing access when someone leaves",
+    "fi": "Pääsyn poistaminen, kun joku lähtee"
+  },
+  "guidance_business_email_compromise": {
+    "en": "A business mailbox that someone else controls",
+    "fi": "Yrityksen sähköposti, jota joku muu hallitsee"
+  },
+  "guidance_fake_domain_invoice": {
+    "en": "Invoices for domains, listings and registers",
+    "fi": "Laskut verkkotunnuksista, hakemistoista ja rekistereistä"
+  },
+  "guidance_merchant_fraud": {
+    "en": "Payment terminal and merchant portal scams",
+    "fi": "Maksupääte- ja kauppiasportaalihuijaukset"
+  },
+  "guidance_order_confirmations": {
+    "en": "Unexpected order confirmations on a business account",
+    "fi": "Odottamattomat tilausvahvistukset yritystilillä"
+  },
+  "guidance_malicious_attachment": {
+    "en": "Unexpected attachments: invoices, complaints and CVs",
+    "fi": "Odottamattomat liitteet: laskut, reklamaatiot ja hakemukset"
+  },
+  "guidance_data_protection_breach": {
+    "en": "When customers' personal data may have leaked",
+    "fi": "Kun asiakkaiden henkilötietoja on voinut vuotaa"
+  },
+  "guidance_ransomware": {
+    "en": "Files suddenly encrypted",
+    "fi": "Tiedostot yhtäkkiä salattu"
+  },
+  "guidance_report_to_police": {
+    "en": "Reporting a scam",
+    "fi": "Huijauksesta ilmoittaminen"
+  },
+  "guidance_monitoring_apps": {
+    "en": "If you think someone close is monitoring your phone",
+    "fi": "Jos epäilet, että joku läheinen valvoo puhelintasi"
+  },
+  "guidance_asking_for_evidence": {
+    "en": "Asking the user for more information",
+    "fi": "Lisätietojen kysyminen käyttäjältä"
+  },
+  "guidance_handing_off": {
+    "en": "When to hand off to a human",
+    "fi": "Milloin siirtää ihmiselle"
+  },
+  "guidance_proportionate_advice": {
+    "en": "Proportionality",
+    "fi": "Oikeasuhtaisuus"
+  },
+  "guidance_privacy_consent": {
+    "en": "Using optional account and device information",
+    "fi": "Valinnaisten tili- ja laitetietojen käyttö"
+  },
+  "guidance_out_of_scope": {
+    "en": "Requests a safety assistant should decline",
+    "fi": "Pyynnöt, joista turva-avustajan pitää kieltäytyä"
+  }
+}

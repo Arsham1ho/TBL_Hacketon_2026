@@ -58,7 +58,9 @@ export type ApiResponse = {
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.
 export type ApiRequest =
-  | { kind: "start"; audience: "consumer" | "small_business"; language: Language | "auto"; message: string; incident?: string }
+  | { kind: "start"; audience: "consumer" | "small_business"; language: Language | "auto"; message: string; incident?: string; demoScenario?: string }
+  | { kind: "continue" }
+  | { kind: "talk_to_person" }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
