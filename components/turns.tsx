@@ -8,6 +8,7 @@ import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
+import { ProviderLogo } from "./select-menu";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
 export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
@@ -337,9 +338,12 @@ const Tile = ({ icon, label, value }: { icon: ReactNode; label: string; value: s
   </div>
 );
 
-const ContactRow = ({ name, note, children }: { name: string; note?: string; children: ReactNode }) => (
+const ContactRow = ({ name, logo, note, children }: { name: string; logo?: string; note?: string; children: ReactNode }) => (
   <div className="grid gap-1.5 border-t border-border pt-2 first-of-type:border-0 first-of-type:pt-0">
-    <p className="font-semibold">{name}</p>
+    <p className="flex items-center gap-2 font-semibold">
+      {logo && <ProviderLogo src={logo} />}
+      {name}
+    </p>
     {note && <p className="text-muted-foreground">{note}</p>}
     <div className="flex flex-wrap items-center gap-2">{children}</div>
   </div>
@@ -636,14 +640,14 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           node: (
             <Panel tone="calm" icon={<Phone className="size-4" aria-hidden />} title={t("contactTitle")}>
               {needsBank && (
-                <ContactRow name={bank?.name ?? t("bank")} note={bank ? undefined : providers.bank ? t("findBankContact") : t("whichBank")}>
+                <ContactRow name={bank?.name ?? t("bank")} logo={bank?.logo} note={bank ? undefined : providers.bank ? t("findBankContact") : t("whichBank")}>
                   {bank && <LinkButton href={bank.website}>{t("officialWebsite")}</LinkButton>}
                   <LinkButton href={`tel:${CARD_BLOCKING.tel}`}>{t("call")} {CARD_BLOCKING.display}</LinkButton>
                   <span className="text-xs text-muted-foreground">{t("cardBlocking")}</span>
                 </ContactRow>
               )}
               {needsOperator && (
-                <ContactRow name={operator?.name ?? t("operator_support_agent")} note={operator ? undefined : t("whichOperator")}>
+                <ContactRow name={operator?.name ?? t("operator_support_agent")} logo={operator?.logo} note={operator ? undefined : t("whichOperator")}>
                   {operator && <LinkButton href={operator.website}>{t("officialWebsite")}</LinkButton>}
                 </ContactRow>
               )}
@@ -712,9 +716,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       } else if (shown < cards.length - 1) {
         replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")), icon: <Check className="size-4" aria-hidden /> }];
       } else if (atContact && needsBank && !providers.bank) {
-        replies = [...BANKS.map((bank) => ({ label: bank.name, run: () => choose("bank", bank.id) })), { label: t("otherProvider"), run: () => choose("bank", "other") }];
+        replies = [...BANKS.map((bank) => ({ label: bank.name, icon: <ProviderLogo src={bank.logo} small />, run: () => choose("bank", bank.id) })), { label: t("otherProvider"), run: () => choose("bank", "other") }];
       } else if (atContact && needsOperator && !providers.operator) {
-        replies = [...OPERATORS.map((operator) => ({ label: operator.name, run: () => choose("operator", operator.id) })), { label: t("otherProvider"), run: () => choose("operator", "other") }];
+        replies = [...OPERATORS.map((operator) => ({ label: operator.name, icon: <ProviderLogo src={operator.logo} small />, run: () => choose("operator", operator.id) })), { label: t("otherProvider"), run: () => choose("operator", "other") }];
       } else {
         replies = [
           ...(live && !closed ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),

@@ -34,6 +34,7 @@ import { guessProvider, type ProviderChoice, type ProviderKind } from "@/lib/pro
 import { Btn, SecretNote, StepMark } from "./ui";
 import { UserProfileModal } from "./user-profile-modal";
 import { VoiceMode } from "./voice-mode";
+import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { clearHistory, newConversationId, saveConversation } from "@/lib/history";
 
@@ -279,24 +280,19 @@ const SettingRow = ({ label, icon, children }: { label: string; icon?: React.Rea
   </div>
 );
 
-function ProviderSelect({ id, value, options, notSet, other, onChange }: { id: string; value?: string; options: Provider[]; notSet: string; other: string; onChange: (id: string) => void }) {
+// The bank or operator, picked from a list with each provider's official logo.
+function ProviderSelect({ id, label, kind, value, options, notSet, other, onChange }: { id: string; label: string; kind: "bank" | "operator"; value?: string; options: Provider[]; notSet: string; other: string; onChange: (id: string) => void }) {
+  const generic = kind === "bank" ? <Landmark className="size-4" aria-hidden /> : <Smartphone className="size-4" aria-hidden />;
   return (
-    <select
+    <SelectMenu
       id={id}
-      value={value ?? ""}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-10 w-full rounded-full border border-border-strong bg-card px-4 text-sm text-foreground focus:border-primary focus:outline-none"
-    >
-      <option value="" disabled>
-        {notSet}
-      </option>
-      {options.map((option) => (
-        <option key={option.id} value={option.id}>
-          {option.name}
-        </option>
-      ))}
-      <option value="other">{other}</option>
-    </select>
+      label={label}
+      value={value}
+      placeholder={notSet}
+      placeholderIcon={generic}
+      onChange={onChange}
+      options={[...options.map((option) => ({ value: option.id, label: option.name, icon: <ProviderLogo src={option.logo} /> })), { value: "other", label: other }]}
+    />
   );
 }
 
@@ -716,10 +712,10 @@ export function SafeStepApp() {
             {/* Used to show the right contact when something happens. */}
             <SettingsGroup title={t("settingsServices")}>
               <SettingRow label={t("yourBank")} icon={<Landmark className="size-4" aria-hidden />}>
-                <ProviderSelect id="bank" value={providers.bank} options={BANKS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("bank", id)} />
+                <ProviderSelect id="bank" kind="bank" label={t("yourBank")} value={providers.bank} options={BANKS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("bank", id)} />
               </SettingRow>
               <SettingRow label={t("yourOperator")} icon={<Smartphone className="size-4" aria-hidden />}>
-                <ProviderSelect id="operator" value={providers.operator} options={OPERATORS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("operator", id)} />
+                <ProviderSelect id="operator" kind="operator" label={t("yourOperator")} value={providers.operator} options={OPERATORS} notSet={t("notSet")} other={t("otherProvider")} onChange={(id) => choose("operator", id)} />
               </SettingRow>
             </SettingsGroup>
 

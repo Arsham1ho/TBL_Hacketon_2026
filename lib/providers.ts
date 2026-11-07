@@ -1,24 +1,25 @@
 // Official contact points for the services a user may need. Websites only where a phone
 // number isn't certain: the user can find the right number there.
-export type Provider = { id: string; name: string; website: string };
+// `logo` is the provider's own icon, downloaded once from its official website into public/logos.
+export type Provider = { id: string; name: string; website: string; logo: string };
 
 export const BANKS: Provider[] = [
-  { id: "nordea", name: "Nordea", website: "https://www.nordea.fi" },
-  { id: "op", name: "OP", website: "https://www.op.fi" },
-  { id: "danske", name: "Danske Bank", website: "https://danskebank.fi" },
-  { id: "spankki", name: "S-Pankki", website: "https://www.s-pankki.fi" },
-  { id: "aktia", name: "Aktia", website: "https://www.aktia.fi" },
-  { id: "handelsbanken", name: "Handelsbanken", website: "https://www.handelsbanken.fi" },
-  { id: "pop", name: "POP Pankki", website: "https://www.poppankki.fi" },
-  { id: "saastopankki", name: "Säästöpankki", website: "https://www.saastopankki.fi" },
-  { id: "alandsbanken", name: "Ålandsbanken", website: "https://www.alandsbanken.fi" },
+  { id: "nordea", name: "Nordea", website: "https://www.nordea.fi", logo: "/logos/nordea.png" },
+  { id: "op", name: "OP", website: "https://www.op.fi", logo: "/logos/op.png" },
+  { id: "danske", name: "Danske Bank", website: "https://danskebank.fi", logo: "/logos/danske.png" },
+  { id: "spankki", name: "S-Pankki", website: "https://www.s-pankki.fi", logo: "/logos/spankki.png" },
+  { id: "aktia", name: "Aktia", website: "https://www.aktia.fi", logo: "/logos/aktia.png" },
+  { id: "handelsbanken", name: "Handelsbanken", website: "https://www.handelsbanken.fi", logo: "/logos/handelsbanken.png" },
+  { id: "pop", name: "POP Pankki", website: "https://www.poppankki.fi", logo: "/logos/pop.png" },
+  { id: "saastopankki", name: "Säästöpankki", website: "https://www.saastopankki.fi", logo: "/logos/saastopankki.png" },
+  { id: "alandsbanken", name: "Ålandsbanken", website: "https://www.alandsbanken.fi", logo: "/logos/alandsbanken.png" },
 ];
 
 export const OPERATORS: Provider[] = [
-  { id: "dna", name: "DNA", website: "https://www.dna.fi" },
-  { id: "elisa", name: "Elisa", website: "https://elisa.fi" },
-  { id: "telia", name: "Telia", website: "https://www.telia.fi" },
-  { id: "moi", name: "Moi", website: "https://moi.fi" },
+  { id: "dna", name: "DNA", website: "https://www.dna.fi", logo: "/logos/dna.svg" },
+  { id: "elisa", name: "Elisa", website: "https://elisa.fi", logo: "/logos/elisa.png" },
+  { id: "telia", name: "Telia", website: "https://www.telia.fi", logo: "/logos/telia.png" },
+  { id: "moi", name: "Moi", website: "https://moi.fi", logo: "/logos/moi.png" },
 ];
 
 // The shared card blocking service for cards issued in Finland.
