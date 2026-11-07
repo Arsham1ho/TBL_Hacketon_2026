@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 // Agent View is available only after explicit approval and remains simulated.
 export async function GET(request: Request) {
   const sessionId = new URL(request.url).searchParams.get("sessionId");
-  if (!sessionId) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+  if (!sessionId || !z.string().uuid().safeParse(sessionId).success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
   const journey = getSession(sessionId)?.journey;
   if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
   if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403 });

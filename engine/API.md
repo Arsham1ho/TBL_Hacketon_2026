@@ -2,6 +2,8 @@
 
 Use `POST /api/sessions` for every event. Each successful call returns the `ApiResponse` shape in `engine/screens.ts`; render `response.screen.type` and retain `response.sessionId` for subsequent calls. The API owns all safety decisions.
 
+The start request includes the first message. This follows the current `ApiRequest` contract. For subsequent events, the path aliases `POST /api/sessions/:id/answers`, `/consent`, `/rescue`, `/handoff`, and `/continue` accept the same event fields without `kind` or `sessionId`. `DELETE /api/sessions/:id` ends the session. The single `POST /api/sessions` event route remains available for the UI integration.
+
 Start:
 
 ```json

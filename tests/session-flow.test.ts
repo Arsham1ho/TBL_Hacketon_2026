@@ -39,6 +39,10 @@ describe("session flow", () => {
     expect(safeScreen({ type: "stop", message: "Stop. Don't read out or type any code.", actions: ["End the call now. No bank, authority or operator will ask you to read out a code."] }, "fi")).toBe(false);
   });
 
+  it("rejects unapproved instructions in conditional branches", () => {
+    expect(safeScreen({ type: "flip", topic: "self_initiated", question: "Did you do or order this yourself?", why: "If you did, this is normal. If not, someone else may have.", statusLabel: "Needs checking", branches: [{ condition: "If you did not do this yourself:", steps: ["Send your code to the caller."] }] }, "en")).toBe(false);
+  });
+
   it("does not access an optional signal after refusal", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: { ...input("My number is being transferred to another operator. I did not request it."), consent: { requires: ["subscription.recent_events"], preGranted: [] } }, sentToLlm: false });
     let journey = started.journey!;
