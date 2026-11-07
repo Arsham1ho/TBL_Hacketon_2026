@@ -5,7 +5,7 @@ import type { Language, Status } from "./types";
 
 export type IncidentCategory = { label: string; title: string; description: string };
 
-type CategoryKey = "code_theft" | "payment_fraud" | "credential_phishing" | "remote_access" | "device_compromise" | "sim_takeover" | "account_takeover" | "ransomware" | "suspicious_attachment" | "suspicious_link" | "unrequested_reset" | "unfamiliar_login" | "breach_notice" | "credential_exposure" | "former_staff_access" | "router_security" | "monitoring_concern";
+type CategoryKey = "code_theft" | "payment_fraud" | "credential_phishing" | "remote_access" | "device_compromise" | "sim_takeover" | "account_takeover" | "ransomware" | "suspicious_attachment" | "suspicious_link" | "unrequested_reset" | "unfamiliar_login" | "breach_notice" | "credential_exposure" | "former_staff_access" | "router_security" | "monitoring_concern" | "supplier_payment_change";
 
 const COPY: Record<CategoryKey, Record<Language, IncidentCategory>> = {
   code_theft: {
@@ -93,6 +93,11 @@ const COPY: Record<CategoryKey, Record<Language, IncidentCategory>> = {
     fi: { label: "Todennäköinen tapaustyyppi", title: "Mahdollinen laitteen seuranta", description: "Joku voi seurata henkilön laitetta tai toimintaa. Turvallisuus on arvioitava ennen laitteen muuttamista." },
     sv: { label: "Trolig händelsetyp", title: "Möjlig övervakning av enhet", description: "Någon kan övervaka personens enhet eller aktivitet. Bedöm säkerheten innan enheten ändras." },
   },
+  supplier_payment_change: {
+    en: { label: "Likely incident type", title: "Supplier payment change", description: "A supplier's payment details changed. Verify the new account through a known contact before paying." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Toimittajan maksutietojen muutos", description: "Toimittajan maksutiedot muuttuivat. Varmista uusi tili ennestään tunnetusta yhteystiedosta ennen maksua." },
+    sv: { label: "Trolig händelsetyp", title: "Ändrade leverantörsbetalningar", description: "En leverantörs betalningsuppgifter ändrades. Kontrollera det nya kontot genom en känd kontakt före betalning." },
+  },
 };
 
 function supported(item: Case): boolean {
@@ -109,6 +114,8 @@ function categoryKey(item: Case, outcome: Outcome): CategoryKey | null {
     && topicValue(item, "credentials_entered") !== "yes" && topicValue(item, "card_details_entered") !== "yes"
     && !item.facts.asksFor.includes("login") && !item.facts.asksFor.includes("card")) return "suspicious_link";
   if (outcome.situation === "personal_safety") return "monitoring_concern";
+  if (["payment_detail_change", "payment_sent"].includes(outcome.situation)
+    && (item.facts.incidentType === "payment_detail_change" || item.facts.pretendsToBe === "supplier")) return "supplier_payment_change";
   if (outcome.situation === "former_staff_access") return "former_staff_access";
   if (outcome.situation === "router_or_network") return "router_security";
   if (outcome.situation === "breach_unverified") return "breach_notice";

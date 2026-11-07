@@ -632,7 +632,7 @@ export const SITUATIONS: Situation[] = [
         "needs_verification",
         "low",
         "routine",
-        ["dont_open_link", "verify_official_channel"],
+        ["verify_official_channel"],
         ["guidance_unrequested_reset"],
       ),
   },

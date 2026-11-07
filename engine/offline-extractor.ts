@@ -36,7 +36,7 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["data_breach_notice", re(String.raw`breach|data leak|leaked|leacked|tietovuo|tietomur|vuoti|vuotanut|vuotaneet|dataintrång|dataläcka|läckt`)],
   ["unrequested_reset", re(String.raw`password reset|reset (email|link)|salasanan (nollaus|vaihto|palautus)|nollauspyyn|återställ.{0,12}lösenord|lösenordsåterställ`)],
   ["router_or_network", re(String.raw`router|reititin|reitittim|modeemi`)],
-  ["payment_detail_change", re(String.raw`(bank account|account number|tilinumero|pankkitili|kontonummer|bankkonto).{0,60}(chang|updat|new|muuttu|paivitt|uusi|uuteen|uudelle|andr|uppdater|nytt)|(new|uusi|uudelle|nytt|changed).{0,30}(bank account|account number|tilinumero|bankkonto|kontonummer)|uudelle tilille|new account`)],
+  ["payment_detail_change", re(String.raw`(bank account|bank details|payment details|account number|tilinumero|pankkitili|maksutiedot|kontonummer|bankkonto|betalningsuppgifter).{0,60}(chang|updat|new|muuttu|paivitt|uusi|uuteen|uudelle|andr|uppdater|nytt)|(new|uusi|uudelle|nytt|changed).{0,30}(bank account|bank details|payment details|account number|tilinumero|maksutiedot|bankkonto|betalningsuppgifter|kontonummer)|uudelle tilille|new account`)],
   ["payment_request", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd:?n?|managing director)\b`)],
   ["ransomware", re(String.raw`(screen|näyttö|skärm).{0,30}(demand|vaati|kräv)`)],
   ["remote_session", re(String.raw`remote (support|access|session|program)|etäy|etätuki|etäyhteys|fjärr`)],

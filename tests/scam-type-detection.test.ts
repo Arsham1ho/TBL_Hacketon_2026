@@ -29,4 +29,8 @@ describe("scam type detection follows the established situation", () => {
   it("names former staff access without claiming payment fraud", async () => {
     expect((await classify("A former employee still has access to our admin account.", "small_business")).title).toBe("Former staff access");
   });
+
+  it("names a supplier bank detail change before the invoice is paid", async () => {
+    expect((await classify("A supplier emailed new bank details for an invoice. We have not paid yet.", "small_business")).title).toBe("Supplier payment change");
+  });
 });

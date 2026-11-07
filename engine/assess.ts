@@ -61,7 +61,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
   if (/\b(?:i (?:have not|haven't|did not|didn't|never) (?:shared|given|read out|sent|typed)|en (?:ole )?(?:jakanut|antanut|kertonut|syöttänyt)|jag har inte (?:delat|gett|läst upp|skickat))\b.{0,25}\b(?:code|pin|koodi|koodia|kod|it)\b/iu.test(guarded.userText)) {
     facts = { ...facts, userAlreadyDid: facts.userAlreadyDid.filter(action => action !== "shared_code"), evidence: facts.evidence.filter(entry => entry.fact !== "userAlreadyDid:shared_code") };
   }
-  const paymentDenied = /\b(?:i (?:have not|haven't|did not|didn't|never) (?:paid|sent|transferred)\b.{0,35}\b(?:money|payment|invoice|funds|anything|it)\b|en (?:ole )?(?:vielä )?(?:maksanut|lähettänyt maksua|siirtänyt rahaa)|jag har inte (?:ännu )?(?:betalat|skickat pengar|fört över pengar))\b/iu.test(guarded.userText);
+  const paymentDenied = /\b(?:(?:i|we) (?:have not|haven't|did not|didn't|never) (?:paid|sent|transferred)\b(?:.{0,35}\b(?:money|payment|invoice|funds|anything|it)\b| yet\b|(?=[.!?;,]|$))|en (?:ole )?(?:vielä )?(?:maksanut|lähettänyt maksua|siirtänyt rahaa)|jag har inte (?:ännu )?(?:betalat|skickat pengar|fört över pengar))\b/iu.test(guarded.userText);
   const codeDenied = facts.asksFor.includes("code") && !facts.userAlreadyDid.includes("shared_code")
     && /\b(?:i (?:refused|declined)(?:\b|\b.{0,25}\b(?:code|it))|i (?:did not|didn't|have not|haven't)\b.{0,25}\b(?:code|share|give|read|send|it)|en (?:antanut|kertonut|jakanut|lähettänyt)\b.{0,20}\b(?:koodi|koodia|sitä)|jag (?:vägrade|delade inte|gav inte|läste inte upp)\b.{0,20}\b(?:kod|koden|den))\b/iu.test(guarded.userText);
   const explicitAnswers: Answers = paymentDenied && !facts.userAlreadyDid.includes("paid")

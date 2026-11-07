@@ -46,6 +46,17 @@ describe("observed accuracy regressions", () => {
     expect(assess(item).flip?.topic).not.toBe("money_transferred");
   });
 
+  it("accepts a business user's explicit statement that an invoice was not paid", async () => {
+    const { item } = await intake(input("A supplier emailed new bank details for an invoice. We have not paid yet.", "small_business"));
+    expect(item.answers.payment_status).toBe("no");
+    expect(assess(item).flip?.topic).not.toBe("payment_status");
+  });
+
+  it("does not mention an unreported link in a password reset alert", async () => {
+    const { item } = await intake(input("I received a password reset email for my account, but I did not request it."));
+    expect(assess(item).outcome.steps).not.toContain("dont_open_link");
+  });
+
   it("disconnects an actively controlled device before other advice", async () => {
     const { item } = await intake({ ...input("En främmande person styr fortfarande min dator via fjärrhjälp.") , language: "sv" });
     const result = assess(item);
