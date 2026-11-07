@@ -1,41 +1,38 @@
 import { describe, expect, it } from "vitest";
 import uiText from "../content/ui-text.json";
+import type { ApiResponse } from "../engine/screens";
 import { GatedSignal } from "../engine/types";
-import { createMockClient, demoScreen } from "../mocks/journey";
+import { createClient } from "../lib/client";
+import { demoScreen } from "../mocks/journey";
 
-describe("mock journey", () => {
-  it("walks from the Stop Screen to the end of a full journey", async () => {
-    const client = createMockClient();
-    const types: string[] = [];
-    const step = async (request: Parameters<typeof client.send>[0]) => types.push((await client.send(request)).screen.type);
+const response = (data: object, status = 200) => new Response(JSON.stringify(data), { status });
 
-    await step({ kind: "start", audience: "consumer", language: "en", message: "help" });
-    await step({ kind: "continue" });
-    await step({ kind: "answer", topic: "card_details_entered", answer: "yes" });
-    await step({ kind: "consent", signal: "subscription.recent_events", granted: true });
-    await step({ kind: "rescue", stepId: "a", outcome: "done" });
-    await step({ kind: "rescue", stepId: "b", outcome: "not_possible" });
-    await step({ kind: "rescue", stepId: "c", outcome: "done" });
-    await step({ kind: "handoff", approved: true });
+describe("session client", () => {
+  it("sends the session id with every event after start", async () => {
+    const calls: { url: string; body: any }[] = [];
+    const client = createClient((async (url: string, init?: RequestInit) => {
+      calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : null });
+      return response({ sessionId: "s1", screen: { type: "stop" } } as Partial<ApiResponse>);
+    }) as typeof fetch);
 
-    types.push((await client.end()).screen.type);
+    await client.send({ kind: "start", audience: "consumer", language: "auto", message: "help" });
+    await client.send({ kind: "talk_to_person" });
+    await client.end();
 
-    expect(types).toEqual(["stop", "flip", "unlock", "rescue", "rescue", "rescue", "handoff", "handoff", "end"]);
+    expect(calls.map((call) => call.body.kind)).toEqual(["start", "talk_to_person", "end"]);
+    expect(calls[0]?.body.sessionId).toBeUndefined();
+    expect(calls[1]?.body.sessionId).toBe("s1");
+    expect(await client.end()).toBeNull();
   });
 
-  it("gives a conditional result when the user is not sure", async () => {
-    const response = await createMockClient().send({ kind: "answer", topic: "card_details_entered", answer: "unsure" });
-    expect(response.screen).toMatchObject({ type: "result" });
-    expect(response.screen.type === "result" && response.screen.branches?.length).toBe(2);
-    expect(response.state.status).toBe("needs_verification");
+  it("treats an error status as a failure", async () => {
+    const client = createClient((async () => response({ error: "session_expired" }, 404)) as unknown as typeof fetch);
+    await expect(client.send({ kind: "continue" })).rejects.toThrow("404");
   });
+});
 
-  it("offers a talk-to-a-person route from any step", async () => {
-    const response = await createMockClient().send({ kind: "talk_to_person" });
-    expect(response.screen.type).toBe("handoff");
-  });
-
-  it("opens every review screen by name", () => {
+describe("review screens", () => {
+  it("open by name", () => {
     for (const name of ["stop", "flip", "unlock", "rescue", "handoff", "fallback", "end", "threat", "unsure", "safe"]) {
       expect(demoScreen(name)).not.toBeNull();
     }

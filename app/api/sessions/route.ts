@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { extractFacts, llmAvailable } from "../../../adapters/llm";
-import { handleEvent, handoffSummary, type Journey } from "../../../engine/handle-event";
+import { handleEvent, handoffSummary, journeyDestination, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
 import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
@@ -15,6 +15,7 @@ const End = z.strictObject({ kind: z.literal("end"), sessionId: z.string().uuid(
 const Continue = z.strictObject({ kind: z.literal("continue"), sessionId: z.string().uuid() });
 const Consent = z.strictObject({ kind: z.literal("consent"), sessionId: z.string().uuid(), signal: GatedSignal, granted: z.boolean() });
 const Rescue = z.strictObject({ kind: z.literal("rescue"), sessionId: z.string().uuid(), stepId: z.string(), outcome: z.enum(["done", "not_possible"]) });
+const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.string().uuid() });
 const Handoff = z.strictObject({ kind: z.literal("handoff"), sessionId: z.string().uuid(), approved: z.boolean() });
 
 export async function POST(request: Request) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "analysis_failed" }, { status: 503 });
     }
   }
-  const event = z.union([Answer, Continue, Consent, Rescue, Handoff]).safeParse(body);
+  const event = z.union([Answer, Continue, Consent, Rescue, Handoff, Talk]).safeParse(body);
   if (event.success) {
     const session = getSession(event.data.sessionId);
     if (!session?.journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
@@ -65,6 +66,7 @@ export async function GET(request: Request) {
   if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
   if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403 });
   const result = assess(journey.item, journey.asked);
-  if (!result.decision.destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
-  return NextResponse.json({ simulated: true, ...handoffPreview(result.decision.destination, result.confirmedFacts, journey.item.language), summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
+  const destination = journeyDestination(journey);
+  if (!destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
+  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)) });
 }

@@ -18,6 +18,7 @@ Subsequent events include `sessionId`:
 {"kind":"consent","sessionId":"...","signal":"subscription.recent_events","granted":false}
 {"kind":"rescue","sessionId":"...","stepId":"0","outcome":"done"}
 {"kind":"handoff","sessionId":"...","approved":false}
+{"kind":"talk_to_person","sessionId":"..."}
 {"kind":"end","sessionId":"..."}
 ```
 

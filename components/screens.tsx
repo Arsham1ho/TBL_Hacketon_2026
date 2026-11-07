@@ -15,7 +15,8 @@ import {
   X,
 } from "lucide-react";
 import type { ApiResponse, DataReceipt, Screen } from "@/engine/screens";
-import type { Destination, Risk, Status, Urgency } from "@/engine/types";
+import type { Risk, Status, Urgency } from "@/engine/types";
+import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
 import { cn } from "@/lib/utils";
 import { Btn, Card, Expandable, SimTag, StatusLabel } from "./ui";
@@ -48,6 +49,32 @@ export function LoadingScreen({ text }: { text: string }) {
       </div>
       <p className="text-2xl font-bold text-navy">{text}</p>
     </div>
+  );
+}
+
+export function BusyDots({ label }: { label: string }) {
+  return (
+    <div role="status" aria-label={label} className="flex justify-center gap-1.5 py-3">
+      {[0, 150, 300].map((delay) => (
+        <span key={delay} className="size-2 animate-bounce rounded-full bg-muted-foreground/60" style={{ animationDelay: `${delay}ms` }} />
+      ))}
+    </div>
+  );
+}
+
+// Only tapped answers appear here. The user's own text is never repeated, as it may hold a secret.
+export function AnswerTrail({ title, answers }: { title: string; answers: { question: string; answer: string }[] }) {
+  return (
+    <Expandable title={title}>
+      <ul className="grid gap-3">
+        {answers.map(({ question, answer }) => (
+          <li key={question}>
+            <p className="text-sm">{question}</p>
+            <p className="font-semibold text-foreground">{answer}</p>
+          </li>
+        ))}
+      </ul>
+    </Expandable>
   );
 }
 
@@ -170,9 +197,16 @@ export function ResultScreen(p: { screen: ScreenOf<"result">; status: Status; t:
           <Branches branches={screen.branches} large />
         </>
       ) : safe ? (
-        <Card className="border-success/30 bg-success-soft">
-          <H1 className="text-2xl">{screen.reason}</H1>
-        </Card>
+        <>
+          <Card className="border-success/30 bg-success-soft">
+            <H1 className="text-2xl">{screen.reason}</H1>
+          </Card>
+          {screen.steps.map((step) => (
+            <p key={step} className="text-lg font-medium">
+              {step}
+            </p>
+          ))}
+        </>
       ) : (
         <ol className="grid gap-3">
           {first && (
@@ -287,7 +321,7 @@ export function RescueScreen(p: {
         <h1 tabIndex={-1} className="text-[1.75rem] leading-tight font-extrabold focus:outline-none">
           {screen.step.title}
         </h1>
-        <p className="text-lg">{screen.step.detail}</p>
+        {screen.step.detail !== screen.step.title && <p className="text-lg">{screen.step.detail}</p>}
       </div>
       <div className="mt-auto grid gap-3">
         <div className="grid grid-cols-2 gap-3">
@@ -351,8 +385,8 @@ export function HandoffScreen(p: { screen: ScreenOf<"handoff">; t: Translate; bu
 const RISK_TEXT: Record<Risk, TextKey> = { none: "riskNone", low: "riskLow", medium: "riskMedium", high: "riskHigh", critical: "riskCritical" };
 const URGENCY_TEXT: Record<Urgency, TextKey> = { none: "urgencyNone", routine: "urgencyRoutine", today: "urgencyToday", immediate: "urgencyImmediate" };
 
-export function AgentViewScreen(p: { destination: Destination; summary: string[]; state: ApiResponse["state"]; t: Translate; onContinue: () => void }) {
-  const { state, t } = p;
+export function AgentViewScreen(p: { agent: AgentPreview; state: ApiResponse["state"]; t: Translate; onContinue: () => void }) {
+  const { agent, state, t } = p;
   return (
     <div className="flex flex-col gap-5">
       <div className="overflow-hidden rounded-3xl border border-border bg-card text-[0.95rem]">
@@ -360,7 +394,7 @@ export function AgentViewScreen(p: { destination: Destination; summary: string[]
           <div className="min-w-0 flex-1">
             <p className="text-sm text-muted-foreground">{t("agentCase")}</p>
             <h1 tabIndex={-1} className="text-lg font-semibold text-navy focus:outline-none">
-              {t(p.destination as TextKey)}
+              {t(agent.destination)}
             </h1>
           </div>
           <SimTag>{t("agentView")}</SimTag>
@@ -378,9 +412,9 @@ export function AgentViewScreen(p: { destination: Destination; summary: string[]
           </p>
         </div>
         <div className="grid gap-2 px-5 py-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6 sm:px-6">
-          <p className="text-sm text-muted-foreground">{t("confirmed")}</p>
+          <p className="text-sm text-muted-foreground">{t("yourSummary")}</p>
           <ul className="grid gap-2">
-            {p.summary.map((line) => (
+            {agent.summary.map((line) => (
               <li key={line} className="flex items-start gap-2.5">
                 <Check className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
                 <span>{line}</span>
@@ -393,7 +427,7 @@ export function AgentViewScreen(p: { destination: Destination; summary: string[]
           {t("agentNote")}
         </p>
       </div>
-      <Btn onClick={p.onContinue}>{t("receiptTitle")}</Btn>
+      <Btn onClick={p.onContinue}>{t("continue")}</Btn>
     </div>
   );
 }

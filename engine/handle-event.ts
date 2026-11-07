@@ -1,4 +1,6 @@
 import approved from "../content/approved-text.json";
+import guidanceTitles from "../content/guidance-titles.json";
+import questions from "../content/questions.json";
 import { assess, intake, type CaseInput, type Extractor } from "./assess";
 import { questionText, reasonText } from "./composer";
 import { confidenceBand } from "./confidence";
@@ -9,9 +11,9 @@ import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters
 import { handoffPreview } from "../adapters/handoff";
 import type { Case } from "./case";
 import type { ApiResponse, Screen } from "./screens";
-import type { GatedSignal, Topic } from "./types";
+import type { Destination, GatedSignal, Language, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean };
 export type Event =
   | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
@@ -19,6 +21,7 @@ export type Event =
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
   | { kind: "handoff"; approved: boolean }
+  | { kind: "talk_to_person" }
   | { kind: "end" };
 
 const screenText = {
@@ -72,12 +75,37 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       journey.handoffDone = true;
       journey.handoffApproved = event.approved;
     }
+    if (event.kind === "talk_to_person") {
+      // A person is available at any step, and the journey carries on after the handoff screen.
+      if (active.type === "handoff" || active.type === "end") throw new Error("invalid_event_order");
+      journey.personRequested = true;
+      journey.stopSeen = true;
+      journey.handoffDone = false;
+      journey.handoffApproved = false;
+    }
     if (event.kind === "continue") {
       if (active.type !== "stop") throw new Error("invalid_event_order");
       journey.stopSeen = true;
     }
   }
   return { journey, response: present(sessionId, journey) };
+}
+
+// The rules choose the destination. A person the user asked for themselves falls back to
+// first-line support, because the rules may have found no reason for a handoff.
+export function journeyDestination(journey: Journey): Destination | null {
+  const { destination } = assess(journey.item, journey.asked).decision;
+  if (destination || !journey.personRequested) return destination;
+  return journey.item.audience === "small_business" ? "business_security_support" : "operator_support_agent";
+}
+
+const unknownText = (topic: Topic, language: Language) => (questions as Partial<Record<Topic, Record<Language, { question: string }>>>)[topic]?.[language].question;
+
+// The supplied corpus has no Swedish titles, so Swedish falls back to the English one.
+function sourceTitle(id: string, language: Language): string {
+  const title = (guidanceTitles as Record<string, { en: string; fi: string }>)[id];
+  if (!title) return id;
+  return language === "fi" ? title.fi : title.en;
 }
 
 function pendingSignal(journey: Journey): GatedSignal | null {
@@ -105,16 +133,19 @@ function present(sessionId: string, journey: Journey, override?: Screen): ApiRes
   const signal = pendingSignal(journey);
   const recovery = rescueSteps(journey);
   const confirmedSummary = result.confirmedFacts.map(f => f.text);
+  const destination = journeyDestination(journey);
+  const handoffScreen = (target: Destination): Screen => ({ type: "handoff", destination: target, summary: handoffSummary(journey, confirmedSummary), omitted: handoffPreview(target, result.confirmedFacts, item.language).omitted });
   let screen: Screen;
   if (override) screen = override;
+  else if (journey.personRequested && destination && !journey.handoffDone) screen = handoffScreen(destination);
   else if (result.interruption && !journey.stopSeen) screen = stopScreen(result.interruption, item.language);
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: composed.question, why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [] };
   else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
-  else if (decision.destination && !journey.handoffDone) screen = { type: "handoff", destination: decision.destination, summary: handoffSummary(journey, confirmedSummary), omitted: handoffPreview(decision.destination, result.confirmedFacts, item.language).omitted };
-  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics, sources: outcome.guidance.map(id => ({ id, title: id })) };
+  else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
+  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination: decision.destination, externalContacts: decision.externalContacts }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }
 
 export function handoffSummary(journey: Journey, facts: string[]): string[] {
