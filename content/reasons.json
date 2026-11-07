@@ -11,7 +11,7 @@
   },
   "code_shared_reason": {
     "en": "You said a code was shared. It may have been used to access or approve something, but that is not yet confirmed.",
-    "fi": "Kerroit jakaneesi koodin. Sitä on voitu käyttää kirjautumiseen tai hyväksyntään, mutta tätä ei ole vielä vahvistettu.",
+    "fi": "Mainitsit, että koodi on päätynyt jollekulle toiselle. Sitä on voitu käyttää kirjautumiseen tai hyväksyntään, mutta tätä ei ole vielä vahvistettu.",
     "sv": "Du berättade att en kod delades. Den kan ha använts för åtkomst eller godkännande, men det är ännu inte bekräftat."
   },
   "remote_granted_reason": {
@@ -208,5 +208,10 @@
     "en": "CEO and supplier fraud use urgent, secret payment requests to bypass normal approval steps — always verify by calling a known internal number.",
     "fi": "Toimitusjohtaja- ja toimittajahuijaukset käyttävät kiireellisiä, salaisia maksupyyntöjä ohittaakseen tavallisen hyväksymismenettelyn — tarkista aina soittamalla tuttuun sisäiseen numeroon.",
     "sv": "VD- och leverantörsbedrägerier använder brådskande, hemliga betalningskrav för att kringgå normala godkännanderutiner — verifiera alltid via ett känt internt nummer."
+  },
+  "operator_order": {
+    "en": "Subscriptions or SIMs nobody ordered suggest someone is using your operator account. Only the operator can stop the order and lock the lines.",
+    "fi": "Liittymät tai SIM-kortit, joita kukaan ei tilannut, viittaavat siihen, että joku käyttää operaattoritiliäsi. Vain operaattori voi pysäyttää tilauksen ja lukita liittymät.",
+    "sv": "Abonnemang eller SIM-kort som ingen beställt tyder på att någon använder ditt operatörskonto. Bara operatören kan stoppa beställningen och spärra linjerna."
   }
 }

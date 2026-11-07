@@ -6,8 +6,8 @@ import { detectMentions } from "./mentions";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
 import { detectManipulationCues } from "./manipulation";
-import { decide, flipLimit, isTriage, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
-import { UNCLEAR, type Outcome } from "./situations";
+import { decide, flipLimit, isTriage, pickFlip, saferFirst, unresolvedFlip, worstCase, type Flip } from "./question-picker";
+import { matchSituation, UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
 import { conflictingTopics, mergeFacts, validateFacts } from "./fact-validator";
 import { GatedSignal, type Audience, type ConfirmedFact, type Decision, type Language, type SecretKind, type Topic } from "./types";
@@ -116,7 +116,9 @@ export function assess(item: Case, asked = 0): Assessment {
   // case to its worst outcome. "help" alone isn't an emergency. "Not sure" still counts.
   const pending = (isTriage(undecided) ? null : undecided) ?? unresolvedFlip(item);
   const unknownTopics = pending ? [pending.topic] : [];
-  const { outcome, decision } = withinContract(item, pending ? worstCase(pending) : decide(item), unknownTopics);
+  // A user who answers "Not sure" really doesn't know, so only an unasked fact may lean safe.
+  const leansSafe = pending && !item.unsure.includes(pending.topic) ? matchSituation(item).unknownLeansSafe?.includes(pending.topic) : false;
+  const { outcome, decision } = withinContract(item, pending ? (leansSafe ? saferFirst(pending) : worstCase(pending)) : decide(item), unknownTopics);
 
   return {
     outcome,

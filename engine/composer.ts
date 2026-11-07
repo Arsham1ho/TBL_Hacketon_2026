@@ -33,6 +33,7 @@ const REASON_OF: Record<string, ReasonKey> = {
   own_payment_change: "own_change",
   colleague_order: "order_check",
   unauthorised_order: "order_check",
+  unauthorised_operator_order: "operator_order",
   booked_remote_support: "harmless",
   remote_banking_exposed: "money_or_card",
   remote_device_exposed: "device_exposed",
@@ -126,9 +127,12 @@ export function compose(outcome: Outcome, language: Language, flip: Flip | null,
   const wording = unknownTopic ? questionText(unknownTopic, language) : null;
   const otherSteps = (outcome.otherBranchSteps ?? []).map((step) => steps[step as keyof typeof steps][language]);
 
+  // Usually the worse branch leads. When the unknown leans safe, the safer branch leads instead.
+  const mainIf = outcome.saferFirst ? wording?.ifSafe : wording?.ifRisky;
+  const otherIf = outcome.saferFirst ? wording?.ifRisky : wording?.ifSafe;
   const lead = texts.slice(0, 3).join(" ");
-  const parts = [wording ? `${wording.ifRisky} ${lead}` : lead];
-  if (wording && otherSteps.length > 0) parts.push(`${wording.ifSafe} ${otherSteps.slice(0, 2).join(" ")}`);
+  const parts = [wording ? `${mainIf} ${lead}` : lead];
+  if (wording && otherSteps.length > 0) parts.push(`${otherIf} ${otherSteps.slice(0, 2).join(" ")}`);
   parts.push(reasonText(outcome, language, audience, item));
   if (asked) parts.push(asked.question);
   if (outcome.destination) parts.push(approved.handoff[language]);
@@ -136,8 +140,8 @@ export function compose(outcome: Outcome, language: Language, flip: Flip | null,
 
   const branches = wording
     ? [
-        { condition: wording.ifRisky, steps: texts },
-        ...(otherSteps.length > 0 ? [{ condition: wording.ifSafe, steps: otherSteps }] : []),
+        { condition: mainIf!, steps: texts },
+        ...(otherSteps.length > 0 ? [{ condition: otherIf!, steps: otherSteps }] : []),
       ]
     : null;
 

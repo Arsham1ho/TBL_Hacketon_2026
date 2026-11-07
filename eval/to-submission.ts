@@ -43,7 +43,9 @@ export function toSubmission(raw: any, item: Case, assessment: Assessment, activ
     escalation_required: decision.destination !== null,
     escalation_target: decision.destination,
     urgency: decision.urgency,
-    steps: composed.steps,
+    // Only the branch the advice leads with: a flat list would mix "lock your SIM now" with the
+    // other branch's "nothing to do" and lose its condition. The advice text keeps both branches.
+    steps: composed.branches?.[0]?.steps ?? composed.steps,
     questions_asked: composed.question ? [composed.question] : [],
     question_topics: flip ? [flip.topic] : [],
     signals_used: [...signalsUsed(raw, item), ...(activity.used ?? [])],

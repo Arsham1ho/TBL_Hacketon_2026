@@ -16,6 +16,8 @@ export type Outcome = {
   // Set only for worst-case advice under an unknown fact.
   otherBranchSteps?: string[];
   worseAnswer?: "yes" | "no";
+  // Set when the advice follows the safer branch and the worse one is the condition.
+  saferFirst?: boolean;
 };
 
 export type Situation = {
@@ -23,6 +25,10 @@ export type Situation = {
   when: (item: Case) => boolean;
   // Facts worth testing here. The picker asks one only if Yes and No really differ.
   flips?: Topic[];
+  // Unknown answers that lean safe, because the message itself makes the worse answer
+  // unlikely, such as a payment that is only being requested. The advice follows the safer
+  // branch and still gives the worse branch as a condition. Everything else leans worst-case.
+  unknownLeansSafe?: Topic[];
   then: (item: Case) => Outcome;
 };
 
@@ -317,6 +323,24 @@ export const SITUATIONS: Situation[] = [
     then: (c) =>
       selfStarted(c) === "yes"
         ? explainBenign("own_order", ["guidance_order_confirmations", "guidance_proportionate_advice"])
+        // Subscriptions or SIMs nobody ordered come from the operator's own account, which
+        // points to an account takeover: only the operator can stop the order and lock the line.
+        : c.facts.pretendsToBe === "operator"
+        ? outcome(
+            "unauthorised_operator_order",
+            "contact_operator_support",
+            "incident_occurred",
+            "critical",
+            "immediate",
+            ["contact_operator", "change_password", "lock_subscription", "review_sessions"],
+            ["guidance_order_confirmations", "guidance_shared_accounts"],
+            {
+              destination: person(c, "operator_support_agent"),
+              externalContacts: ["police"],
+              rescue: true,
+              wantsSignals: ["subscription.recent_events", "operator_account.recent_logins"],
+            },
+          )
         : outcome(
             "unauthorised_order",
             "verify_via_official_channel",
@@ -676,6 +700,9 @@ export const SITUATIONS: Situation[] = [
     id: "payment_detail_change",
     when: (c) => is(c, "payment_detail_change"),
     flips: ["payment_status"],
+    // A supplier asking to be paid to a new account usually hasn't been paid yet: verify first,
+    // and "if the payment has gone, call the bank" stays as a branch.
+    unknownLeansSafe: ["payment_status"],
     then: (c) => yes(c, "payment_status")
       ? bankIncident("payment_sent", c, ["guidance_invoice_fraud", "guidance_payment_verification"], true, ["verify_out_of_band", "report_police"])
       : outcome(

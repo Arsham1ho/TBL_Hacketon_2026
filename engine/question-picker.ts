@@ -91,6 +91,21 @@ export function unresolvedFlip(item: Case): Flip | null {
   return null;
 }
 
+// For an unknown that leans safe: the safer branch leads, and the worse one is kept as a condition.
+export function saferFirst(flip: Flip): Outcome {
+  const yesIsWorse = severity(flip.ifYes) >= severity(flip.ifNo);
+  const safer = yesIsWorse ? flip.ifNo : flip.ifYes;
+  const worse = yesIsWorse ? flip.ifYes : flip.ifNo;
+  return {
+    ...safer,
+    wantsSignals: [...new Set([...safer.wantsSignals, ...worse.wantsSignals])],
+    guidance: [...new Set([...safer.guidance, ...worse.guidance])],
+    otherBranchSteps: worse.steps.filter((step) => !safer.steps.includes(step)),
+    worseAnswer: yesIsWorse ? "yes" : "no",
+    saferFirst: true,
+  };
+}
+
 // Used for "Not sure" and when nobody can reply. The fact stays unknown, so the
 // advice follows the worse branch without claiming that branch is true.
 export function worstCase(flip: Flip): Outcome {
