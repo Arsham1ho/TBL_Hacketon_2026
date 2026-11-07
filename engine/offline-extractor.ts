@@ -82,7 +82,7 @@ const DID: [Facts["userAlreadyDid"][number], RegExp][] = [
 ];
 
 const SELF_YES = re(String.raw`i('m| am) (logging|signing) in|right now on|new (laptop|computer)|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|uutta tietokonetta|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in|ny dator|i own|my own`);
-const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|log|logging|sign|order)|i'm not logging|en ole kirjautu|en pyytänyt|en ole pyytänyt|en tilannut|ei tilattu|har inte (bett|begärt|beställt)|bad inte|loggar inte in`);
+const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|start|initiate|log|logging|sign|order)|i'm not logging|en ole kirjautu|en pyytänyt|en ole pyytänyt|en aloittanut|en tilannut|ei tilattu|har inte (bett|begärt|startat|beställt)|bad inte|loggar inte in`);
 const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contract|known number|confirmed)|she confirmed|he confirmed|soitin.{0,50}(sopimuksen|tuttuun|vahvisti)|soittamalla.{0,50}tuttuun|vahvisti muutoksen|ringde.{0,50}(avtalet|bekräftade|känt)|genom att ringa|bekräftade ändringen|\((admin|pääkäyttäjä|administratör)\)`);
 
 const PRESSURE = re(String.raw`urgent|immediately|within \d+|today|keep it (confidential|secret)|confidential|suspended|expire|expiring|locked|overdue|kiire|välittömästi|heti|tunnin sisällä|luottamuksellis|lukittu|erääntyy|vanhenee|suljetaan|tänään|bråttom|omedelbart|inom \d+|hemlig|konfidentiell|spärrad|löper ut|stängs|i dag|virus|don't remember|en muista|minns inte|same thread|samma tråd|samassa ketjussa`);

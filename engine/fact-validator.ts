@@ -32,22 +32,29 @@ function isEmpty(value: unknown): boolean {
 // costs far more than one extra caution, so a danger fact from either source is kept.
 export function mergeFacts(primary: Facts, backstop: Facts): Facts {
   const did = [...new Set([...primary.userAlreadyDid, ...backstop.userAlreadyDid])];
-  const asksNothing = primary.asksNothing ?? backstop.asksNothing;
+  const asksFor = [...new Set([...primary.asksFor, ...backstop.asksFor])];
+  // A model claiming that a message asks for nothing must never erase a
+  // concrete request found by the deterministic safety backstop.
+  const asksNothing = asksFor.length > 0 ? false : primary.asksNothing ?? backstop.asksNothing;
+  const selfInitiated = primary.selfInitiated !== null && backstop.selfInitiated !== null
+    && primary.selfInitiated !== backstop.selfInitiated ? null : primary.selfInitiated ?? backstop.selfInitiated;
+  const independentlyVerified = primary.independentlyVerified !== null && backstop.independentlyVerified !== null
+    && primary.independentlyVerified !== backstop.independentlyVerified ? null : primary.independentlyVerified ?? backstop.independentlyVerified;
   return {
     ...primary,
     incidentType: primary.incidentType ?? backstop.incidentType,
     // A vague "other" must not hide a specific match such as a claimed bank or operator.
     pretendsToBe: !primary.pretendsToBe || primary.pretendsToBe === "other" ? backstop.pretendsToBe ?? primary.pretendsToBe : primary.pretendsToBe,
     contactStartedBy: primary.contactStartedBy ?? backstop.contactStartedBy,
-    selfInitiated: primary.selfInitiated ?? backstop.selfInitiated,
-    independentlyVerified: primary.independentlyVerified ?? backstop.independentlyVerified,
+    selfInitiated,
+    independentlyVerified,
     passwordReused: primary.passwordReused ?? backstop.passwordReused,
     serviceLost: primary.serviceLost ?? backstop.serviceLost,
     pressureOrSecrecy: primary.pressureOrSecrecy ?? backstop.pressureOrSecrecy,
     asksNothing,
     userAlreadyDid: did.length > 1 ? did.filter((action) => action !== "nothing") : did,
     dataExposed: [...new Set([...primary.dataExposed, ...backstop.dataExposed])],
-    asksFor: asksNothing === true ? primary.asksFor : [...new Set([...primary.asksFor, ...backstop.asksFor])],
+    asksFor,
     happeningNow: primary.happeningNow === true || backstop.happeningNow === true ? true : primary.happeningNow,
     personalSafetyRisk: primary.personalSafetyRisk === true || backstop.personalSafetyRisk === true ? true : primary.personalSafetyRisk,
     asksToTracePerson: primary.asksToTracePerson || backstop.asksToTracePerson,
