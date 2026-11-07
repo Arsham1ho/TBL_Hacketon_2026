@@ -378,8 +378,18 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "code_given",
-    when: (c) => did(c, "shared_code"),
+    when: (c) => did(c, "shared_code") && poses(c, "bank"),
     then: (c) => bankIncident("code_given", c, ["guidance_one_time_codes", "guidance_bank_verification"], false),
+  },
+  {
+    id: "non_bank_code_given",
+    when: (c) => did(c, "shared_code"),
+    then: (c) => outcome(
+      "non_bank_code_given", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
+      ["change_password", "review_sessions", "dont_share_codes"],
+      ["guidance_one_time_codes", "guidance_credential_compromise"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
   },
   {
     id: "account_password_exposed",

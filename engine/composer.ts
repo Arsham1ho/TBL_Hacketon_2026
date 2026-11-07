@@ -33,6 +33,7 @@ const REASON_OF: Record<string, ReasonKey> = {
   card_exposed: "money_or_card",
   bank_login_exposed: "money_or_card",
   code_given: "money_or_card",
+  non_bank_code_given: "password_exposed",
   account_password_exposed: "password_exposed",
   own_click: "harmless",
   link_opened_nothing_entered: "link_only",

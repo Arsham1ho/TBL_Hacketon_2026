@@ -33,11 +33,8 @@ function signalsUsed(raw: any, item: Case): string[] {
   return used;
 }
 
-export function toSubmission(raw: any, item: Case, assessment: Assessment) {
+export function toSubmission(raw: any, item: Case, assessment: Assessment, activity: { requested?: string[]; used?: string[] } = {}) {
   const { decision, outcome, composed, flip, confidence } = assessment;
-  const wanted = outcome.wantsSignals.filter(
-    (signal) => item.availableSignals.includes(signal) && !item.pregrantedSignals.includes(signal),
-  );
   return {
     case_id: raw.case_id,
     risk_level: decision.risk,
@@ -49,8 +46,9 @@ export function toSubmission(raw: any, item: Case, assessment: Assessment) {
     steps: composed.steps,
     questions_asked: composed.question ? [composed.question] : [],
     question_topics: flip ? [flip.topic] : [],
-    signals_used: signalsUsed(raw, item),
-    consent_requested_for: wanted,
+    signals_used: [...signalsUsed(raw, item), ...(activity.used ?? [])],
+    // One-answer mode has no consent interaction. Never claim that a request occurred.
+    consent_requested_for: activity.requested ?? [],
     citations: outcome.guidance,
     confidence,
     abstained: outcome.situation === "unclear",
