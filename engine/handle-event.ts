@@ -20,6 +20,7 @@ import { guardInput } from "./input-guard";
 import type { InterruptionKind } from "./interruption";
 import type { ApiResponse, HandoffDetails, Screen, SupportRoute } from "./screens";
 import { linkContextCopy } from "./link-context";
+import { radarMatch } from "./scam-radar";
 import { contextualQuestion } from "./contextual-question";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
@@ -200,7 +201,7 @@ async function reread(journey: Journey, text: string, extractor?: Extractor, rep
   if (result.secretsFound.length > 0) journey.secretFound = true;
   const facts = replace ? result.item.facts : mergeFacts(result.item.facts, current.facts);
   const conflicts = replace ? result.item.conflicts ?? [] : [...new Set([...(current.conflicts ?? []), ...(result.item.conflicts ?? []), ...conflictingTopics(result.item.facts, current.facts)])];
-  return { ...current, facts: { ...facts, language: current.language }, conflicts, signals: { ...current.signals, hasLink: current.signals.hasLink || result.item.signals.hasLink }, mentions: result.item.mentions };
+  return { ...current, facts: { ...facts, language: current.language }, manipulationCues: result.item.manipulationCues, conflicts, signals: { ...current.signals, hasLink: current.signals.hasLink || result.item.signals.hasLink }, mentions: result.item.mentions };
 }
 
 // The interview is read by the LLM only. The keyword reader would take a question such as
@@ -337,7 +338,8 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language, item.audience, item), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+  const radar = radarMatch(item);
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm }, radar: radar ? { id: radar.id, title: radar.title[item.language], clue: radar.clue[item.language] } : null };
 }
 
 // The summary's parts: what the user said, why it matters, and the steps done and not done.

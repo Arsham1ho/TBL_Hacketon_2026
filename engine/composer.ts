@@ -6,6 +6,7 @@ import type { Flip } from "./question-picker";
 import type { Outcome } from "./situations";
 import type { Audience, Language, Topic } from "./types";
 import { didAction, topicValue, type Case } from "./case";
+import { manipulationExplanation } from "./manipulation";
 
 export type ReasonKey = keyof typeof reasons;
 
@@ -94,7 +95,10 @@ export function reasonText(outcome: Outcome, language: Language, audience?: Audi
     : outcome.situation === "remote_device_exposed" && confirmed("gave_remote_access", "remote_access_given") ? "remote_granted_reason"
     : REASON_OF[outcome.situation];
   const resolvedKey = audience === "small_business" ? (BUSINESS_REASON_OF[key] ?? key) : key;
-  return reasons[resolvedKey][language];
+  const reason = reasons[resolvedKey][language];
+  if (!["verify_via_official_channel", "do_not_interact_and_delete"].includes(outcome.primaryAction) || !item?.facts.asksFor.length) return reason;
+  const explanation = manipulationExplanation(item.manipulationCues ?? [], language);
+  return explanation ? `${reason} ${explanation}` : reason;
 }
 
 export function stepTexts(outcome: Outcome, language: Language): string[] {

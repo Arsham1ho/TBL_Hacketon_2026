@@ -5,6 +5,7 @@ import { guardInput } from "./input-guard";
 import { detectMentions } from "./mentions";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
+import { detectManipulationCues } from "./manipulation";
 import { decide, flipLimit, isTriage, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
 import { UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
@@ -55,6 +56,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       audience: input.audience,
       language: input.language,
       facts,
+      manipulationCues: detectManipulationCues(`${guarded.userText}\n${guarded.maskedIncident ?? ""}`),
       conflicts: primary ? conflictingTopics(primary, backstop) : [],
       answers: {},
       unsure: [],

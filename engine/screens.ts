@@ -79,6 +79,7 @@ export type ApiResponse = {
   secretWarning: string | null;
   notice: string;
   dataReceipt: DataReceipt;
+  radar?: { id: string; title: string; clue: string } | null;
 };
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.
