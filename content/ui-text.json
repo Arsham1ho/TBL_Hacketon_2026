@@ -1,172 +1,184 @@
 {
-  "banner": {
-    "en": "Synthetic prototype. Not a live DNA service. This is a temporary test page for Stages 1 and 2.",
-    "fi": "Synteettinen prototyyppi. Ei toimiva DNA:n palvelu. Tämä on väliaikainen testisivu vaiheille 1 ja 2.",
-    "sv": "Syntetisk prototyp. Inte en aktiv DNA-tjänst. Det här är en tillfällig testsida för steg 1 och 2."
+  "_review": {
+    "en": "draft: needs team review",
+    "fi": "draft: needs native speaker review",
+    "sv": "draft: needs native speaker review"
   },
-  "whatHappened": {
-    "en": "What happened?",
-    "fi": "Mitä tapahtui?",
-    "sv": "Vad hände?"
+  "language": { "en": "Language", "fi": "Kieli", "sv": "Språk" },
+  "exit": { "en": "Exit", "fi": "Poistu", "sv": "Avsluta" },
+  "back": { "en": "Back", "fi": "Takaisin", "sv": "Tillbaka" },
+  "prototype": {
+    "en": "Synthetic prototype. Not a live DNA service.",
+    "fi": "Synteettinen prototyyppi. Ei toimiva DNA:n palvelu.",
+    "sv": "Syntetisk prototyp. Inte en aktiv DNA-tjänst."
   },
-  "received": {
-    "en": "Message you received (optional)",
-    "fi": "Saamasi viesti (valinnainen)",
-    "sv": "Meddelandet du fick (valfritt)"
+  "audience": { "en": "Who is this for?", "fi": "Kenelle tämä on?", "sv": "Vem gäller det?" },
+  "consumer": { "en": "Personal", "fi": "Henkilöasiakas", "sv": "Privat" },
+  "smallBusiness": { "en": "Small business", "fi": "Pienyritys", "sv": "Småföretag" },
+  "whatHappened": { "en": "What happened?", "fi": "Mitä tapahtui?", "sv": "Vad hände?" },
+  "whatHappenedBusiness": {
+    "en": "What's happening at your business?",
+    "fi": "Mitä yrityksessäsi tapahtuu?",
+    "sv": "Vad händer i ditt företag?"
   },
-  "language": {
-    "en": "Language",
-    "fi": "Kieli",
-    "sv": "Språk"
+  "hint": {
+    "en": "Tell us in your own words. A sentence is enough.",
+    "fi": "Kerro omin sanoin. Yksi lause riittää.",
+    "sv": "Berätta med egna ord. En mening räcker."
   },
-  "auto": {
-    "en": "Detect automatically",
-    "fi": "Tunnista automaattisesti",
-    "sv": "Identifiera automatiskt"
+  "sample": {
+    "en": "I got a text asking me to pay for a parcel",
+    "fi": "Sain tekstiviestin, jossa pyydetään maksamaan paketista",
+    "sv": "Jag fick ett sms om att betala för ett paket"
   },
-  "user": {
-    "en": "User",
-    "fi": "Käyttäjä",
-    "sv": "Användare"
+  "sampleBusiness": {
+    "en": "A supplier asked us to change their bank details",
+    "fi": "Toimittaja pyysi meitä vaihtamaan pankkitiedot",
+    "sv": "En leverantör bad oss ändra sina bankuppgifter"
   },
-  "consumer": {
-    "en": "Consumer",
-    "fi": "Kuluttaja",
-    "sv": "Konsument"
+  "pasteToggle": {
+    "en": "Paste the message you received",
+    "fi": "Liitä saamasi viesti",
+    "sv": "Klistra in meddelandet du fick"
   },
-  "smallBusiness": {
-    "en": "Small business",
-    "fi": "Pienyritys",
-    "sv": "Småföretag"
+  "pasteLabel": { "en": "Message you received", "fi": "Saamasi viesti", "sv": "Meddelandet du fick" },
+  "send": { "en": "Send", "fi": "Lähetä", "sv": "Skicka" },
+  "safetyNote": {
+    "en": "Never share passwords, codes or full card numbers here.",
+    "fi": "Älä koskaan jaa tässä salasanoja, koodeja tai koko korttinumeroa.",
+    "sv": "Dela aldrig lösenord, koder eller fullständiga kortnummer här."
   },
-  "check": {
-    "en": "Check this",
-    "fi": "Tarkista",
-    "sv": "Kontrollera"
+  "quickMessage": { "en": "Suspicious message", "fi": "Epäilyttävä viesti", "sv": "Misstänkt meddelande" },
+  "quickMessageText": {
+    "en": "I got a suspicious message.",
+    "fi": "Sain epäilyttävän viestin.",
+    "sv": "Jag fick ett misstänkt meddelande."
   },
-  "checking": {
-    "en": "Checking…",
-    "fi": "Tarkistetaan…",
-    "sv": "Kontrollerar…"
+  "quickCall": { "en": "Suspicious call", "fi": "Epäilyttävä puhelu", "sv": "Misstänkt samtal" },
+  "quickCallText": {
+    "en": "I got a suspicious call.",
+    "fi": "Sain epäilyttävän puhelun.",
+    "sv": "Jag fick ett misstänkt samtal."
+  },
+  "quickLink": { "en": "Clicked a link", "fi": "Avasin linkin", "sv": "Klickade på en länk" },
+  "quickLinkText": {
+    "en": "I clicked a link and now I'm worried.",
+    "fi": "Avasin linkin ja nyt olen huolissani.",
+    "sv": "Jag klickade på en länk och nu är jag orolig."
+  },
+  "quickAccount": { "en": "Account or SIM problem", "fi": "Tili- tai SIM-ongelma", "sv": "Konto- eller SIM-problem" },
+  "quickAccountText": {
+    "en": "Something is wrong with my account or SIM.",
+    "fi": "Tilissäni tai SIM-kortissani on jotain vialla.",
+    "sv": "Något är fel med mitt konto eller SIM-kort."
+  },
+  "quickBusiness": { "en": "Business incident", "fi": "Yrityksen tapaus", "sv": "Händelse i företaget" },
+  "quickBusinessText": {
+    "en": "Something happened at our company.",
+    "fi": "Yrityksessämme tapahtui jotain.",
+    "sv": "Något har hänt i vårt företag."
+  },
+  "loading": {
+    "en": "Preparing your next step…",
+    "fi": "Valmistellaan seuraavaa vaihetta…",
+    "sv": "Förbereder nästa steg…"
   },
   "failed": {
     "en": "Something went wrong. Please try again, or talk to a person.",
-    "fi": "Jokin meni vikaan. Yritä uudelleen tai puhu ihmisen kanssa.",
+    "fi": "Jokin meni pieleen. Yritä uudelleen tai puhu ihmisen kanssa.",
     "sv": "Något gick fel. Försök igen eller prata med en person."
   },
-  "startAgain": {
-    "en": "Start again",
-    "fi": "Aloita alusta",
-    "sv": "Börja om"
+  "tryAgain": { "en": "Try again", "fi": "Yritä uudelleen", "sv": "Försök igen" },
+  "stopped": { "en": "I've stopped", "fi": "Lopetin", "sv": "Jag har slutat" },
+  "stoppedBusiness": { "en": "We've stopped", "fi": "Lopetimme", "sv": "Vi har slutat" },
+  "talk": { "en": "Talk to a person", "fi": "Puhu ihmisen kanssa", "sv": "Prata med en person" },
+  "yes": { "en": "Yes", "fi": "Kyllä", "sv": "Ja" },
+  "no": { "en": "No", "fi": "Ei", "sv": "Nej" },
+  "notSure": { "en": "Not sure", "fi": "En ole varma", "sv": "Inte säker" },
+  "whatWeKnow": { "en": "What we know", "fi": "Mitä tiedämme", "sv": "Det här vet vi" },
+  "whileYouDecide": {
+    "en": "What to do for each answer",
+    "fi": "Mitä tehdä kunkin vastauksen kohdalla",
+    "sv": "Vad du ska göra för varje svar"
   },
-  "why": {
-    "en": "Why:",
-    "fi": "Miksi:",
-    "sv": "Varför:"
+  "eachCase": {
+    "en": "Here's what to do in each case",
+    "fi": "Näin toimit kussakin tilanteessa",
+    "sv": "Så här gör du i varje fall"
   },
-  "yes": {
-    "en": "Yes",
-    "fi": "Kyllä",
-    "sv": "Ja"
+  "needsChecking": { "en": "Needs checking", "fi": "Tarkistettava", "sv": "Behöver kontrolleras" },
+  "why": { "en": "Why", "fi": "Miksi", "sv": "Varför" },
+  "stillUnknown": { "en": "Still unknown", "fi": "Vielä epäselvää", "sv": "Fortfarande okänt" },
+  "source": { "en": "Source", "fi": "Lähde", "sv": "Källa" },
+  "syntheticGuidance": { "en": "Synthetic guidance", "fi": "Synteettinen ohje", "sv": "Syntetisk vägledning" },
+  "done": { "en": "Done", "fi": "Valmis", "sv": "Klart" },
+  "unlockTitle": { "en": "Can we check one thing?", "fi": "Saammeko tarkistaa yhden asian?", "sv": "Får vi kontrollera en sak?" },
+  "simulatedSignal": { "en": "Simulated signal", "fi": "Simuloitu signaali", "sv": "Simulerad signal" },
+  "what": { "en": "What", "fi": "Mitä", "sv": "Vad" },
+  "limit": { "en": "Limit", "fi": "Rajaus", "sv": "Begränsning" },
+  "allow": { "en": "Allow this check", "fi": "Salli tämä tarkistus", "sv": "Tillåt kontrollen" },
+  "deny": { "en": "No, continue without it", "fi": "Ei, jatka ilman sitä", "sv": "Nej, fortsätt utan den" },
+  "step": { "en": "Step {n} of {total}", "fi": "Vaihe {n}/{total}", "sv": "Steg {n} av {total}" },
+  "onlyYou": { "en": "Only you can do this", "fi": "Vain sinä voit tehdä tämän", "sv": "Bara du kan göra detta" },
+  "notPossible": { "en": "Not possible", "fi": "Ei onnistu", "sv": "Går inte" },
+  "handoffTitle": { "en": "Check what we'll share", "fi": "Tarkista, mitä jaamme", "sv": "Kontrollera vad vi delar" },
+  "simulatedHandoff": { "en": "Simulated handoff", "fi": "Simuloitu siirto", "sv": "Simulerad överlämning" },
+  "sentTo": { "en": "Sent to", "fi": "Vastaanottaja", "sv": "Skickas till" },
+  "yourSummary": { "en": "Your summary", "fi": "Yhteenvetosi", "sv": "Din sammanfattning" },
+  "leftOut": { "en": "Left out", "fi": "Jätetty pois", "sv": "Utelämnat" },
+  "approve": { "en": "Approve and share", "fi": "Hyväksy ja jaa", "sv": "Godkänn och dela" },
+  "dontShare": { "en": "Don't share", "fi": "Älä jaa", "sv": "Dela inte" },
+  "operator_support_agent": { "en": "Operator support agent", "fi": "Operaattorin asiakaspalvelija", "sv": "Operatörens kundtjänst" },
+  "security_specialist": { "en": "Security specialist", "fi": "Tietoturva-asiantuntija", "sv": "Säkerhetsspecialist" },
+  "business_security_support": { "en": "Business security support", "fi": "Yritysten tietoturvatuki", "sv": "Säkerhetssupport för företag" },
+  "human_advisor": { "en": "Trained human advisor", "fi": "Koulutettu neuvoja", "sv": "Utbildad rådgivare" },
+  "agentView": { "en": "Simulated agent view", "fi": "Simuloitu asiakaspalvelijan näkymä", "sv": "Simulerad vy för handläggare" },
+  "agentCase": { "en": "Shared case summary", "fi": "Jaettu tapauksen yhteenveto", "sv": "Delad sammanfattning av ärendet" },
+  "risk": { "en": "Risk", "fi": "Riski", "sv": "Risk" },
+  "urgency": { "en": "Urgency", "fi": "Kiireellisyys", "sv": "Brådska" },
+  "confirmed": { "en": "Confirmed", "fi": "Vahvistettu", "sv": "Bekräftat" },
+  "agentNote": {
+    "en": "The customer does not need to repeat their story.",
+    "fi": "Asiakkaan ei tarvitse kertoa tarinaansa uudelleen.",
+    "sv": "Kunden behöver inte berätta allt igen."
   },
-  "no": {
-    "en": "No",
-    "fi": "Ei",
-    "sv": "Nej"
+  "riskNone": { "en": "None", "fi": "Ei riskiä", "sv": "Ingen" },
+  "riskLow": { "en": "Low", "fi": "Matala", "sv": "Låg" },
+  "riskMedium": { "en": "Medium", "fi": "Keskitaso", "sv": "Medel" },
+  "riskHigh": { "en": "High", "fi": "Korkea", "sv": "Hög" },
+  "riskCritical": { "en": "Critical", "fi": "Kriittinen", "sv": "Kritisk" },
+  "urgencyNone": { "en": "No action needed", "fi": "Ei toimenpiteitä", "sv": "Ingen åtgärd behövs" },
+  "urgencyRoutine": { "en": "When convenient", "fi": "Kun sinulle sopii", "sv": "När det passar" },
+  "urgencyToday": { "en": "Today", "fi": "Tänään", "sv": "I dag" },
+  "urgencyImmediate": { "en": "Now", "fi": "Heti", "sv": "Nu" },
+  "receiptTitle": { "en": "What we used", "fi": "Mitä käytimme", "sv": "Vad vi använde" },
+  "receiptUsed": { "en": "Used", "fi": "Käytetty", "sv": "Använt" },
+  "receiptRefused": { "en": "You said no to", "fi": "Kielsit käytön", "sv": "Du sa nej till" },
+  "receiptNotAccessed": { "en": "Not accessed", "fi": "Ei avattu", "sv": "Inte öppnat" },
+  "receiptNothing": { "en": "Nothing", "fi": "Ei mitään", "sv": "Inget" },
+  "receiptAi": { "en": "Sent to AI", "fi": "Lähetetty tekoälylle", "sv": "Skickat till AI" },
+  "receiptAiYes": {
+    "en": "Your words, with hidden details removed.",
+    "fi": "Sanasi ilman piilotettuja tietoja.",
+    "sv": "Dina ord, utan dolda uppgifter."
   },
-  "notSure": {
-    "en": "Not sure",
-    "fi": "En ole varma",
-    "sv": "Inte säker"
+  "receiptAiNo": {
+    "en": "Nothing was sent to AI.",
+    "fi": "Mitään ei lähetetty tekoälylle.",
+    "sv": "Inget skickades till AI."
   },
-  "howDecided": {
-    "en": "How the engine decided",
-    "fi": "Näin moottori päätti",
-    "sv": "Så beslutade motorn"
+  "endSession": { "en": "End session", "fi": "Lopeta istunto", "sv": "Avsluta sessionen" },
+  "startAgain": { "en": "Start again", "fi": "Aloita alusta", "sv": "Börja om" },
+  "startNew": { "en": "Start a new check", "fi": "Aloita uusi tarkistus", "sv": "Starta en ny kontroll" },
+  "subscription.recent_events": {
+    "en": "Recent SIM and subscription changes",
+    "fi": "Viimeisimmät SIM- ja liittymämuutokset",
+    "sv": "Senaste SIM- och abonnemangsändringar"
   },
-  "factsReadBy": {
-    "en": "Facts read by",
-    "fi": "Faktojen lukija",
-    "sv": "Fakta lästes av"
-  },
-  "action": {
-    "en": "Action",
-    "fi": "Toimenpide",
-    "sv": "Åtgärd"
-  },
-  "riskUrgency": {
-    "en": "Risk / urgency",
-    "fi": "Riski / kiire",
-    "sv": "Risk / brådska"
-  },
-  "handoff": {
-    "en": "Handoff (simulated)",
-    "fi": "Siirto ihmiselle (simuloitu)",
-    "sv": "Överlämning (simulerad)"
-  },
-  "contacts": {
-    "en": "User contacts",
-    "fi": "Käyttäjä ottaa yhteyttä",
-    "sv": "Användaren kontaktar"
-  },
-  "unknown": {
-    "en": "Still unknown",
-    "fi": "Vielä epäselvää",
-    "sv": "Fortfarande okänt"
-  },
-  "nothingDecisive": {
-    "en": "nothing decisive",
-    "fi": "ei mitään ratkaisevaa",
-    "sv": "inget avgörande"
-  },
-  "none": {
-    "en": "none",
-    "fi": "ei mitään",
-    "sv": "inget"
-  },
-  "guidance": {
-    "en": "Synthetic guidance:",
-    "fi": "Synteettinen ohjeistus:",
-    "sv": "Syntetisk vägledning:"
-  },
-  "exLive": {
-    "en": "Live scam",
-    "fi": "Huijaus käynnissä",
-    "sv": "Pågående bedrägeri"
-  },
-  "exHarmless": {
-    "en": "Harmless",
-    "fi": "Harmiton",
-    "sv": "Ofarligt"
-  },
-  "exFlip": {
-    "en": "Decision Flip",
-    "fi": "Ratkaiseva kysymys",
-    "sv": "Avgörande fråga"
-  },
-  "exUnclear": {
-    "en": "Unclear",
-    "fi": "Epäselvä",
-    "sv": "Oklart"
-  },
-  "exLiveText": {
-    "en": "Someone from my bank is still on the phone and wants the code from my text message.",
-    "fi": "Pankista soittava on yhä linjalla ja haluaa tekstiviestini koodin.",
-    "sv": "Någon från min bank är kvar i luren och vill ha koden från mitt sms."
-  },
-  "exHarmlessText": {
-    "en": "My bank texted that I have a new message in its app. Is this a scam?",
-    "fi": "Pankkini ilmoitti tekstiviestillä, että sovelluksessa on uusi viesti. Onko tämä huijaus?",
-    "sv": "Min bank skickade sms om att jag har ett nytt meddelande i appen. Är det bedrägeri?"
-  },
-  "exFlipText": {
-    "en": "I opened a link in a parcel text and now I think it was a scam.",
-    "fi": "Avasin linkin pakettiviestistä ja nyt epäilen huijausta.",
-    "sv": "Jag öppnade en länk i ett paket-sms och tror nu att det var bedrägeri."
-  },
-  "exUnclearText": {
-    "en": "help",
-    "fi": "apua",
-    "sv": "hjälp"
-  }
+  "subscription.network_status": { "en": "Your line's network status", "fi": "Liittymäsi verkon tila", "sv": "Nätstatus för ditt abonnemang" },
+  "device.recent_app_installs": { "en": "Recently installed apps", "fi": "Äskettäin asennetut sovellukset", "sv": "Nyligen installerade appar" },
+  "device.security_findings": { "en": "Security app findings", "fi": "Tietoturvasovelluksen havainnot", "sv": "Säkerhetsappens resultat" },
+  "operator_account.recent_logins": { "en": "Recent account logins", "fi": "Tilin viimeisimmät kirjautumiset", "sv": "Senaste inloggningar på kontot" },
+  "credential_exposure": { "en": "Breach monitoring result", "fi": "Tietovuotoseurannan tulos", "sv": "Resultat av läckbevakning" },
+  "business.staff_accounts": { "en": "Staff accounts", "fi": "Työntekijöiden tilit", "sv": "Personalkonton" }
 }
