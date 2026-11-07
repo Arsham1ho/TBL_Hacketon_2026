@@ -1,3 +1,4 @@
+import type { ContentAnalysis } from "../adapters/link-scan";
 import type { IncidentCategory, IncidentStory } from "./incident-category";
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
 
@@ -80,6 +81,8 @@ export type ApiResponse = {
   notice: string;
   dataReceipt: DataReceipt;
   radar?: { id: string; title: string; clue: string } | null;
+  // What the link and message check found in content the user received.
+  analysis?: ContentAnalysis | null;
 };
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.

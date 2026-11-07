@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { randomUUID } from "node:crypto";
-import { extractFacts, interpretInterviewAnswer, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
+import { extractFacts, interpretInterviewAnswer, isSecurityConcern, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
 import { isTriage, pickFlip } from "../../../engine/question-picker";
 import { UNCLEAR } from "../../../engine/situations";
@@ -16,6 +16,7 @@ import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
 import { handoffPreview } from "../../../adapters/handoff";
 import { assess } from "../../../engine/assess";
+import { analyzeContent, combine, findUrls, worse } from "../../../adapters/link-scan";
 
 const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, language: z.union([Language, z.literal("auto")]), fallbackLanguage: Language.optional(), message: z.string().trim().min(1).max(10000), incident: z.string().max(10000).optional(), demoSignals: z.array(GatedSignal).max(7).optional(), demoScenario: z.enum(DEMO_SCENARIOS).optional() });
 const Answer = z.strictObject({ kind: z.literal("answer"), sessionId: z.string().uuid(), topic: Topic, answer: z.enum(["yes", "no", "unsure"]) });
@@ -39,7 +40,17 @@ export async function POST(request: Request) {
     try {
       const llm = llmAvailable();
       const demo = demoSignalsFor(start.data.demoScenario ?? "none");
-      const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
+      // Links in what the user received are opened and checked before the rules run.
+      const analysis = await analyzeContent(incident ?? "", message, language).catch(() => null);
+      const linkVerdict = analysis && analysis.links.length ? (demo.visible.linkVerdict ? worse(demo.visible.linkVerdict, analysis.verdict) : analysis.verdict) : demo.visible.linkVerdict;
+      const hasLink = demo.visible.hasLink || Boolean(analysis?.links.length) || /https?:\/\/|www\./iu.test(incident ?? "");
+      const { journey, response: first } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink, linkVerdict }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
+      if (journey && analysis) {
+        journey.analysis = analysis;
+        if (journey.input) journey.input = { ...journey.input, signals: { ...journey.input.signals, hasLink, linkVerdict } };
+      }
+      if (journey) await keepRealReport(journey, message);
+      const response = journey ? present("pending", journey) : first;
       const sessionId = createJourneySession(journey as Journey);
       return NextResponse.json({ ...(await respond(sessionId, journey, response)), sessionId });
     } catch {
@@ -55,6 +66,19 @@ export async function POST(request: Request) {
       const llm = llmAvailable();
       const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
+      // A link shared later in the chat is checked the same way.
+      const typed = "text" in payload ? payload.text ?? "" : "";
+      if (journey && typed && findUrls(typed).some((url) => !journey.analysis?.links.some((link) => link.url === url))) {
+        const found = await analyzeContent("", typed, journey.item.language).catch(() => null);
+        if (found?.links.length) {
+          const links = [...(journey.analysis?.links ?? []), ...found.links.filter((link) => !journey.analysis?.links.some((known) => known.url === link.url))];
+          journey.analysis = combine(links, journey.analysis?.message ?? []);
+          const verdict = journey.analysis.verdict;
+          const signals = { ...journey.item.signals, hasLink: true, linkVerdict: journey.item.signals.linkVerdict ? worse(journey.item.signals.linkVerdict, verdict) : verdict };
+          journey.item = { ...journey.item, signals };
+          if (journey.input) journey.input = { ...journey.input, signals };
+        }
+      }
       if (journey && payload.kind === "ai_answer" && !session.journey.pendingAsk?.topic && llm && (payload.answer === "yes" || payload.answer === "no")) {
         const last = journey.interview?.at(-1);
         if (last) {
@@ -62,6 +86,7 @@ export async function POST(request: Request) {
           if (interpreted && interpreted.answer === payload.answer) journey.item = { ...journey.item, answers: { ...journey.item.answers, [interpreted.topic]: interpreted.answer } };
         }
       }
+      if (journey && (payload.kind === "add_details" || payload.kind === "ai_answer") && typed) await keepRealReport(journey, journey.input?.openingMessage ?? typed);
       session.journey = journey;
       return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response));
     } catch {
@@ -179,4 +204,11 @@ export async function GET(request: Request) {
   const destination = journeyDestination(journey);
   if (!destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
   return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)), details: handoffDetails(journey, result.confirmedFacts.map(fact => fact.text)) });
+}
+
+// The keyword reader can miss a real report worded in an unusual way, such as "my wallet got
+// drained". Before turning it away as off topic, Gemini checks whether it is a safety problem.
+async function keepRealReport(journey: Journey, text: string) {
+  if (journey.awaitingDetails !== "off_topic" || !llmAvailable()) return;
+  if (await isSecurityConcern(text)) journey.awaitingDetails = undefined;
 }

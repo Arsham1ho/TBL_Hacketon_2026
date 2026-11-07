@@ -3,7 +3,8 @@ import type { Facts, Topic } from "./types";
 
 // Plain words a vague message mentions. They never change a decision: they only pick
 // which triage question comes first and tell the user what was understood.
-export const MENTIONS = ["account", "money", "device", "call", "sms", "email"] as const;
+// crypto and extortion also select the crypto and extortion rules in situations.ts.
+export const MENTIONS = ["account", "money", "device", "call", "sms", "email", "crypto", "extortion"] as const;
 export type Mention = (typeof MENTIONS)[number];
 
 const start = String.raw`(?<![\p{L}\p{N}])`;
@@ -13,6 +14,8 @@ const PATTERNS: Record<Mention, RegExp> = {
   device: new RegExp(fold(start + String.raw`(hacked|virus|malware|remote|anydesk|teamviewer|my (phone|computer|laptop|device)|tietokone|kone(eni|ttani)|puhelime|etä|hakkero|dator|min telefon|fjärr|hackad)`), "iu"),
   call: new RegExp(fold(start + String.raw`(call(ed|ing|s)?|rang|phoned|soitt|puhelu|ringde|ringer|samtal)`), "iu"),
   sms: new RegExp(fold(start + String.raw`(sms|text message|texted|a text|whatsapp|tekstivie|tekstari|viesti|textmeddelande|meddelande)`), "iu"),
+  crypto: new RegExp(fold(start + String.raw`(seed ?phrase|recovery ?phrase|secret phrase|private ?key|mnemonic|wallet|crypto|bitcoin|btc|usdt|ethereum|metamask|trust ?wallet|ledger|binance|coinbase|nft|siemenlause|palautuslause|lompako|krypto|seedfras|plånbok)`), "iu"),
+  extortion: new RegExp(fold(start + String.raw`(sextort|nudes?|intimate|naked|webcam|alastonkuv|intiimi|nakenbild|intima bilder|blackmail|kirist|utpress)`), "iu"),
   email: new RegExp(fold(start + String.raw`(e-?mail|mail|sähköpost|meili|e-post|mejl)`), "iu"),
 };
 
@@ -39,7 +42,7 @@ export function orderByMentions(flips: Topic[], mentions: Mention[] = [], priori
 }
 
 // Words that show the user is worried about something, even with no detail yet.
-const CONCERN = new RegExp(fold(start + String.raw`(what (should|do|can) (i|we) do|what to do|look at this|check this|(is|with|about|of) this|trust|bother|worr|not sure|unsure|on behalf|mitä (minun |meidän )?(pitäisi|kannattaa|teen|teemme|tehdä)|tämä|tämän|tälle|tässä|katso|tarkista|luotettav|mietity|huolestutt|hätä|en ole varma|en tiedä|puolesta|vad ska (jag|vi)|det här|den här|titta|kolla|pålitlig|oroar|inte säker|vet inte|räkning|help|worried|scared|afraid|wrong|strange|weird|odd|suspicious|scam|fraud|hack|phish|leak|breach|stolen|steal|virus|spam|fake|threat|blackmail|lost|locked|someone|somebody|apu|auta|huolissa|pelotta|outo|oudo|epäily|huijau|huijari|hakker|murto|vuoto|vuoti|varast|kirist|feik|joku|hjälp|orolig|rädd|konstig|misstänk|bedr|hack|läck|stul|stöld|utpress|falsk|någon)`), "iu");
+const CONCERN = new RegExp(fold(start + String.raw`(what (should|do|can) (i|we) do|what to do|look at this|check this|(is|with|about|of) this|trust|bother|worr|not sure|unsure|on behalf|mitä (minun |meidän )?(pitäisi|kannattaa|teen|teemme|tehdä)|tämä|tämän|tälle|tässä|katso|tarkista|luotettav|mietity|huolestutt|hätä|en ole varma|en tiedä|puolesta|vad ska (jag|vi)|det här|den här|titta|kolla|pålitlig|oroar|inte säker|vet inte|räkning|help|worried|scared|afraid|wrong|strange|weird|odd|suspicious|scam|fraud|hack|phish|leak|breach|stolen|steal|virus|spam|fake|threat|blackmail|lost|locked|someone|somebody|apu|auta|huolissa|pelotta|outo|oudo|epäily|huijau|huijari|hakker|murto|vuoto|vuoti|varast|kirist|feik|joku|hjälp|orolig|rädd|konstig|misstänk|bedr|hack|läck|stul|stöld|utpress|falsk|någon|drain|wallet|crypto|bitcoin|btc|usdt|ethereum|metamask|seed phrase|recovery phrase|nft|charged|charge|unauthori|withdraw|emptied|missing|disappear|gone|compromis|impersonat|pretend|ransom|extort|sextort|nude|took over|taken over|locked out|can'?t (log|sign|get) in|cannot (log|sign) in|deepfake|sim swap|no sim|identity|stalk|spy|track(ed|ing) me|keylog|clon|skim|chargeback|invest|trading|broker|romance|dating|job offer|lottery|prize|inheritance|otp|2fa|verification code|one-time|ransomware|encrypted|unknown (login|device|charge|payment|transaction)|didn'?t (make|buy|order|authorise|authorize)|not me|bullied|harass|threaten|tyhjen|tyhjä|lompako|krypto|veloit|kadon|kadonn|tunnistamato|kaapat|vakoil|sijoitu|romanssi|uhkail|lunnas|tömd|plånbok|debiter|försvunn|kapad|spion|invester|hotad|lösen)`), "iu");
 // What the keyword reader fills in for any sentence, which says nothing about relevance.
 const DEFAULT_TYPES: (Facts["incidentType"])[] = [null, "message_or_notice", "other"];
 

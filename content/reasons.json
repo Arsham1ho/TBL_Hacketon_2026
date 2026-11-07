@@ -213,5 +213,20 @@
     "en": "CEO and supplier fraud use urgent, secret payment requests to bypass normal approval steps — always verify by calling a known internal number.",
     "fi": "Toimitusjohtaja- ja toimittajahuijaukset käyttävät kiireellisiä, salaisia maksupyyntöjä ohittaakseen tavallisen hyväksymismenettelyn — tarkista aina soittamalla tuttuun sisäiseen numeroon.",
     "sv": "VD- och leverantörsbedrägerier använder brådskande, hemliga betalningskrav för att kringgå normala godkännanderutiner — verifiera alltid via ett känt internt nummer."
+  },
+  "crypto_secret_requested": {
+    "en": "Someone is asking for your seed phrase or private key. Whoever has it controls the wallet, and crypto transfers can't be reversed.",
+    "fi": "Joku pyytää siemenlausettasi tai yksityistä avaintasi. Sen haltija hallitsee lompakkoa, eikä kryptosiirtoja voi perua.",
+    "sv": "Någon ber om din seedfras eller privata nyckel. Den som har den styr plånboken, och kryptoöverföringar kan inte ångras."
+  },
+  "crypto_compromised": {
+    "en": "Your wallet's secret or approvals may be in someone else's hands, so any funds left in it are at risk until they are moved.",
+    "fi": "Lompakkosi salaisuus tai hyväksynnät voivat olla jonkun muun hallussa, joten jäljellä olevat varat ovat vaarassa, kunnes ne siirretään.",
+    "sv": "Plånbokens hemlighet eller godkännanden kan finnas hos någon annan, så kvarvarande medel är i fara tills de flyttas."
+  },
+  "sextortion": {
+    "en": "This is extortion. The threat is designed to scare you into paying fast; paying rarely stops it.",
+    "fi": "Kyse on kiristyksestä. Uhkaus on tehty pelottamaan sinut maksamaan nopeasti, eikä maksaminen yleensä lopeta sitä.",
+    "sv": "Det här är utpressning. Hotet ska skrämma dig att betala snabbt, och att betala stoppar det sällan."
   }
 }

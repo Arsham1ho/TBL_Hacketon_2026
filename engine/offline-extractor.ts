@@ -25,6 +25,14 @@ const PARTNER = re(String.raw`(?<![\p{L}])(my ex(?![\p{L}-])|my ex-(partner|husb
 const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["partner_monitoring", re(String.raw`(?<![\p{L}])(my ex(?![\p{L}-])|my ex-(partner|husband|wife|boyfriend|girlfriend)|ex-?partner|exäni|ex-?(kumppan|mie|vaimo|puoliso|poikaystäv|tyttöystäv)\p{L}*|entinen (puoliso|mies|vaimo|kumppani)|(min|mitt) ex(?![\p{L}-])|min före detta|före detta (man|fru|sambo|partner))`)],
   ["ransomware", re(String.raw`(files?|tiedosto\p{L}*|filer\p{L}*).{0,40}(won't open|encrypted|locked|eivät aukea|ei aukea|salattu|salattiin|lukittu|går inte att öppna|krypter\p{L}*)|ransom|lunnas|lösen(summa|pengar|krav)|(pay|maksa|betala|send|demands?)\b.{0,40}(bitcoin|btc)\b|(bitcoin|btc)\b.{0,30}(payment|ransom|demand)|krypterad\w* filer`)],
+  // Blackmail and sextortion: someone threatens to share images or data unless paid.
+  ["payment_request", re(String.raw`sextort|(nude|intimate|naked|private) (photos?|pics?|pictures|videos?|images?)|webcam (video|recording)|alastonkuv|intiimi\w* kuv|nakenbild|intima bilder|(share|send|post|leak|publish|julkais|jakaa|levittää|sprida|publicera).{0,40}(photos?|pics?|videos?|kuv|bild|video).{0,40}(unless|if i don'?t|jos en|om jag inte|pay|maksa|betala)|blackmail|kiristä|kiristy|utpress`)],
+  // Romance, friend-in-need and "new number" family scams.
+  ["payment_request", re(String.raw`(met|know|talking to|dating).{0,40}(online|on (tinder|instagram|facebook|whatsapp|a dating))|dating (app|site)|online (boyfriend|girlfriend|partner|friend)|treffi(sovellu|palvelu)|deittisovellu|nettitutt|dejtingapp|nätdejt|hi (mum|mom|dad)|hei äiti|hei isä|hej mamma|hej pappa|(this is|it'?s) (your )?(son|daughter|child).{0,30}new (number|phone)|(stuck|stranded|in trouble|hospital|arrested|jumissa|pulassa|sairaalassa|pidätetty|fast|sjukhus).{0,40}(need|send|tarvitse|lähetä|behöver|skicka).{0,20}(money|rahaa|pengar)`)],
+  ["unexpected_order_or_bill", re(String.raw`(unknown|unauthori[sz]ed|strange|weird|suspicious|unrecognised|unrecognized|didn'?t make|not mine|tuntemat\w*|outo\w*|okänd\w*|konstig\w*).{0,30}(charges?|transactions?|payments?|purchases?|subscriptions?|veloitu\w*|tapahtum\w*|maksu\w*|osto\w*|tilau\w*|debiter\w*|transaktion\w*|köp\w*|prenumeration\w*)|(charged|veloitettiin|debiterad\w*).{0,30}(didn'?t|not|en|inte)|subscription (i|we) (never|didn'?t)`)],
+  ["unwanted_app_or_profile", re(String.raw`(pop-?up|ponnahdus|popup|varning).{0,60}(virus|infected|call|soita|ring|support|tuki)|(computer|pc|laptop|tietokone|dator).{0,30}(infected|blocked|locked|saastu|lukittu|låst|infekter)`)],
+  ["link_or_site", re(String.raw`qr[ -]?(code|koodi|kod)|(scanned|skannasin|skannade).{0,20}qr|(buyer|ostaja|köpare|seller|myyjä|säljare).{0,60}(link|linkki|länk|courier|kuriiri|bud|matkahuolto|posti|shipping)|(tori|marketplace|blocket|huuto\.net|vinted|ebay).{0,80}(link|linkki|länk|payment|maksu|betalning|card|kortti|kort)|(fake|scam|huijaus|bluff|falsk)\w*.{0,10}(shop|store|website|verkkokaup|kauppa|butik|nätbutik|sivusto|webbplats)|(ordered|tilasin|beställde).{0,60}(never (arrived|came)|ei (tullut|saapunut)|kom aldrig|aldrig kom)`)],
+  ["unknown_login", re(String.raw`(instagram|facebook|whatsapp|snapchat|tiktok|gmail|outlook|apple id|icloud|steam|discord|telegram|x\.com|twitter).{0,40}(hacked|stolen|taken|lost access|can'?t (log|get) in|locked|hakkeroitu|kaapattu|varastettu|en pääse|hackad|kapad|stulen|kommer inte in)|(lost|no) access to my (account|email|instagram|facebook|whatsapp)|(en pääse|pääsy).{0,30}(tilille|tiliini|sähköpostiin)|kommer inte (in|åt) (på|mitt|min)`)],
   ["mailbox_takeover", re(String.raw`forwarding rule|edelleenlähetyssään|vidarebefordringsregel|wrong account number|väärä tilinumero|väärällä tilinumerolla|fel kontonummer`)],
   ["former_staff_access", re(String.raw`(former|ex-?employee|entinen|tidigare).{0,40}(employee|staff|työntekijä|anställd)|(employee|työntekijä|anställd).{0,30}(left|lähti|lähtenyt|slutade|slutat)`)],
   ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number (is being|was|has been) (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|to another operator|toiselle operaattorille|annan operatör|(lost|no) (signal|network)|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`)],
@@ -60,9 +68,11 @@ const ASKS: [Facts["asksFor"][number], RegExp][] = [
   ["remote_access", re(String.raw`remote (access|support|program)|etäyhteyd|etätu|fjärr(åtkomst|hjälp|stöd)|anydesk|teamviewer`)],
   ["app_install", re(String.raw`install|asenna|asentamaan|installera`)],
   ["code", re(String.raw`(?<!qr[ -])\bcodes?\b|(?<!qr-)koodi|tunnuslu|\bpin\b|(?<!qr-)\bkod(en|er)?\b`)],
-  ["login", re(String.raw`\blog ?in\b|logging in|sign in|credentials|kirjaudu|kirjautu|tunnistau|(?<!verkko)tunnukse|logga in|inloggning|identify|identifying|verify your account|confirm my details|vahvista tieto|bekräfta`)],
+  ["login", re(String.raw`seed ?phrase|recovery ?phrase|secret (recovery )?phrase|private ?key|mnemonic|12[ -]words?|24[ -]words?|wallet (validation|sync|verification|connect)|validate (my|your) wallet|siemenlause|palautuslause|yksityi\w* avain|lompakon (vahvistus|synkronointi)|återställningsfras|seedfras|privat nyckel|\blog ?in\b|logging in|sign in|credentials|kirjaudu|kirjautu|tunnistau|(?<!verkko)tunnukse|logga in|inloggning|identify|identifying|verify your account|confirm my details|vahvista tieto|bekräfta`)],
   ["card", re(String.raw`card (details|number)|update your card|update my card|kortti|korttitie|kortuppgift|kortnummer`)],
-  ["money", re(String.raw`\bpay\b|payment of|\bfees?\b|\bmaksa\w*|\bmaksu\b|käsittelymaksu|toimitusmaksu|betala|avgift|send money|send (?:me|us) (?:€|\$)?\d+(?:\s*(?:bucks|euros?|dollars?))?|send it\?|lähetä rahaa|lähettää rahat|skicka pengar|skicka pengarna|move .{0,20}(money|savings)|safe account|siirrä rahat|siirtää .{0,12}(rahat|säästöni)|turvatili|flytta .{0,20}(pengar|besparing)|säkert konto|deposit|takuuvuokr|talle(tan|ttaa|tus)|deposition|sätter in|sätta in|\binvest\w*|sijoit|investera|returns guaranteed|tuotto|avkastning|trading|(needs?|wants?|asks? for|pyysi|pyytää|haluaa|tarvitsee|vill ha|behöver)\s.{0,12}\d|bail\b`)],
+  ["approval", re(String.raw`connect (your|my) wallet|approve (the|this|a) (transaction|contract|signature)|sign (the|this|a) (transaction|contract)|yhdistä lompakko|hyväksy (tapahtuma|transaktio)|anslut (din|min) plånbok|godkänn (transaktion|överföring)`)],
+  ["code", re(String.raw`(6|six|kuusi|sex)[ -]?(digit|numero|siffr)\w*|verification (code|number)|vahvistuskoodi|tunnistuskoodi|verifieringskod|bekräftelsekod|sms[ -]?(code|koodi|kod)|one[- ]time (code|password)|kertakäyttö\w*|engångskod`)],
+  ["money", re(String.raw`gift ?cards?|itunes|google play (card|kortti|kort)|steam (card|wallet|kortti|kort)|paysafe|lahjakortti|presentkort|withdraw(al)? (fee|tax)|(unlock|release|access) (my|the|your) (funds|profits|money|winnings)|nostomaksu|vapauttaa (rahat|varat)|uttagsavgift|frigöra (pengar|medel)|recovery (service|company|agent)|(need|needs|tarvitsen|tarvitsee|behöver)\s(some |the |urgent )?(money|cash|rahaa|pengar)|get (my|the) money back|saada rahat takaisin|få tillbaka pengarna|(job|task|work|työ|tehtävä|jobb|uppdrag).{0,40}(prepay|deposit|fee|commission|maksaa ensin|ennakko|förskott|avgift)|(like|rate|review).{0,20}(videos?|products?|hotels?).{0,30}(earn|paid|tienaa|tjäna)|lottery|you('ve)? won|lotto|arvonta|voitit|perintö|inheritance|arv(et)? |vinst|du har vunnit|overpaid|overpayment|ylimaksu|överbetal|refund the (difference|extra)|\bpay\b|payment of|\bfees?\b|\bmaksa\w*|\bmaksu\b|käsittelymaksu|toimitusmaksu|betala|avgift|send money|send (?:me|us) (?:€|\$)?\d+(?:\s*(?:bucks|euros?|dollars?))?|send it\?|lähetä rahaa|lähettää rahat|skicka pengar|skicka pengarna|move .{0,20}(money|savings)|safe account|siirrä rahat|siirtää .{0,12}(rahat|säästöni)|turvatili|flytta .{0,20}(pengar|besparing)|säkert konto|deposit|takuuvuokr|talle(tan|ttaa|tus)|deposition|sätter in|sätta in|\binvest\w*|sijoit|investera|returns guaranteed|tuotto|avkastning|trading|(needs?|wants?|asks? for|pyysi|pyytää|haluaa|tarvitsee|vill ha|behöver)\s.{0,12}\d|bail\b`)],
   ["bank_change", re(String.raw`(new|changed).{0,20}(bank account|account number)|tilinumero|bankkonto`)],
 ];
 
@@ -92,9 +102,10 @@ const DID: [Facts["userAlreadyDid"][number], RegExp][] = [
   ["installed_app", re(String.raw`i installed|i downloaded|asensin|latasin .{0,20}sovellu|installerade|laddade ner`)],
   ["opened_attachment", re(String.raw`opened (it|the attachment|the zip)|i opened .{0,30}(attachment|zip|file)|avasin (sen|liitteen|tiedoston)|öppnade (den|bilagan|filen)`)],
   ["entered_card", re(String.raw`(typed|entered|gave|put in|filled in).{0,30}card|card (details|number).{0,20}(typed|entered)|(syötin|annoin|kirjoitin|täytin).{0,30}kort|(skrev|angav|fyllde|lämnade).{0,30}kort`)],
-  ["paid", re(String.raw`paid .{0,40}(invoice|new account)|emptied (my|the|our)|(was|been) emptied|stole (my|our|\d)|stolen from|money (was|has been) (stolen|taken)|tyhjensi|tyhjennett|(?<!(puhelin|puhelim|laite|lompakko)\w{0,6} )varastettiin|varastivat|tömd|tömde|stulit|(?<![\p{L}])(i|we) (already |also |then |just )?(paid|transferred)\b|maksoimme|vi betalade|betalade .{0,40}(konto|faktura)|(?<![\p{L}])i (already )?(moved|sent) (the |my |\d)|already (moved|paid|sent)|payment (has )?(went|gone|was sent)|(?<![\p{L}])(maksoin|siirsin (rah|\d|kaik|ne|sen|jo|osan)|lähetin rahat|lähetin rahaa)|olen (jo )?(maksanut|siirtänyt)|(?<![\p{L}])(betalade|flyttade (pengar|\d|dem|allt)|förde över|skickade pengar)|har (redan )?(betalat|flyttat)`)],
+  ["paid", re(String.raw`(wallet|account|lompakko\w*|tili\w*|plånbok\w*|konto\w*).{0,30}(drained|emptied|cleared|wiped|tyhjennettiin|tyhjeni|tömdes|tömd)|drained (my|our|the)|(sent|transferred|bought|lähetin|ostin|skickade|köpte).{0,30}(crypto|bitcoin|btc|usdt|eth|krypto|gift ?cards?|lahjakort|presentkort)|(invested|sijoitin|investerade).{0,40}(\d|money|rahaa|pengar|savings|säästö|besparing)|paid .{0,40}(invoice|new account)|emptied (my|the|our)|(was|been) emptied|stole (my|our|\d)|stolen from|money (was|has been) (stolen|taken)|tyhjensi|tyhjennett|(?<!(puhelin|puhelim|laite|lompakko)\w{0,6} )varastettiin|varastivat|tömd|tömde|stulit|(?<![\p{L}])(i|we) (already |also |then |just )?(paid|transferred)\b|maksoimme|vi betalade|betalade .{0,40}(konto|faktura)|(?<![\p{L}])i (already )?(moved|sent) (the |my |\d)|already (moved|paid|sent)|payment (has )?(went|gone|was sent)|(?<![\p{L}])(maksoin|siirsin (rah|\d|kaik|ne|sen|jo|osan)|lähetin rahat|lähetin rahaa)|olen (jo )?(maksanut|siirtänyt)|(?<![\p{L}])(betalade|flyttade (pengar|\d|dem|allt)|förde över|skickade pengar)|har (redan )?(betalat|flyttat)`)],
   ["shared_code", re(String.raw`(typed|gave|read out|entered|shared).{0,40}(code|pin)|(?<=code.{0,60})i (sent|forwarded|gave)|(sent|forwarded) (it|the code)|(?<=koodi.{0,60})(lähetin|annoin)|(?<=kod.{0,60})(skickade|gav)|code .{0,20}(typed|gave|read)|(annoin|luin|syötin|kirjoitin|kerroin).{0,50}(koodi|tunnuslu)|(gav|läste upp|skrev|angav).{0,30}(kod|pin)`)],
-  ["entered_login", re(String.raw`(typed|entered|signed in|logged in|gave).{0,40}(password|credentials|work email|login|through a link|banking details|bank details|online banking)|logged in to a fake|logged in through|signed in with|(syötin|annoin|kirjoitin|kirjauduin).{0,40}(salasan|tunnuks|linkin|linkistä|sähköposti)|kirjauduin|(työntekijä\w*|employee).{0,20}(kirjautui|signed in)|(skrev|angav|loggade in).{0,40}(lösenord|inloggning|länk|nätbank)|loggade in`)],
+  ["entered_login", re(String.raw`(gave|shared|typed|entered|sent|told|annoin|kerroin|syötin|lähetin|gav|skrev|skickade|berättade).{0,40}(seed|recovery phrase|private key|12 words|24 words|siemenlause|palautuslause|yksityi\w* avain|återställningsfras|privat nyckel)|(typed|entered|signed in|logged in|gave).{0,40}(password|credentials|work email|login|through a link|banking details|bank details|online banking)|logged in to a fake|logged in through|signed in with|(syötin|annoin|kirjoitin|kirjauduin).{0,40}(salasan|tunnuks|linkin|linkistä|sähköposti)|kirjauduin|(työntekijä\w*|employee).{0,20}(kirjautui|signed in)|(skrev|angav|loggade in).{0,40}(lösenord|inloggning|länk|nätbank)|loggade in`)],
+  ["approved_prompt", re(String.raw`(approved|signed|confirmed|accepted|hyväksyin|allekirjoitin|vahvistin|godkände|signerade|bekräftade).{0,40}(transaction|contract|wallet|request|prompt|notification|tapahtum|pyynnön|ilmoitu|transaktion|begäran|förfrågan|avisering)|connected my wallet|yhdistin lompakko|anslöt min plånbok`)],
   ["opened_link", re(String.raw`(link|linkki|länk).{0,40}(clicked|klikkasin|avasin|klickade|öppnade)|(clicked|opened|tapped|followed).{0,40}link|link .{0,20}(clicked|opened)|(avasin|klikkasin|painoin|napautin).{0,40}(linkki|linkin)|linkin.{0,20}(avasin|klikkasin)|(klickade|öppnade|tryckte).{0,30}länk`)],
 ];
 
@@ -107,6 +118,18 @@ const PRESSURE = re(String.raw`urgent|immediately|within \d+|by today|keep it (c
 const DEFENSIVE_IMMEDIATE = re(String.raw`(deleted|hung up|closed|removed|changed|reported|ignored|poistin|suljin|vaihdoin|ilmoitin|lopetin|raderade|lade på|stängde|bytte|anmälde).{0,25}(immediately|heti|välittömästi|omedelbart)`);
 const LIVE = re(String.raw`still on the (phone|line)|on the (phone|line) (now|right now)|calling (me )?(right )?now|right now|still (?:controls|controlling|has access)|right now|juuri nyt|ohjaa (?:edelleen|vielä)|on (vielä )?linjalla|puhelu on käynnissä|just nu|styr fortfarande|fortfarande (?:styr|har åtkomst)|fortfarande i (telefon|luren)|på linjen`);
 const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|scammer's (address|name)|expose (him|her|them|this|the scammer)|publish (their|his|her) name|kuka omistaa|selvittää kuka|selvitä kuka|paljasta (hänet|huijari)|julkaista (hänen|huijarin)|etsi .{0,30}huijari|huijarin (osoite|nimi)|vem som äger|ta reda på vem|hitta bedragaren|bedragarens (adress|namn)|hänga ut|publicera (hans|hennes|namnet)`);
+
+const IDENTITY = re(String.raw`in my name|my name (was|has been) used|identity (theft|stolen|was stolen)|stole my identity|henkilötunnu|minun nimiss|nimissäni|identiteettivarkau|i mitt namn|personnummer|identitetsstöld|passport|passi|pass(et)? |id[- ]card|henkilökortti|id-kort|ajokortti|körkort|driver'?s licen[cs]e`);
+const ASSETS: [Facts["assetInvolved"][number], RegExp][] = [
+  ["money", re(String.raw`money|savings|crypto|bitcoin|btc|usdt|ethereum|wallet|raha|säästö|krypto|lompakko|pengar|besparing|plånbok|€|\beur|dollars?`)],
+  ["card", re(String.raw`\bcard|credit card|debit card|kortti|kortin|\bkort(et)?\b|visa|mastercard`)],
+  ["login", re(String.raw`password|login|credentials|account|seed ?phrase|recovery phrase|private key|instagram|facebook|whatsapp|snapchat|tiktok|apple id|salasan|tunnuks|tili\b|tilin|tilille|lösenord|inlogg|konto`)],
+  ["code", re(String.raw`\bcodes?\b|\bpin\b|otp|koodi|tunnuslu|\bkod(en|er)?\b`)],
+  ["device", re(String.raw`phone|computer|laptop|tablet|ipad|iphone|android|puhelin|puhelime|tietokone|kone(eni|ttani)|tabletti|telefon|dator|surfplatta`)],
+  ["sim", re(String.raw`\bsim\b|e-?sim|phone number|puhelinnumero|numeroni|telefonnummer|mitt nummer`)],
+  ["email", re(String.raw`e-?mail|gmail|outlook|hotmail|sähköpost|meili|e-post|mejl`)],
+  ["router", re(String.raw`router|reititin|reitittim|modeemi|wifi|wi-fi|wlan`)],
+];
 
 const EMAIL_ONLY = re(String.raw`only my email|only (an |your )?email|(?<!, )names and email|no passwords|vain sähköposti|ei salasanoja|(?<!, )nimet ja sähköposti|endast e-post|bara (min )?e-post|inga lösenord`);
 const NO_PASSWORD = re(String.raw`no passwords|did not include passwords|ei salasanoja|salasanoja (tai .{0,30})?ei|salasanat eivät|inga lösenord|lösenord (har )?inte`);
@@ -151,7 +174,7 @@ export function offlineExtract(input: ExtractionInput): Facts {
     const values: T[] = [];
     for (const [value, pattern] of table) {
       const found = first(pattern, text);
-      if (found) {
+      if (found && !values.includes(value)) {
         quote(field, found);
         values.push(value);
       }
@@ -213,6 +236,11 @@ export function offlineExtract(input: ExtractionInput): Facts {
     dataExposed.push("password");
     quote("dataExposed", first(PASSWORD_EXPOSED, all)!);
   }
+  const identity = first(IDENTITY, all);
+  if (identity && !dataExposed.includes("identity")) {
+    dataExposed.push("identity");
+    quote("dataExposed", identity);
+  }
   const bankLogin = first(BANK_LOGIN, all);
   if (bankLogin && (did.includes("entered_login") || incidentType === "data_breach_notice" || /leak|leack|vuot|läck/iu.test(all))) {
     dataExposed.push("bank_login");
@@ -230,7 +258,7 @@ export function offlineExtract(input: ExtractionInput): Facts {
     incidentType,
     contactStartedBy: stranger ? "stranger" : null,
     pretendsToBe: pick(POSES, all, "pretendsToBe"),
-    assetInvolved: [],
+    assetInvolved: collect(ASSETS, all, "assetInvolved"),
     asksFor: ownChannel || askedNothing ? [] : collect(ASKS, requestText, "asksFor"),
     userAlreadyDid: did,
     dataExposed,

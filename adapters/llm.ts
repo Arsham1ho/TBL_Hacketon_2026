@@ -6,7 +6,7 @@ import { Facts } from "../engine/types";
 // The only file that calls the LLM. It reads facts and nothing else: it can't choose
 // a status, risk, action or destination, and it gets masked text with no tools.
 
-export const PROMPT_VERSION = "7";
+export const PROMPT_VERSION = "8";
 
 const SYSTEM_PROMPT = `You read one report from a person in Finland about a possible digital security problem, and return facts as JSON. The report may be in Finnish, English or Swedish, with or without ä and ö.
 
@@ -31,10 +31,27 @@ Fields:
 - asksNothing: true only if the content itself shows it wants nothing here: it just informs, sends you to the service's own app, says it has no links, or the caller asked for nothing. Never true if it asks for payment, a login or details.
 - passwordReused, serviceLost: only if stated.
 - happeningNow: true only if the threat is live now, such as a caller still on the line.
-- assetInvolved: leave empty unless the text names it directly.
+- assetInvolved: only assets the text names directly (see the mapping below).
 - pressureOrSecrecy: urgency, deadlines, threats or secrecy in the message or call.
 - personalSafetyRisk: true if the user needs medical help, is in physical danger or watched by someone close.
-- asksToTracePerson: true if the user wants someone identified, traced or exposed.`;
+- asksToTracePerson: true if the user wants someone identified, traced or exposed.
+
+How common scams map to the fields (only when the text supports it):
+- Crypto: a seed phrase, recovery phrase, private key or wallet "validation"/"sync" request is asksFor login. Sharing or typing one is userAlreadyDid entered_login. A drained or emptied wallet, or crypto sent to a scammer, is paid. A "withdrawal fee", "tax" or "unlock fee" to get profits out is asksFor money. "Connect your wallet" or "approve this transaction" on a site is asksFor approval; approving it is approved_prompt.
+- Investment or trading platforms, guaranteed returns, crypto "brokers" or "recovery services" that promise to get lost money back: asksFor money, pretendsToBe other or support.
+- Romance or online friend asking for money, gift cards or crypto: payment_request, pretendsToBe other, asksFor money.
+- "Hi mum/dad, new number" messages, or a cloned voice of a relative asking for money: pretendsToBe family, asksFor money.
+- Job or task offers (like videos, review products, prepay for tasks), lottery wins, inheritances, prizes or refunds that need a fee first: asksFor money.
+- Online marketplace (Tori, Facebook Marketplace, Blocket): a buyer sending a courier or "receive payment" link is link_or_site with asksFor card; overpayment refund requests are asksFor money.
+- Sextortion or blackmail threatening to share photos or videos: payment_request, pressureOrSecrecy true, asksFor money.
+- Gift cards, iTunes/Google Play/Steam cards as payment: asksFor money.
+- A QR code that leads to a payment or login page: link_or_site.
+- Someone asking for a WhatsApp, Instagram, Facebook, MobilePay or bank verification code: asksFor code; account then taken over: unknown_login.
+- Pop-up saying the computer is infected with a number to call, or "Microsoft/Apple support" calling: remote_session, pretendsToBe support.
+- Unknown or unauthorised card charges or subscriptions: unexpected_order_or_bill, assetInvolved card.
+- Loans, contracts or accounts opened in the user's name: dataExposed identity.
+- A fake web shop that took payment and never delivered: link_or_site, userAlreadyDid paid.
+- Mention of these assets fills assetInvolved: money or crypto -> money, card -> card, passwords or accounts -> login, verification codes -> code, phone or computer -> device, SIM or phone number -> sim, email account -> email.`;
 
 const SCHEMA = (() => {
   const { $schema: _schema, ...schema } = z.toJSONSchema(Facts) as Record<string, unknown>;
@@ -300,4 +317,21 @@ export async function nextQuestion(input: { story: string; asked: { question: st
   } catch {
     return null;
   }
+}
+
+// Decides whether a short message is about a scam, fraud, hacking, data leak or other digital
+// safety problem. Used only to avoid turning a real report away; it never sets any fact.
+const CONCERN_PROMPT = "You triage messages for a digital-safety helpline (scams, fraud, hacked accounts, stolen money or crypto, data leaks, malware, harassment, identity theft, suspicious calls, messages or links). Answer true if the message plausibly describes or asks about such a problem, even if short, vague, misspelled or in Finnish or Swedish. Answer false only for clearly unrelated requests like recipes, homework or small talk.";
+export async function isSecurityConcern(text: string, options: LlmOptions = {}): Promise<boolean | null> {
+  if (!llmAvailable()) return null;
+  client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
+  try {
+    const response = await client.chat.completions.create({
+      model: options.model ?? llmModel(),
+      messages: [{ role: "system", content: CONCERN_PROMPT }, { role: "user", content: text.slice(0, 2000) }],
+      response_format: { type: "json_schema", json_schema: { name: "concern", strict: true, schema: { type: "object", properties: { relevant: { type: "boolean" } }, required: ["relevant"], additionalProperties: false } } },
+    }, { timeout: options.timeoutMs ?? 4000 });
+    const result = JSON.parse(response.choices[0]?.message?.content ?? "{}");
+    return typeof result.relevant === "boolean" ? result.relevant : null;
+  } catch { return null; }
 }

@@ -55,6 +55,11 @@ function outcome(
 }
 
 const did = didAction;
+// What the user's quoted words mention. Used only to pick the crypto and extortion rules.
+const evidenceText = (c: Case) => c.facts.evidence.map((item) => item.quote).join(" ").toLowerCase();
+const CRYPTO = /seed|recovery ?phrase|private ?key|mnemonic|wallet|crypto|bitcoin|btc|usdt|ethereum|metamask|token|siemenlause|palautuslause|lompako|krypto|seedfras|plånbok/u;
+const crypto = (c: Case) => Boolean(c.mentions?.includes("crypto")) || CRYPTO.test(evidenceText(c));
+const SEXTORTION = /sextort|nude|intimate|naked|webcam|alastonkuv|intiimi|nakenbild|intima bilder/u;
 const selfStarted = (item: Case) => topicValue(item, "self_initiated");
 const asks = (item: Case, request: Case["facts"]["asksFor"][number]) => item.facts.asksFor.includes(request);
 const is = (item: Case, type: Case["facts"]["incidentType"]) => item.facts.incidentType === type;
@@ -417,6 +422,37 @@ export const SITUATIONS: Situation[] = [
             ["dont_open_attachment", "delete_or_report_message", "inform_staff"],
             ["guidance_malicious_attachment"],
           ),
+  },
+  {
+    // Whoever has a seed phrase or wallet approval controls the funds, so this comes before
+    // the general money and login rules.
+    id: "crypto_compromised",
+    when: (c) => crypto(c) && (did(c, "entered_login") || did(c, "approved_prompt") || did(c, "paid")),
+    then: (c) => outcome(
+      "crypto_compromised", "change_password_and_enable_mfa", "incident_occurred", "critical", "immediate",
+      ["move_remaining_crypto", "revoke_wallet_approvals", "report_police", "keep_evidence", "beware_recovery_scams"],
+      ["guidance_investment_scam", "guidance_credential_compromise", "guidance_report_to_police"],
+      { externalContacts: ["police"], rescue: true, destination: person(c, "security_specialist") },
+    ),
+  },
+  {
+    id: "crypto_secret_requested",
+    when: (c) => crypto(c) && (c.facts.asksFor.includes("login") || c.facts.asksFor.includes("approval")),
+    then: () => outcome(
+      "crypto_secret_requested", "do_not_interact_and_delete", "threat_in_progress", "high", "today",
+      ["never_share_seed", "dont_reply", "report_to_platform", "beware_recovery_scams"],
+      ["guidance_investment_scam", "guidance_credential_compromise"],
+    ),
+  },
+  {
+    id: "sextortion",
+    when: (c) => Boolean(c.mentions?.includes("extortion")) || SEXTORTION.test(evidenceText(c)),
+    then: () => outcome(
+      "sextortion", "escalate_to_human", "threat_in_progress", "high", "today",
+      ["dont_pay_extortion", "keep_evidence", "report_to_platform", "report_police", "seek_support_org"],
+      ["guidance_report_to_police"],
+      { externalContacts: ["police"], destination: "human_advisor" },
+    ),
   },
   {
     id: "money_gone",

@@ -37,6 +37,9 @@ import { UserProfileModal } from "./user-profile-modal";
 import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
+import { LinkAnalysisCard } from "./link-analysis";
+import { pasteCopy, wantsPaste } from "@/lib/received";
+import type { ContentAnalysis } from "@/adapters/link-scan";
 import { ReportView } from "./report-view";
 import { clearHistory, newConversationId, saveConversation, type Conversation, type SavedReport } from "@/lib/history";
 
@@ -262,7 +265,7 @@ export const RICH_BUSINESS_SCENARIOS: AttackScenario[] = [
 ];
 
 // What has been said so far.
-type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
+type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; analysis?: ContentAnalysis };
 
 const SettingsGroup = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="grid gap-1">
@@ -336,6 +339,11 @@ export function SafeStepApp() {
   const [message, setMessage] = useState("");
   const [followUp, setFollowUp] = useState("");
   const [incident, setIncident] = useState("");
+  // The first message said something was received but didn't include it, so SafeStep asks
+  // for the message, email or link before assessing.
+  const [pasteFor, setPasteFor] = useState<string | null>(null);
+  const [pasted, setPasted] = useState("");
+  const shownAnalysis = useRef<string | null>(null);
   const [demo, setDemo] = useState<DemoScenario>("none");
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -501,6 +509,15 @@ export function SafeStepApp() {
       setItems((previous) => [...previous, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
     }
     lastStatus.current = status ?? lastStatus.current;
+    // The link and message check is shown once, and again only if a new link was checked.
+    if (next.analysis) {
+      const key = JSON.stringify(next.analysis.links.map((link) => link.url)) + next.analysis.message.length;
+      if (key !== shownAnalysis.current) {
+        shownAnalysis.current = key;
+        const analysis = next.analysis;
+        setItems((previous) => [...previous, { from: "safestep", text: "", analysis }]);
+      }
+    }
     setResponse(next);
   }
 
@@ -612,6 +629,9 @@ export function SafeStepApp() {
     setMessage("");
     setFollowUp("");
     setIncident("");
+    setPasteFor(null);
+    setPasted("");
+    shownAnalysis.current = null;
     setDemo("none");
     setSelectedScenarioId(null);
   }
@@ -619,6 +639,10 @@ export function SafeStepApp() {
   function start() {
     // Masked here as well: the chat must never repeat a code or password the user typed.
     record({ from: "user", text: maskSecrets(message.trim()).text });
+    if (!incident.trim() && wantsPaste(message)) {
+      setPasteFor(message.trim());
+      return;
+    }
     void send({
       kind: "start",
       audience,
@@ -626,6 +650,25 @@ export function SafeStepApp() {
       fallbackLanguage: browserLanguage,
       message: message.trim(),
       ...(incident.trim() ? { incident } : {}),
+      ...(demo !== "none" ? { demoScenario: demo } : {}),
+    });
+  }
+
+  // Starts the assessment with the message the user received, or without it if they don't have it.
+  function sendPasted(content: string | null) {
+    const story = pasteFor ?? message.trim();
+    const shownLanguage = choice === "auto" ? browserLanguage : choice;
+    const text = content?.trim() ?? "";
+    record({ from: "safestep", text: pasteCopy[shownLanguage].title }, { from: "user", text: text ? maskSecrets(text).text : pasteCopy[shownLanguage].skip });
+    setPasteFor(null);
+    setPasted("");
+    void send({
+      kind: "start",
+      audience,
+      language: choice,
+      fallbackLanguage: browserLanguage,
+      message: story,
+      ...(text ? { incident: text } : {}),
       ...(demo !== "none" ? { demoScenario: demo } : {}),
     });
   }
@@ -934,8 +977,11 @@ export function SafeStepApp() {
           {items.map((item, index) =>
             item.assessment ? (
               <AssessmentNote key={index} state={item.assessment} t={t} />
+            ) : item.analysis ? (
+              // Chats saved before the scored check have no risk level, so they're skipped.
+              item.analysis.risk ? <LinkAnalysisCard key={index} analysis={item.analysis} language={shown} t={t} /> : null
             ) : item.from === "user" ? (
-              <p key={index} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 leading-relaxed">
+              <p key={index} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 leading-relaxed break-words whitespace-pre-wrap">
                 {item.text}
               </p>
             ) : (
@@ -945,6 +991,15 @@ export function SafeStepApp() {
                 {item.text}
               </p>
             ),
+          )}
+          {pasteFor && !busy && (
+            <div className="grid gap-2.5 leading-relaxed">
+              <StepMark className="size-5 text-foreground" />
+              <h1 tabIndex={-1} className="text-[1.0625rem] leading-relaxed font-medium focus:outline-none">
+                {pasteCopy[shown].title}
+              </h1>
+              <p className="text-sm text-muted-foreground">{pasteCopy[shown].hint}</p>
+            </div>
           )}
           {response?.secretWarning && <SecretNote text={response.secretWarning} />}
           {turn && (
@@ -999,6 +1054,27 @@ export function SafeStepApp() {
               const text = followUp.trim();
               setFollowUp("");
               continueSaved(text);
+            }}
+          />
+        </div>
+      )}
+
+      {pasteFor && !busy && (
+        <div className={WIDTH}>
+          <div className="flex flex-wrap gap-2 pt-1 pb-1">
+            <Btn variant="plain" onClick={() => sendPasted(null)} className="flex-1">
+              {pasteCopy[shown].skip}
+            </Btn>
+          </div>
+          <DescriptionComposer
+            question=""
+            sample={pasteCopy[shown].placeholder}
+            sendLabel={pasteCopy[shown].send}
+            text={pasted}
+            disabled={busy}
+            onChange={setPasted}
+            onSend={() => {
+              if (pasted.trim()) sendPasted(pasted);
             }}
           />
         </div>
