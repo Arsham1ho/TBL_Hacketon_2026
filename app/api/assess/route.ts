@@ -8,7 +8,7 @@ import { questionText, reasonText } from "@/engine/composer";
 import { confidenceBand } from "@/engine/confidence";
 import { fallbackScreen, stopScreen } from "@/engine/fallback";
 import { detectLanguage } from "@/engine/language";
-import type { Case } from "@/engine/case";
+import { applyAnswer, type Case } from "@/engine/case";
 import { Audience, Language, Topic } from "@/engine/types";
 
 // Temporary Stage 2 preview API. It drives the real engine; Stage 3 replaces it with
@@ -66,10 +66,11 @@ export async function POST(request: Request) {
     const { sessionId, topic, answer } = reply.data;
     const session = getSession(sessionId);
     if (!session) return NextResponse.json({ error: "session_expired" }, { status: 404 });
-    session.item =
-      answer === "unsure"
-        ? { ...session.item, unsure: [...session.item.unsure, topic] }
-        : { ...session.item, answers: { ...session.item.answers, [topic]: answer } };
+    // Only the question on screen can be answered, so a double click can't use up the budget.
+    if (assess(session.item, session.asked).flip?.topic !== topic) {
+      return NextResponse.json({ error: "not_the_current_question" }, { status: 409 });
+    }
+    session.item = applyAnswer(session.item, topic, answer);
     session.asked += 1;
     const result = assess(session.item, session.asked);
     return NextResponse.json(present(sessionId, session.item, result, session.extractedBy, session.secretFound));

@@ -54,6 +54,26 @@ function toAnswer(value: boolean | null): Answer | null {
   return value ? "yes" : "no";
 }
 
+// A "no" from the user overrules a misread. A "yes" is handled by each situation's flip.
+const CORRECTED_BY: Partial<Record<Facts["userAlreadyDid"][number], Topic[]>> = {
+  paid: ["money_transferred", "payment_status"],
+  entered_card: ["card_details_entered"],
+  entered_login: ["credentials_entered"],
+  shared_code: ["code_shared"],
+  installed_app: ["app_installed"],
+  gave_remote_access: ["remote_access_given"],
+};
+
+export function didAction(item: Case, action: Facts["userAlreadyDid"][number]): boolean {
+  if (CORRECTED_BY[action]?.some((topic) => item.answers[topic] === "no")) return false;
+  return item.facts.userAlreadyDid.includes(action);
+}
+
+export function applyAnswer(item: Case, topic: Topic, answer: Answer | "unsure"): Case {
+  if (answer !== "unsure") return withAnswer({ ...item, unsure: item.unsure.filter((value) => value !== topic) }, topic, answer);
+  return item.unsure.includes(topic) ? item : { ...item, unsure: [...item.unsure, topic] };
+}
+
 export function withAnswer(item: Case, topic: Topic, answer: Answer): Case {
   return { ...item, answers: { ...item.answers, [topic]: answer } };
 }

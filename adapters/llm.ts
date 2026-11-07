@@ -56,10 +56,11 @@ export async function extractFacts(input: ExtractionInput, options: LlmOptions =
   client ??= new OpenAI({
     apiKey: geminiKey() || openAiKey(),
     baseURL: geminiKey() ? GEMINI_BASE_URL : undefined,
-    maxRetries: 1,
+    maxRetries: 0,
   });
   const model = options.model ?? llmModel();
-  const timeout = options.timeoutMs ?? Number(process.env.LLM_TIMEOUT_MS ?? 8000);
+  const configured = Number(process.env.LLM_TIMEOUT_MS);
+  const timeout = options.timeoutMs ?? (configured > 0 ? configured : 8000);
 
   const response = await client.chat.completions.create(
     {

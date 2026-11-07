@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { readAnswerOffline } from "../engine/answer-reader";
 import { assess, intake } from "../engine/assess";
-import type { Case } from "../engine/case";
+import { applyAnswer, type Case } from "../engine/case";
 import type { Topic } from "../engine/types";
 import { cachedExtractor } from "./cached-extractor";
 import { toCaseInput, toSubmission } from "./to-submission";
@@ -19,7 +19,8 @@ function next() {
     asked += 1;
     return { type: "question", text: assessment.composed.question, topics: [assessment.flip.topic] };
   }
-  return { type: "final", answer: toSubmission(raw, item!, assessment) };
+  // Consent isn't interactive until Stage 4, so the bot must not report asking for it.
+  return { type: "final", answer: { ...toSubmission(raw, item!, assessment), consent_requested_for: [] } };
 }
 
 const lines = createInterface({ input: process.stdin });
@@ -36,14 +37,10 @@ lines.on("line", async (line) => {
     pendingTopic = null;
     reply = next();
   } else if (event.type === "user_reply" && pendingTopic) {
-    const answer = readAnswerOffline(event.text, item!.language);
-    item =
-      answer === "unsure"
-        ? { ...item!, unsure: [...item!.unsure, pendingTopic] }
-        : { ...item!, answers: { ...item!.answers, [pendingTopic]: answer } };
+    item = applyAnswer(item!, pendingTopic, readAnswerOffline(event.text, item!.language, pendingTopic));
     reply = next();
   } else {
-    reply = { type: "final", answer: toSubmission(raw, item!, assess(item!, 99)) };
+    reply = { type: "final", answer: { ...toSubmission(raw, item!, assess(item!, 99)), consent_requested_for: [] } };
   }
   process.stdout.write(`${JSON.stringify(reply)}\n`);
 });

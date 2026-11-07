@@ -5,7 +5,7 @@ import { guardInput } from "./input-guard";
 import { interruptionFor, type InterruptionKind } from "./interruption";
 import { offlineExtract, type ExtractionInput } from "./offline-extractor";
 import { decide, MAX_FLIPS, pickFlip, unresolvedFlip, worstCase, type Flip } from "./question-picker";
-import type { Outcome } from "./situations";
+import { UNCLEAR, type Outcome } from "./situations";
 import { caseConfidence, confirmedFacts } from "./summary";
 import { mergeFacts, validateFacts } from "./fact-validator";
 import { GatedSignal, type Audience, type ConfirmedFact, type Decision, type Language, type SecretKind, type Topic } from "./types";
@@ -27,7 +27,7 @@ export type Intake = { item: Case; secretsFound: SecretKind[]; extractedBy: "pri
 
 const gated = (values: string[]) => values.filter((value): value is GatedSignal => GatedSignal.safeParse(value).success);
 
-const LINK = /https?:\/\/|www\.|(?<![\p{L}\p{N}@.-])[\p{L}\p{N}-]+\.(?:fi|se|com|net|org|io|eu|ly|example|test|invalid)(?![\p{L}\p{N}])/iu;
+const LINK = /https?:\/\/|www\.|(?<![\p{L}\p{N}@.-])(?:[\p{L}\p{N}-]+\.)+(?:fi|se|com|net|org|io|eu|ly|co|uk|de|top|xyz|info|shop|app|site|online|club|link|example|test|invalid)(?![\p{L}\p{N}])/iu;
 
 export async function intake(input: CaseInput, extract: Extractor = offlineExtract): Promise<Intake> {
   const guarded = guardInput(input.openingMessage, input.incidentContent);
@@ -41,12 +41,13 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
     incidentChannel: input.incidentChannel,
     hasRiskyLink: hasLink && input.signals.linkVerdict !== "clean",
   };
-  const source = `${guarded.userText}\n${incidentText}`;
-  const primary = validateFacts(await attempt(extract, extraction), source);
-  const backstop = validateFacts(offlineExtract(extraction), source) ?? offlineExtract({ ...extraction, userText: "", incidentText: "" });
+  const primary = extract === offlineExtract ? null : validateFacts(await attempt(extract, extraction), guarded);
+  // The keyword reader gets plain text: the wrapper tags are for the LLM only.
+  const plain = { ...extraction, incidentText: guarded.maskedIncident ?? "" };
+  const backstop = validateFacts(offlineExtract(plain), guarded) ?? offlineExtract({ ...plain, userText: "", incidentText: "" });
   const facts = primary ? { ...mergeFacts(primary, backstop), language: input.language } : backstop;
   return {
-    extractedBy: primary ? "primary" : "fallback",
+    extractedBy: primary || extract === offlineExtract ? "primary" : "fallback",
     secretsFound: guarded.secretsFound,
     item: {
       audience: input.audience,
@@ -93,32 +94,21 @@ function toDecision(outcome: Outcome, unknownTopics: Topic[]): Decision {
   };
 }
 
-const UNCLEAR_FALLBACK: Outcome = {
-  situation: "unclear",
-  status: "needs_verification",
-  risk: "medium",
-  urgency: "today",
-  primaryAction: "verify_via_official_channel",
-  destination: null,
-  externalContacts: [],
-  rescue: false,
-  steps: ["verify_official_channel", "dont_open_link", "dont_share_codes"],
-  guidance: ["guidance_asking_for_evidence", "guidance_handing_off"],
-  wantsSignals: [],
-};
-
 // The contract is the last word: anything outside it becomes the unclear path.
-export function withinContract(outcome: Outcome, unknownTopics: Topic[]): { outcome: Outcome; decision: Decision } {
+export function withinContract(item: Case, outcome: Outcome, unknownTopics: Topic[]): { outcome: Outcome; decision: Decision } {
   const decision = toDecision(outcome, unknownTopics);
   if (checkDecision(decision).length === 0) return { outcome, decision };
-  return { outcome: UNCLEAR_FALLBACK, decision: toDecision(UNCLEAR_FALLBACK, unknownTopics) };
+  const unclear = UNCLEAR.then(item);
+  return { outcome: unclear, decision: toDecision(unclear, unknownTopics) };
 }
 
 export function assess(item: Case, asked = 0): Assessment {
-  const open = asked < MAX_FLIPS ? pickFlip(item) : null;
-  const pending = open ?? unresolvedFlip(item);
+  // Running out of questions doesn't answer them: an unasked fact stays unknown.
+  const undecided = pickFlip(item);
+  const open = asked < MAX_FLIPS ? undecided : null;
+  const pending = undecided ?? unresolvedFlip(item);
   const unknownTopics = pending ? [pending.topic] : [];
-  const { outcome, decision } = withinContract(pending ? worstCase(pending) : decide(item), unknownTopics);
+  const { outcome, decision } = withinContract(item, pending ? worstCase(pending) : decide(item), unknownTopics);
 
   return {
     outcome,

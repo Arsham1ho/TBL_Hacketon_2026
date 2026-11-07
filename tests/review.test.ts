@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { readAnswerOffline } from "../engine/answer-reader";
 import { assess, intake, type CaseInput } from "../engine/assess";
+import { applyAnswer } from "../engine/case";
 import { mergeFacts, validateFacts } from "../engine/fact-validator";
 import { guardInput, maskSecrets } from "../engine/input-guard";
 import { interruptionFor } from "../engine/interruption";
+import { decide } from "../engine/question-picker";
 import type { Facts, Language } from "../engine/types";
 import { blankFacts } from "./helpers";
 
@@ -45,10 +48,13 @@ describe("attacks must never read as Safe", () => {
 
   it("doesn't let a backstop guess reassure over an unsure LLM", () => {
     const primary = { ...blankFacts };
-    const backstop: Facts = { ...blankFacts, selfInitiated: "yes", asksNothing: true, independentlyVerified: true };
+    const backstop: Facts = { ...blankFacts, selfInitiated: "yes", asksNothing: true, independentlyVerified: true, userAlreadyDid: ["nothing"], dataExposed: ["email_only"] };
     const merged = mergeFacts(primary, backstop);
     expect(merged.selfInitiated).toBeNull();
     expect(merged.independentlyVerified).toBeNull();
+    expect(merged.asksNothing).toBeNull();
+    expect(merged.userAlreadyDid).toEqual([]);
+    expect(merged.dataExposed).toEqual([]);
   });
 
   it("does let a backstop denial through", () => {
@@ -124,7 +130,7 @@ describe("actions taken are read correctly", () => {
 
 describe("unquoted facts", () => {
   it("returns an unquoted false to unknown", () => {
-    const facts = validateFacts({ ...blankFacts, pressureOrSecrecy: false, passwordReused: false }, "text");
+    const facts = validateFacts({ ...blankFacts, pressureOrSecrecy: false, passwordReused: false }, { userText: "text", maskedIncident: null });
     expect(facts?.pressureOrSecrecy).toBeNull();
     expect(facts?.passwordReused).toBeNull();
   });
@@ -184,3 +190,142 @@ describe("broad keywords", () => {
     expect(result.item.facts.pretendsToBe).not.toBe("family");
   });
 });
+
+describe("second review", () => {
+  it.each<[string, string, Partial<CaseInput>]>([
+    ["family demand", "Is this ok?", { incidentContent: "Hi mum it's me. Send money to FI2112345600000785 now. As usual no links." }],
+    ["code demand", "Is this ok?", { incidentContent: "as usual, give the code you get by sms to our agent. Contains no links." }],
+    ["password breach", "What now?", { incidentContent: "Passwords, names and email addresses of customers leaked in a data breach." }],
+    ["fake email-only breach", "What now?", { incidentContent: "Data breach. Only your email leaked. Log in at https://evil.example/secure to protect your account." }],
+    ["own order then card", "I ordered shoes. Got an order confirmation and then I typed my card number into the site", {}],
+    ["live remote scam", "I booked remote support, they now want a payment on the line right now and I gave them remote control", {}],
+    ["pushed approval", "I'm logging in. I got an approval request. A man on the phone is telling me to approve it urgently", {}],
+    ["hidden link", "Is this ok?", { incidentContent: "track at login.posti.fi or posti-track.top. No links needed, in the app." }],
+  ])("%s isn't Safe", async (_name, text, overrides) => {
+    expect((await run(text, overrides)).decision.status).not.toBe("safe");
+  });
+
+  it("keeps money loss ahead of a trace request", async () => {
+    expect((await run("I paid 500 euros to a scammer yesterday. Who owns this number?")).decision.primaryAction).toBe("contact_bank_and_block_cards");
+  });
+
+  it("doesn't turn one denial into a full denial", async () => {
+    const result = await run("A woman from the bank called and asked for my code. I didn't pay anything", { incidentChannel: "call" });
+    expect(result.flip?.topic).toBe("code_shared");
+  });
+
+  it("keeps the safety fact from the keyword reader", async () => {
+    const llm = () => ({ ...blankFacts, incidentType: "unknown_login", evidence: [{ fact: "incidentType", quote: "logged in" }] });
+    const result = await run("My ex logged in from an unknown place and knows where I live", {}, llm);
+    expect(result.outcome.situation).toBe("personal_safety");
+  });
+
+  it("rejects tiny quotes and scam text as proof of what the user did", () => {
+    const facts = validateFacts(
+      {
+        ...blankFacts,
+        independentlyVerified: true,
+        selfInitiated: "yes",
+        evidence: [
+          { fact: "independentlyVerified", quote: "a" },
+          { fact: "selfInitiated", quote: "You ordered this yourself" },
+        ],
+      },
+      { userText: "Is this real?", maskedIncident: "You ordered this yourself, a real order" },
+    );
+    expect(facts?.independentlyVerified).toBeNull();
+    expect(facts?.selfInitiated).toBeNull();
+  });
+
+  it("treats an unasked fact as unknown when questions run out", async () => {
+    const { item } = await intake(input("I got an attachment and opened it. Is it dangerous?"));
+    const result = assess(item, 2);
+    expect(result.flip).toBeNull();
+    expect(result.unknownTopics).toEqual(["app_installed"]);
+    expect(result.decision.primaryAction).toBe("isolate_device_and_scan");
+  });
+
+  it("lets a later answer settle a Not sure", async () => {
+    const { item } = await intake(input("I got an attachment and opened it"));
+    const settled = applyAnswer(applyAnswer(item, "app_installed", "unsure"), "app_installed", "no");
+    expect(assess(settled).unknownTopics).toEqual([]);
+    expect(assess(settled).outcome.situation).toBe("attachment_not_run");
+  });
+
+  it("lets the user correct a misread action", async () => {
+    const { item } = await intake(input("I paid the fee"));
+    expect(decide(item).situation).toBe("money_gone");
+    expect(decide(applyAnswer(item, "money_transferred", "no")).situation).not.toBe("money_gone");
+  });
+
+  it.each([
+    ["I'm not in danger right now", "en", "yes"],
+    ["en ole juuri nyt vaarassa", "fi", "yes"],
+    ["Yes, I clicked it and nothing happened", "en", "yes"],
+    ["No kyllä", "fi", "yes"],
+    ["It was someone else", "en", "unsure"],
+    ["soitin pankkiin ja he sanoivat", "fi", "unsure"],
+  ] as const)("reads %s", (reply, language, expected) => {
+    expect(readAnswerOffline(reply, language, "user_safety")).toBe(expected);
+  });
+
+  it.each([
+    ["losenord: Hunter2 x", "Hunter2"],
+    ["losenordet ar sommar", "sommar"],
+    ["Your code is:\n482913", "482913"],
+    ["the code from text was 48.29.13", "48.29"],
+    ["vahvistusnumero 482913", "482913"],
+    ["4111  1111  1111  1111", "1111"],
+    ["4111-1111 - 1111-1111", "1111"],
+  ])("masks %s", (text, secret) => {
+    expect(maskSecrets(text).text).not.toContain(secret);
+  });
+
+  it.each([
+    ["My banking app won't open today", "ransomware"],
+    ["Sovellus ei aukea puhelimessa", "ransomware"],
+    ["I sent an email to support yesterday about my account", "money_gone"],
+    ["Syötin salasanani kenttään verkkosivulla", "sim_takeover"],
+    ["I feel worried about this message from a friend", "payment_lure"],
+    ["I left the office and later logged in from home", "former_staff_access"],
+  ])("doesn't over-read %s", async (text, situation) => {
+    expect((await run(text)).outcome.situation).not.toBe(situation);
+  });
+
+  it("doesn't call a denied install an incident", async () => {
+    const result = await run("I didn't install anything, is this ok?", { incidentContent: "Download update from app.apk" });
+    expect(result.outcome.situation).not.toBe("unwanted_app");
+  });
+
+  it("reads a call the user describes beside a pasted message", async () => {
+    const { item } = await intake(input("He phoned and asked for my bank code and card number", { incidentContent: "Hello" }));
+    expect(item.facts.asksFor).toContain("code");
+  });
+
+  it("lets a denial beat an LLM yes", () => {
+    expect(mergeFacts({ ...blankFacts, selfInitiated: "yes" }, { ...blankFacts, selfInitiated: "no" }).selfInitiated).toBe("no");
+  });
+});
+
+describe("after the second review", () => {
+  it("keeps short real evidence such as CEO", async () => {
+    const result = await run("Our CEO asked by email to urgently pay 6 900 euros to a new partner and keep it confidential", { audience: "small_business" });
+    expect(result.flip?.topic).toBe("payment_status");
+  });
+
+  it("doesn't count an ordinary appointment today as pressure", async () => {
+    const { item } = await intake(input("We booked remote support", { incidentContent: "Confirming your session today at 14:00." }));
+    expect(item.facts.pressureOrSecrecy).toBeNull();
+  });
+
+  it("reads a Finnish partial transfer as money moved", async () => {
+    const result = await run("Poliisi soitti ja pyysi siirtämään rahat. Siirsin jo osan.", fi);
+    expect(result.decision.primaryAction).toBe("contact_bank_and_block_cards");
+  });
+
+  it("lets the user's own yes settle an urgent notice", async () => {
+    const { item } = await intake(input("My eSIM moved to a new phone", { incidentContent: "eSIM activated. If this wasn't you, contact us immediately." }));
+    expect(decide(applyAnswer(item, "self_initiated", "yes")).status).toBe("safe");
+  });
+});
+

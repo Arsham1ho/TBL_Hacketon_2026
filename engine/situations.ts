@@ -1,4 +1,4 @@
-import { topicValue, type Case } from "./case";
+import { didAction, topicValue, type Case } from "./case";
 import type { Destination, ExternalContact, GatedSignal, PrimaryAction, Risk, Status, Topic, Urgency } from "./types";
 
 export type Outcome = {
@@ -53,8 +53,8 @@ function outcome(
   };
 }
 
-const did = (item: Case, action: Case["facts"]["userAlreadyDid"][number]) =>
-  item.facts.userAlreadyDid.includes(action);
+const did = didAction;
+const selfStarted = (item: Case) => topicValue(item, "self_initiated");
 const asks = (item: Case, request: Case["facts"]["asksFor"][number]) => item.facts.asksFor.includes(request);
 const is = (item: Case, type: Case["facts"]["incidentType"]) => item.facts.incidentType === type;
 const poses = (item: Case, party: Case["facts"]["pretendsToBe"]) => item.facts.pretendsToBe === party;
@@ -77,7 +77,34 @@ const colleagueDemand = (item: Case) =>
 // A true quote can still support a wrong conclusion, so reassuring facts must have
 // nothing against them: no risky request, no pressure, and no denial from the user.
 const uncontradicted = (item: Case) =>
-  item.facts.asksFor.length === 0 && item.facts.pressureOrSecrecy !== true && item.facts.selfInitiated !== "no";
+  item.facts.asksFor.length === 0 && item.facts.pressureOrSecrecy !== true && selfStarted(item) !== "no";
+
+const HARM_ACTIONS: Case["facts"]["userAlreadyDid"] = [
+  "paid",
+  "entered_card",
+  "entered_login",
+  "shared_code",
+  "installed_app",
+  "gave_remote_access",
+  "approved_prompt",
+  "opened_attachment",
+];
+const anyHarmDone = (item: Case) => HARM_ACTIONS.some((action) => did(item, action));
+
+// Requests that are never part of something genuine. A login or remote session can be
+// the user's own, so those two are left to the situations that check for them.
+const RISKY_REQUESTS: Case["facts"]["asksFor"] = ["money", "code", "card", "app_install"];
+
+// One gate for every Safe outcome, so no rule can forget a check.
+export function safeIsBlocked(item: Case): boolean {
+  return (
+    anyHarmDone(item) ||
+    badLink(item) ||
+    // The user's own "yes, that was me" outweighs urgent wording in a notice.
+    (item.facts.pressureOrSecrecy === true && item.answers.self_initiated !== "yes") ||
+    RISKY_REQUESTS.some((request) => asks(item, request))
+  );
+}
 
 function explainBenign(id: string, guidance: string[], risk: Risk = "none"): Outcome {
   return outcome(id, "no_action_needed", "safe", risk, risk === "none" ? "none" : "routine", ["explain_benign"], guidance);
@@ -132,8 +159,9 @@ export const SITUATIONS: Situation[] = [
       ),
   },
   {
+    // Harm comes first: someone who lost money needs the bank before anything else.
     id: "trace_request",
-    when: (c) => c.facts.asksToTracePerson,
+    when: (c) => c.facts.asksToTracePerson && !anyHarmDone(c),
     then: () =>
       outcome(
         "trace_request",
@@ -241,7 +269,7 @@ export const SITUATIONS: Situation[] = [
     when: (c) => is(c, "unexpected_order_or_bill"),
     flips: ["self_initiated"],
     then: (c) =>
-      c.facts.selfInitiated === "yes"
+      selfStarted(c) === "yes"
         ? explainBenign("own_order", ["guidance_order_confirmations", "guidance_proportionate_advice"])
         : yes(c, "self_initiated")
         ? outcome(
@@ -273,7 +301,7 @@ export const SITUATIONS: Situation[] = [
   {
     id: "booked_remote_support",
     when: (c) =>
-      is(c, "remote_session") && (c.facts.independentlyVerified === true || c.facts.selfInitiated === "yes") && c.facts.selfInitiated !== "no",
+      is(c, "remote_session") && (c.facts.independentlyVerified === true || selfStarted(c) === "yes") && selfStarted(c) !== "no",
     then: () => explainBenign("booked_remote_support", ["guidance_remote_access", "guidance_proportionate_advice"]),
   },
   {
@@ -402,7 +430,7 @@ export const SITUATIONS: Situation[] = [
     id: "own_click",
     when: (c) =>
       did(c, "opened_link") &&
-      (c.facts.selfInitiated === "yes" || c.facts.asksNothing === true) &&
+      (selfStarted(c) === "yes" || c.facts.asksNothing === true) &&
       c.signals.linkVerdict !== "malicious" &&
       uncontradicted(c),
     then: () => explainBenign("own_click", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
@@ -429,7 +457,7 @@ export const SITUATIONS: Situation[] = [
     id: "approval_prompts",
     when: (c) => is(c, "approval_prompts"),
     then: (c) =>
-      c.facts.selfInitiated === "yes"
+      selfStarted(c) === "yes"
         ? explainBenign("own_approval_prompt", ["guidance_mfa_fatigue", "guidance_proportionate_advice"])
         : outcome(
             "approval_prompt_attack",
@@ -470,12 +498,6 @@ export const SITUATIONS: Situation[] = [
           ),
   },
   {
-    id: "breach_email_only",
-    when: (c) =>
-      is(c, "data_breach_notice") && c.facts.dataExposed.includes("email_only") && !c.facts.dataExposed.includes("password"),
-    then: () => explainBenign("breach_email_only", ["guidance_breach_response", "guidance_proportionate_advice"], "low"),
-  },
-  {
     id: "fake_breach_notice",
     when: (c) => is(c, "data_breach_notice") && asks(c, "login") && c.signals.hasLink,
     then: () =>
@@ -488,6 +510,12 @@ export const SITUATIONS: Situation[] = [
         ["dont_open_link", "verify_official_channel"],
         ["guidance_fake_breach_notice", "guidance_smishing_basics", "guidance_prompt_injection"],
       ),
+  },
+  {
+    id: "breach_email_only",
+    when: (c) =>
+      is(c, "data_breach_notice") && c.facts.dataExposed.includes("email_only") && !c.facts.dataExposed.includes("password"),
+    then: () => explainBenign("breach_email_only", ["guidance_breach_response", "guidance_proportionate_advice"], "low"),
   },
   {
     id: "breach_password",
@@ -534,7 +562,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "own_payment_change",
-    when: (c) => is(c, "payment_detail_change") && c.facts.selfInitiated === "yes" && uncontradicted(c),
+    when: (c) => is(c, "payment_detail_change") && selfStarted(c) === "yes" && uncontradicted(c),
     then: () => explainBenign("own_payment_change", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
   },
   {
@@ -542,7 +570,7 @@ export const SITUATIONS: Situation[] = [
     when: (c) =>
       is(c, "payment_detail_change") &&
       c.facts.independentlyVerified === true &&
-      c.facts.selfInitiated !== "no" &&
+      selfStarted(c) !== "no" &&
       !asks(c, "money"),
     then: () => explainBenign("payment_verified", ["guidance_payment_verification", "guidance_invoice_fraud"], "low"),
   },
@@ -788,7 +816,7 @@ export const SITUATIONS: Situation[] = [
     id: "looks_genuine",
     when: (c) =>
       uncontradicted(c) &&
-      (c.facts.selfInitiated === "yes" || (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
+      (selfStarted(c) === "yes" || (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
     then: () => explainBenign("looks_genuine", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
   },
   {
@@ -806,6 +834,8 @@ export const SITUATIONS: Situation[] = [
       ),
   },
 ];
+
+export const UNCLEAR = SITUATIONS.at(-1)!;
 
 export function matchSituation(item: Case): Situation {
   const match = SITUATIONS.find((situation) => situation.when(item));
