@@ -9,6 +9,7 @@ import { fallbackScreen, stopScreen } from "./fallback";
 import { fastDanger } from "./fast-danger";
 import { detectMentions, isGreetingOnly, isOffTopic, type Mention } from "./mentions";
 import { isTriage } from "./question-picker";
+import { matchSituation } from "./situations";
 import { incidentCategory, incidentStory, likelyCategory } from "./incident-category";
 import { safeScreen } from "./output-guard";
 import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters/signals";
@@ -18,9 +19,10 @@ import { mergeFacts, validateFacts } from "./fact-validator";
 import { guardInput } from "./input-guard";
 import type { InterruptionKind } from "./interruption";
 import type { ApiResponse, Screen, SupportRoute } from "./screens";
+import { linkContextCopy } from "./link-context";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; flipHistory?: { topic: Topic; question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean; linkContextAsked?: boolean };
 export type Event =
   | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
@@ -61,6 +63,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       const expected = assess(current.item, current.asked).flip;
       if (!expected || expected.topic !== event.topic) throw new Error("invalid_topic");
       journey.asked++;
+      journey.flipHistory = [...(current.flipHistory ?? []), { topic: event.topic, question: current.phrased?.[event.topic] ?? active.question, answer: event.answer }];
       journey.item = event.answer === "unsure"
         ? { ...current.item, unsure: [...current.item.unsure, event.topic] }
         : { ...current.item, answers: { ...current.item.answers, [event.topic]: event.answer } };
@@ -70,6 +73,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       const expected = assess(current.item, current.asked).flip;
       if (!expected || expected.topic !== event.topic) throw new Error("invalid_topic");
       journey.asked++;
+      journey.flipHistory = [...(current.flipHistory ?? []), { topic: event.topic, question: current.phrased?.[event.topic] ?? active.question, answer: event.text }];
       journey.item = await readTypedAnswer(journey, event.topic, event.text, event.extractor);
       noteTypedText(journey, event);
     }
@@ -89,6 +93,7 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
     }
     if (event.kind === "add_details") {
       if (active.type === "end") throw new Error("invalid_event_order");
+      if (active.type === "describe" && active.reason === "link_context") journey.linkContextAsked = true;
       const before = assess(current.item, current.asked).decision;
       if (current.awaitingDetails) {
         // A plain Yes or No answers "has something happened?" and isn't a description.
@@ -199,7 +204,10 @@ async function readInterview(journey: Journey, extractor?: Extractor): Promise<C
   } catch {
     return current;
   }
-  const read = validateFacts(raw, guarded);
+  // A question provides context, never proof. Only the person's own report and
+  // answers can support an extracted fact, even if a model quotes the question.
+  const answerSource = guardInput([journey.input.openingMessage, ...(journey.interview ?? []).map(item => item.answer)].join("\n"), journey.input.incidentContent);
+  const read = validateFacts(raw, answerSource);
   if (!read) return current;
   return { ...current, facts: { ...mergeFacts(read, current.facts), language: current.language }, mentions: [...new Set([...(current.mentions ?? []), ...detectMentions(guarded.userText)])] };
 }
@@ -309,6 +317,7 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (journey.noIncident) screen = { type: "end", message: approved.offTopic[item.language].none };
   else if (journey.awaitingDetails === "greeting") screen = { type: "describe", reason: "greeting", ...approved.describe[item.language] };
   else if (journey.awaitingDetails === "off_topic") screen = { type: "describe", reason: "off_topic", message: approved.offTopic[item.language].message, hint: approved.offTopic[item.language].hint };
+  else if (!journey.linkContextAsked && matchSituation(item).id === "link_opened" && item.facts.asksFor.length === 0 && item.facts.asksNothing !== true && !item.answers.card_details_entered && !item.answers.credentials_entered) screen = { type: "describe", reason: "link_context", ...linkContextCopy[item.language] };
   else if (journey.pendingAsk) screen = { type: "ask", ...journey.pendingAsk };
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: composed.question, why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [], ...(isTriage(flip) ? { context: triageContext(item, journey.asked) } : {}) };
   else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };

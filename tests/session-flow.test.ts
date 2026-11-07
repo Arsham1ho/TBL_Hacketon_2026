@@ -116,7 +116,7 @@ describe("session flow", () => {
   });
 
   it("offers a person from any step and then carries on", async () => {
-    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text."), sentToLlm: false });
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text asking for card details."), sentToLlm: false });
     const asked = await handleEvent("test", started.journey, { kind: "talk_to_person" });
     expect(asked.response.screen).toMatchObject({ type: "handoff", destination: "operator_support_agent" });
     expect(asked.response.state.destination).toBe("operator_support_agent");
@@ -131,7 +131,7 @@ describe("session flow", () => {
   });
 
   it("shows readable unknowns and sources, not internal ids", async () => {
-    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text."), sentToLlm: false });
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text asking for card details."), sentToLlm: false });
     const done = await handleEvent("test", started.journey, { kind: "answer", topic: (started.response.screen as { topic: "card_details_entered" }).topic, answer: "unsure" });
     expect(done.response.screen.type).toBe("result");
     const screen = done.response.screen as Extract<typeof done.response.screen, { type: "result" }>;
@@ -196,7 +196,7 @@ describe("session flow", () => {
     it("reads a Finnish click after the link is named", async () => {
       const message = "Sain viestin että paketti on jumissa ja linkki, klikkasin sitä mutta en antanut mitään tietoja.";
       const { response } = await handleEvent("test", null, { kind: "start", input: input(message, "fi"), sentToLlm: false });
-      expect(response.screen).toMatchObject({ type: "flip", topic: "card_details_entered" });
+      expect(response.screen).toMatchObject({ type: "describe", reason: "link_context" });
     });
 
     it("offers the bank first when a caller poses as the bank", async () => {

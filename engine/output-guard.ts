@@ -1,5 +1,6 @@
 import { maskSecrets } from "./input-guard";
 import type { Screen } from "./screens";
+import { linkContextCopy } from "./link-context";
 import type { Language } from "./types";
 import approved from "../content/approved-text.json";
 import { questionText } from "./composer";
@@ -44,7 +45,7 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
       && (!screen.likelyType || isApprovedIncidentCategory(screen.likelyType, language));
   }
   if (screen.type === "describe") {
-    const copy = screen.reason === "greeting" ? approved.describe[language] : approved.offTopic[language];
+    const copy = screen.reason === "link_context" ? linkContextCopy[language] : screen.reason === "greeting" ? approved.describe[language] : approved.offTopic[language];
     return screen.message === copy.message && screen.hint === copy.hint;
   }
   if (screen.type === "ask") return screen.question.trim().endsWith("?") && screen.question.length <= 160;
