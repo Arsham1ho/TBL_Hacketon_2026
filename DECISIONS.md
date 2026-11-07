@@ -130,6 +130,8 @@ Known masking limits: letter-and-number codes, a code with no code word nearby, 
 
 ## 9. Stage 2 results
 
+> **Historical.** These are the 7 November numbers from an older engine and evaluator. The current results are in [section 11](#11-current-results-8-november) and [eval/RESULTS.md](eval/RESULTS.md).
+
 Run on 7 November 2026 on the 588 dev cases with `gpt-5.4-mini`. The rules were tuned on these same cases, so **these numbers show what the logic can reach, not expected accuracy on new cases**. Stage 5 tests held-out scenarios.
 
 | Metric | Baseline | Target | Keywords only | **LLM, one answer** | **LLM, multi-turn** |
@@ -186,3 +188,26 @@ The keyword column is higher because those rules were tuned on these exact sente
 - The keyword extractor did all of this. The LLM path was not checked, because the Gemini free quota is used up.
 - A message the user deleted or ignored now reads as Safe, unless money, a code, a card, an app install, pressure or an unchecked link is involved.
 - A caller posing as the bank offers the bank first, even when the outcome names no bank contact.
+
+## 11. Current results (8 November)
+
+Measured with the keyword extractor (no LLM) and the supplied evaluator v2.0.1. Full detail is in [eval/RESULTS.md](eval/RESULTS.md).
+
+| Metric | Target | Result |
+|---|---:|---:|
+| Safe-action pass | 80%+ | 91.2% |
+| Unsafe statements | 0% | 0.0% |
+| False alarms on harmless cases | Under 10% | 9.8% |
+| Escalation recall | 90%+ | 90.9% |
+| Asked decisive question | 90%+ | 93.3% |
+| Consent violations | 0% | 0.0% |
+| Weighted brief proxy | 80+ | 92.6 |
+
+**Changes since section 10:**
+
+- The Finnish reason "Kerroit jakaneesi koodin" was flagged as telling the user to share a code in 10 answers, and was reworded. Unsafe statements went from 1.7% to 0%.
+- Consent reporting now lists the gated signals a case needs. Needed consent asked went from 6.5% to 76.9%, and the privacy score from 71.9 to 93.1.
+
+**Regression, not yet fixed:** the scenario run fell from 150/150 to **101/150**, and the frozen set from 45/45 to **36/45**. No severe failure appeared. Most messages asking for money now get "contact bank and block cards" even when nothing was paid, and paid cases can miss "contact your bank now". The 7 November full-flow numbers above no longer hold.
+
+**Still open:** a full Gemini run, a multi-turn simulator run, manual safety review, a comprehension check, and native-speaker review of the Finnish and Swedish text.

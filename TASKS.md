@@ -11,13 +11,18 @@ See [strategy.md](strategy.md) for the product plan, [ARCHITECTURE.md](ARCHITECT
 | Safety contract, decision rules, Decision Flip, fact extraction | Done |
 | Input Guard, composer, fallback text | Done |
 | Evaluator link, including one-answer and multi-turn runs | Done |
-| Fast Danger Check, Output Guard | **Not started** |
-| Session flow and final API routes | **Not started** |
-| Final UI | **Not started**; `app/page.tsx` is a temporary test page |
-| Interactive consent, simulated signals, Rescue Mode, handoff | **Not started** |
-| Held-out testing, attack testing, human review | **Not started** |
+| Fast Danger Check, Output Guard | Done (`engine/fast-danger.ts`, `engine/output-guard.ts`) |
+| Session flow and final API routes | Done (`engine/handle-event.ts`, `/api/sessions`) |
+| Final UI | Done; `app/page.tsx` runs the real product flow |
+| Interactive consent, simulated signals, Rescue Mode, handoff | Built and connected to the engine |
+| Held-out and attack testing | Done (`eval:holdout`, `eval:frozen`, `tests/attack-hardening.test.ts`) |
+| Manual safety review (C4), comprehension check (B18) | **Sheets ready in `review/`, no results yet** |
+| Finnish and Swedish review (C3) | **Not started**; `content/` still says draft |
+| Full Gemini run (A14), remove `/api/assess` (A18) | **Not done** |
 
-**Known problems:** live danger can be missed, consent reporting isn't real yet, and false alarms are 11.4% against a target of under 10%.
+Status checked on 8 November 2026.
+
+**Known problems:** the full-conversation scenario run regressed from 150/150 to 101/150 (no severe failures), because money-request messages now get "contact bank and block cards" even when nothing was paid. False alarms are 9.8% on the dev set, just under the 10% target. Small-business cases pass 82.8%. See [eval/RESULTS.md](eval/RESULTS.md).
 
 ## Who owns what
 

@@ -110,6 +110,14 @@ Brief scorecard proxy: correctness 91.5, clarity 96.4, uncertainty and escalatio
 
 Consumers pass 95.2% and small businesses 82.8%. Small-business and call cases are the weakest; most of their misses are over-reactions (sending a cautious check to the bank) rather than unsafe advice.
 
+### The five sample journeys
+
+The supplied `five_journeys.jsonl` passes 4 of 5, with no unsafe statements and every needed escalation made. The miss is a supplier asking to pay to a new bank account: the message doesn't say whether the invoice was paid, so SafeStep covers both cases and its primary action takes the paid branch. Details are in [eval/RESULTS.md](eval/RESULTS.md).
+
+Full conversations (`npm run eval:scenarios`) pass 116 of 150 with 0 severe failures. Most misses are cases where the simulator answers "Not sure" to "Did you transfer money?" and SafeStep takes the cautious path.
+
+The 335 test inputs were regenerated and pass the supplied validator.
+
 ### Failure and escalation examples
 
 - **Escalation:** "Someone threatens to share my intimate photos unless I pay" is handed to a human advisor, with the police listed and the advice not to pay, keep evidence and report the account.
@@ -137,7 +145,9 @@ The LLM run on 7 November (`gpt-5.4-mini`, older evaluator) is in [DECISIONS.md]
 - The free Gemini tier allows 15 requests a minute. Above that, the app falls back to the keyword extractor.
 - Masking can miss letter-and-number codes and codes with no code word nearby.
 - Swedish source titles fall back to English, because the supplied guidance has no Swedish titles.
-- The frozen new-wording test scored 7 of 12 with the keyword extractor.
+- The frozen new-wording test scored 7 of 12 with the keyword extractor on its first, unseen run. Later rule changes raised it to 10 of 12, but only the first run counts as unseen.
+- **Known regression:** full-conversation scenarios pass 101 of 150 (150 of 150 on 7 November), with no severe failures. Most money-request messages now get "contact bank and block cards" even when nothing was paid. See [eval/RESULTS.md](eval/RESULTS.md).
+- No manual safety review or comprehension check is recorded yet. The sheets are in [review/](review/README.md).
 
 ## Licence
 

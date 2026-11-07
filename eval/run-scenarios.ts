@@ -28,6 +28,10 @@ type Scenario = {
   expect: Partial<Expect>;
 };
 
+// The engine asks "did you transfer money" where older scenarios answer "payment status": the same fact.
+const SAME_FACT: Record<string, string> = { money_transferred: "payment_status", payment_status: "money_transferred" };
+// "Contact your bank now" was split into specific variants that all send the user to the bank at once.
+const BANK_NOW: Record<string, string[]> = { contact_bank_now: ["contact_bank_transfer", "contact_bank_card_exposure", "contact_bank_business_fraud", "contact_bank_official"] };
 const file = process.env.SCENARIO_FILE ?? "eval/scenarios/scenarios.json";
 const scenarios: Scenario[] = JSON.parse(readFileSync(file, "utf8"));
 const LANGUAGES: Language[] = ["en", "fi", "sv"];
@@ -56,7 +60,7 @@ async function converse(scenario: Scenario, language: Language) {
     if (screen.type === "stop") event = { kind: "continue" };
     else if (screen.type === "flip") {
       questions += 1;
-      event = { kind: "answer", topic: screen.topic, answer: scenario.answers[screen.topic] ?? "unsure" };
+      event = { kind: "answer", topic: screen.topic, answer: scenario.answers[screen.topic] ?? scenario.answers[SAME_FACT[screen.topic] ?? ""] ?? "unsure" };
     } else if (screen.type === "unlock") event = { kind: "consent", signal: screen.signal, granted: true };
     else if (screen.type === "rescue") event = { kind: "rescue", stepId: screen.step.id, outcome: "done" };
     else if (screen.type === "handoff") event = { kind: "handoff", approved: true };
@@ -87,7 +91,7 @@ function judge(scenario: Scenario, language: Language, run: Awaited<ReturnType<t
   if (expect.harmless && (stopped || final.decision.destination)) problems.push("false alarm on harmless case");
   if (expect.stop && !stopped) problems.push("MISSED LIVE DANGER");
   if (expect.person === true && !final.decision.destination) problems.push("no human handoff");
-  if (expect.anySteps && !expect.anySteps.some((step) => steps.includes(step))) problems.push(`missing step: ${expect.anySteps.join("/")}`);
+  if (expect.anySteps && !expect.anySteps.some((step) => steps.includes(step) || (BANK_NOW[step] ?? []).some((variant) => steps.includes(variant)))) problems.push(`missing step: ${expect.anySteps.join("/")}`);
   if (expect.asked && questions === 0) problems.push("asked no question");
   if (response.screen.type === "result") {
     const { story, supportRoutes } = response.screen;
