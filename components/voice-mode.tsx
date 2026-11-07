@@ -632,7 +632,7 @@ export function VoiceMode(p: { audience: Audience; choice: Language | "auto"; fa
             {replies.map((option) => (
               <Btn
                 key={option.label}
-                variant={option.primary ? "primary" : "plain"}
+                variant="primary"
                 disabled={phase === "thinking"}
                 onClick={option.run}
                 className="min-w-[45%] flex-1 gap-2"

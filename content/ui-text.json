@@ -808,5 +808,20 @@
     "en": "Clear history",
     "fi": "Tyhjennä historia",
     "sv": "Rensa historiken"
+  },
+  "historyToday": {
+    "en": "Today",
+    "fi": "Tänään",
+    "sv": "I dag"
+  },
+  "historyYesterday": {
+    "en": "Yesterday",
+    "fi": "Eilen",
+    "sv": "I går"
+  },
+  "historyEarlier": {
+    "en": "Earlier",
+    "fi": "Aiemmin",
+    "sv": "Tidigare"
   }
 }

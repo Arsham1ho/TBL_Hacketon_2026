@@ -1,16 +1,87 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Building2, History, MessageSquareText, Trash, User, X } from "lucide-react";
-import type { Language } from "@/engine/types";
+import { ArrowLeft, Building2, History, MessageSquareText, Trash, X } from "lucide-react";
+import type { Language, Status } from "@/engine/types";
 import { clearHistory, deleteConversation, loadHistory, type Conversation } from "@/lib/history";
+import { cn } from "@/lib/utils";
 import type { Translate } from "@/lib/ui-text";
 import { AssessmentNote } from "./turns";
 import { StatusLabel } from "./ui";
 
 const LOCALE: Record<Language, string> = { en: "en-GB", fi: "fi-FI", sv: "sv-FI" };
-const when = (time: number, language: Language) =>
-  new Intl.DateTimeFormat(LOCALE[language], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(time);
+const time = (at: number, language: Language) => new Intl.DateTimeFormat(LOCALE[language], { hour: "2-digit", minute: "2-digit" }).format(at);
+const day = (at: number, language: Language) => new Intl.DateTimeFormat(LOCALE[language], { day: "numeric", month: "short" }).format(at);
+const startOfDay = (at: number) => new Date(at).setHours(0, 0, 0, 0);
+
+// "17:07" today, "Yesterday" before that, then the date.
+function when(at: number, language: Language, t: Translate) {
+  const today = startOfDay(Date.now());
+  if (at >= today) return time(at, language);
+  if (at >= today - 86_400_000) return t("historyYesterday");
+  return day(at, language);
+}
+
+// Today, Yesterday and Earlier, newest first.
+function groups(list: Conversation[], t: Translate): [string, Conversation[]][] {
+  const today = startOfDay(Date.now());
+  const buckets: [string, Conversation[]][] = [
+    [t("historyToday"), list.filter((item) => item.updatedAt >= today)],
+    [t("historyYesterday"), list.filter((item) => item.updatedAt < today && item.updatedAt >= today - 86_400_000)],
+    [t("historyEarlier"), list.filter((item) => item.updatedAt < today - 86_400_000)],
+  ];
+  return buckets.filter(([, items]) => items.length > 0);
+}
+
+// A greeting such as "hi" says nothing about the case, so the title is the scam type if one
+// was found, else the first message with some substance, and the preview is what follows.
+function describe(conversation: Conversation) {
+  const said = conversation.items.filter((item) => item.from === "user" && !item.assessment).map((item) => item.text);
+  const substantial = said.find((text) => text.trim().split(/\s+/).length >= 3) ?? said[0] ?? conversation.title;
+  const title = conversation.likelyType || substantial;
+  const preview = conversation.likelyType ? substantial : (said.find((text) => text !== substantial && text.trim().split(/\s+/).length >= 3) ?? "");
+  return { title, preview };
+}
+
+// The status as a small dot in its colour, beside plain text, as in the rest of the app.
+const STATUS_DOT: Record<Status, string> = {
+  safe: "bg-success",
+  needs_verification: "bg-warning",
+  threat_in_progress: "bg-destructive",
+  incident_occurred: "bg-danger-deep",
+};
+
+function HistoryCard({ conversation, t, language, onOpen, onDelete }: { conversation: Conversation; t: Translate; language: Language; onOpen: () => void; onDelete: () => void }) {
+  const { title, preview } = describe(conversation);
+  return (
+    <li className="relative">
+      <button type="button" onClick={onOpen} className="grid w-full gap-0.5 px-3.5 py-3 pr-12 text-left transition-colors hover:bg-accent/60 focus-visible:bg-accent/60">
+        <span className="truncate font-medium">{title}</span>
+        {preview && <span className="truncate text-sm text-muted-foreground">{preview}</span>}
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          {conversation.audience === "small_business" && <Building2 className="size-3" aria-hidden />}
+          {when(conversation.updatedAt, language, t)}
+          {conversation.status && conversation.statusLabel && (
+            <>
+              <span aria-hidden>·</span>
+              <span className={cn("size-1.5 rounded-full", STATUS_DOT[conversation.status])} aria-hidden />
+              {conversation.statusLabel}
+            </>
+          )}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label={`${t("deleteChat")}: ${title}`}
+        title={t("deleteChat")}
+        className="absolute top-1/2 right-2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-danger-soft hover:text-destructive"
+      >
+        <Trash className="size-4" aria-hidden />
+      </button>
+    </li>
+  );
+}
 
 // Past chats saved in this browser: a bottom sheet on phones, a drawer from the left on desktop.
 // A saved chat opens as a read-only transcript; the live session behind it has already ended.
@@ -53,8 +124,8 @@ export function HistoryPanel({ open, onClose, t, language }: { open: boolean; on
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-base font-bold">{selected ? selected.title : t("history")}</h2>
-            <p className="truncate text-xs text-muted-foreground">{selected ? when(selected.startedAt, language) : t("historySaved")}</p>
+            <h2 className="truncate text-base font-bold">{selected ? describe(selected).title : t("history")}</h2>
+            <p className="truncate text-xs text-muted-foreground">{selected ? `${day(selected.startedAt, language)}, ${time(selected.startedAt, language)}` : t("historySaved")}</p>
           </div>
           <button type="button" onClick={onClose} aria-label={t("close")} className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
             <X className="size-5" aria-hidden />
@@ -72,42 +143,28 @@ export function HistoryPanel({ open, onClose, t, language }: { open: boolean; on
               <p className="max-w-[240px] text-sm text-muted-foreground">{t("historyEmpty")}</p>
             </div>
           ) : (
-            <ul className="grid gap-2">
-              {list.map((conversation) => (
-                <li key={conversation.id} className="group relative">
-                  <button
-                    type="button"
-                    onClick={() => setSelected(conversation)}
-                    className="grid w-full gap-1.5 rounded-2xl border border-border-strong bg-card p-3.5 pr-12 text-left transition-colors hover:bg-accent/50 active:scale-[.99]"
-                  >
-                    <span className="line-clamp-2 leading-snug font-semibold">{conversation.title}</span>
-                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        {conversation.audience === "small_business" ? <Building2 className="size-3.5" aria-hidden /> : <User className="size-3.5" aria-hidden />}
-                        {when(conversation.updatedAt, language)}
-                      </span>
-                      {conversation.status && conversation.statusLabel && (
-                        <span className="[&_p]:text-xs">
-                          <StatusLabel status={conversation.status} label={conversation.statusLabel} />
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      deleteConversation(conversation.id);
-                      setList(loadHistory());
-                    }}
-                    aria-label={`${t("deleteChat")}: ${conversation.title}`}
-                    title={t("deleteChat")}
-                    className="absolute top-2.5 right-2.5 flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-danger-soft hover:text-destructive"
-                  >
-                    <Trash className="size-4" aria-hidden />
-                  </button>
-                </li>
+            <div className="grid gap-4">
+              {groups(list, t).map(([label, items]) => (
+                <section key={label} className="grid gap-1.5">
+                  <h3 className="px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</h3>
+                  <ul className="grid divide-y divide-border overflow-hidden rounded-2xl border border-border">
+                    {items.map((conversation) => (
+                      <HistoryCard
+                        key={conversation.id}
+                        conversation={conversation}
+                        t={t}
+                        language={language}
+                        onOpen={() => setSelected(conversation)}
+                        onDelete={() => {
+                          deleteConversation(conversation.id);
+                          setList(loadHistory());
+                        }}
+                      />
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
           )}
         </div>
 
