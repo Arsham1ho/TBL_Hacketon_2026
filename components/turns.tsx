@@ -11,7 +11,8 @@ import { Details, StatusLabel } from "./ui";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
 export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
-export type Turn = { body: ReactNode; recap: string; replies: Reply[] };
+// `say` is what voice mode reads aloud for a result card; other screens are read from the screen itself.
+export type Turn = { body: ReactNode; recap: string; replies: Reply[]; say?: string };
 
 type Actions = {
   t: Translate;
@@ -722,8 +723,21 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           ...(sensitive ? [talk(recap)] : []),
         ];
       }
+      const spoken =
+        current.title === t("incidentSummary")
+          ? [screen.statusLabel, story.attempted]
+          : current.action
+            ? [current.title, current.recap]
+            : current.title === t("storyPrevent")
+              ? [current.title, ...story.prevent]
+              : current.title === t("storyDone")
+                ? [current.title, ...done]
+                : current.title === t("eachCase")
+                  ? [current.title, ...(screen.branches ?? []).flatMap((branch) => [branch.condition, ...branch.steps])]
+                  : [current.recap];
       return {
         recap,
+        say: spoken.map((line) => line.trim().replace(/([^.!?:])$/, "$1.")).join(" "),
         body: (
           <>
             {/* Only the current card is shown. Earlier ones stay in the chat as one line each. */}

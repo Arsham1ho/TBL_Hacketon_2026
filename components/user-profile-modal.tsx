@@ -48,8 +48,21 @@ export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout
   const iban = isBusiness ? business.corporateIban : personal.bankAccountIban;
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={user.name} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-      <div className="grid w-full max-w-md gap-5 rounded-3xl border border-border bg-card p-5 text-foreground shadow-2xl motion-safe:animate-[fade-up_.25s_ease-out]">
+    // A bottom sheet on phones, a centred card from the sm breakpoint up.
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={user.name}
+      onClick={(event) => {
+        // Tapping above the sheet closes it, as with any phone sheet.
+        if (event.target === event.currentTarget && window.matchMedia("(max-width: 639px)").matches) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-xs sm:items-center sm:p-4"
+    >
+      <div className="grid max-h-[92dvh] w-full gap-5 overflow-y-auto overscroll-contain rounded-t-[28px] border-t border-border bg-card px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-foreground shadow-2xl motion-safe:animate-[sheet-up_.32s_cubic-bezier(.2,.9,.3,1)] sm:max-h-none sm:max-w-md sm:overflow-visible sm:rounded-3xl sm:border sm:p-5 sm:motion-safe:animate-[fade-up_.25s_ease-out]">
+        <div className="-mb-2 flex justify-center sm:hidden" aria-hidden>
+          <span className="h-1.5 w-10 rounded-full bg-border-strong" />
+        </div>
         <div className="flex items-start gap-3">
           <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-foreground text-lg font-bold text-background">{user.avatarInitials}</div>
           <div className="grid min-w-0 flex-1 gap-1">
@@ -59,7 +72,7 @@ export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout
               {isBusiness ? business.companyName : "Consumer"}
             </span>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
+          <button type="button" onClick={onClose} aria-label="Close" className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground sm:size-9">
             <X className="size-4" />
           </button>
         </div>
@@ -99,16 +112,17 @@ export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout
           {isBusiness ? <Chip mono>Y {business.businessId}</Chip> : <Chip mono>ID {personal.maskedSsn}</Chip>}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-4">
-          <button type="button" onClick={onLogout} className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-destructive hover:bg-danger-soft">
+        {/* On phones: Done and Switch as full-width thumb buttons, Log out under them. */}
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <button type="button" onClick={onLogout} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium text-destructive hover:bg-danger-soft sm:min-h-10 sm:justify-start">
             <LogOut className="size-4" aria-hidden />
             Log out
           </button>
-          <div className="flex gap-2">
-            <Btn variant="plain" className="min-h-10 px-4 text-sm" onClick={onSwitchUser}>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Btn variant="plain" className="min-h-12 px-4 text-base sm:min-h-10 sm:text-sm" onClick={onSwitchUser}>
               Switch
             </Btn>
-            <Btn variant="primary" className="min-h-10 px-4 text-sm" onClick={onClose}>
+            <Btn variant="primary" className="min-h-12 px-4 text-base sm:min-h-10 sm:text-sm" onClick={onClose}>
               Done
             </Btn>
           </div>

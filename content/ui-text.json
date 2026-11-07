@@ -778,5 +778,35 @@
     "en": "Clear saved data",
     "fi": "Tyhjennä tallennetut tiedot",
     "sv": "Rensa sparade uppgifter"
+  },
+  "talkByVoice": {
+    "en": "Talk by voice",
+    "fi": "Puhu äänellä",
+    "sv": "Prata med rösten"
+  },
+  "history": {
+    "en": "History",
+    "fi": "Historia",
+    "sv": "Historik"
+  },
+  "historySaved": {
+    "en": "Saved only in this browser",
+    "fi": "Tallennettu vain tähän selaimeen",
+    "sv": "Sparas bara i den här webbläsaren"
+  },
+  "historyEmpty": {
+    "en": "Your chats will appear here. They stay on this device only.",
+    "fi": "Keskustelusi näkyvät tässä. Ne pysyvät vain tällä laitteella.",
+    "sv": "Dina chattar visas här. De stannar bara på den här enheten."
+  },
+  "deleteChat": {
+    "en": "Delete chat",
+    "fi": "Poista keskustelu",
+    "sv": "Radera chatten"
+  },
+  "clearHistory": {
+    "en": "Clear history",
+    "fi": "Tyhjennä historia",
+    "sv": "Rensa historiken"
   }
 }

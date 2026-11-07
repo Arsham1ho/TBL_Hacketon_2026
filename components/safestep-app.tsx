@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  History,
   Landmark,
   Monitor,
   Moon,
@@ -24,6 +25,7 @@ import { translator } from "@/lib/ui-text";
 import { DEFAULT_PREFERENCES, loadPreferences, motionReduced, savePreferences, type Preferences } from "@/lib/preferences";
 import { BANKS, OPERATORS, type Provider } from "@/lib/providers";
 import { cn } from "@/lib/utils";
+import { nextSample, sampleText } from "@/lib/samples";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
 import { LoginPage } from "./login-page";
@@ -31,6 +33,9 @@ import { AssessmentNote, agentTurn, screenTurn, type Reply } from "./turns";
 import { guessProvider, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { Btn, SecretNote, StepMark } from "./ui";
 import { UserProfileModal } from "./user-profile-modal";
+import { VoiceMode } from "./voice-mode";
+import { HistoryPanel } from "./history-panel";
+import { clearHistory, newConversationId, saveConversation } from "@/lib/history";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -324,6 +329,9 @@ export function SafeStepApp() {
   const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [voice, setVoice] = useState(false);
+  // Which example the empty field shows. Picked at random after load, then rotated.
+  const [sample, setSample] = useState(0);
   const [choice, setChoice] = useState<Language | "auto">("auto");
   const [browserLanguage, setBrowserLanguage] = useState<Language>("fi");
   const [audience, setAudience] = useState<Audience>("consumer");
@@ -335,6 +343,10 @@ export function SafeStepApp() {
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [agent, setAgent] = useState<AgentPreview | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  // This chat's place in the browser history. A new id each time the user starts over.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const closeHistory = useCallback(() => setHistoryOpen(false), []);
+  const conversation = useRef<{ id: string; startedAt: number } | null>(null);
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
@@ -375,6 +387,14 @@ export function SafeStepApp() {
   }
 
   const shown = response?.language ?? (choice === "auto" ? browserLanguage : choice);
+
+  // A random example each visit, and a new one every few seconds while the field is empty.
+  useEffect(() => setSample(nextSample(Math.floor(Math.random() * 10))), []);
+  useEffect(() => {
+    if (message || response || motionReduced()) return;
+    const timer = setInterval(() => setSample(nextSample), 4500);
+    return () => clearInterval(timer);
+  }, [message, response]);
   const t = translator(shown);
   const consumer = audience === "consumer";
   const question = t(consumer ? "whatHappened" : "whatHappenedBusiness");
@@ -391,6 +411,25 @@ export function SafeStepApp() {
     if (!busy) log.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
     return () => cancelAnimationFrame(frame);
   }, [items, response, agent, busy, stage, revealed]);
+
+  // Each chat is saved in this browser as it goes, so it can be read again from History.
+  useEffect(() => {
+    if (items.length === 0) return;
+    conversation.current ??= { id: newConversationId(), startedAt: Date.now() };
+    const first = items.find((item) => item.from === "user" && !item.assessment);
+    saveConversation({
+      ...conversation.current,
+      updatedAt: Date.now(),
+      audience,
+      language: shown,
+      title: (first?.text ?? "").slice(0, 120) || t("history"),
+      items,
+      status: response?.state.status,
+      statusLabel: response?.state.statusLabel,
+      likelyType: response?.state.likelyType,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, response]);
 
   // Remembered on this device, or taken from the logged-in profile.
   useEffect(() => {
@@ -417,6 +456,7 @@ export function SafeStepApp() {
     try {
       ["safestep-providers", "safestep-preferences", "safestep_active_user_id"].forEach((key) => localStorage.removeItem(key));
     } catch {}
+    clearHistory();
     setProviders({});
     setPreferences(DEFAULT_PREFERENCES);
     savePreferences(DEFAULT_PREFERENCES);
@@ -487,6 +527,7 @@ export function SafeStepApp() {
   }
 
   async function restart() {
+    conversation.current = null;
     await client.end().catch(() => null);
     setResponse(null);
     setAgent(null);
@@ -515,11 +556,27 @@ export function SafeStepApp() {
     });
   }
 
+  const historyButton = (
+    <>
+      <button
+        type="button"
+        onClick={() => setHistoryOpen(true)}
+        aria-label={t("history")}
+        title={t("history")}
+        className="fixed top-[max(0.5rem,env(safe-area-inset-top))] left-3 z-40 flex size-11 items-center justify-center rounded-lg bg-card/90 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <History className="size-5" aria-hidden />
+      </button>
+      <HistoryPanel open={historyOpen} onClose={closeHistory} t={t} language={shown} />
+    </>
+  );
+
   const prototypeLine = <p className="px-4 pb-[max(0.25rem,env(safe-area-inset-bottom))] text-center text-[11px] text-muted-foreground">{t("prototype")}</p>;
 
   if (items.length === 0 && !response) {
     return (
       <div className="flex h-dvh flex-col">
+        {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
           {currentUser ? (
             <button
@@ -565,8 +622,9 @@ export function SafeStepApp() {
             {question}
           </h1>
         </main>
+        {voice && <VoiceMode audience={audience} choice={choice} fallbackLanguage={browserLanguage} onClose={() => setVoice(false)} />}
         <div className={WIDTH}>
-          <DescriptionComposer question={question} sample={t(consumer ? "sample" : "sampleBusiness")} sendLabel={t("send")} text={message} disabled={busy} onChange={setMessage} onSend={start} />
+          <DescriptionComposer question={question} sample={sampleText(audience, sample, shown)} sendLabel={t("send")} text={message} disabled={busy} onChange={setMessage} onSend={start} voiceLabel={t("talkByVoice")} onVoice={() => setVoice(true)} />
 
         </div>
         {prototypeLine}
@@ -739,7 +797,8 @@ export function SafeStepApp() {
 
   return (
     <div className="flex h-dvh flex-col">
-      <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+      {historyButton}
+        <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
         {currentUser ? (
           <button
             type="button"

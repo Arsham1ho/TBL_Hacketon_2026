@@ -3,6 +3,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { unlockAudio } from "@/lib/voice";
+import { SiriOrb } from "./siri-orb";
 
 // The sample is only a placeholder. It is never submitted.
 export function DescriptionComposer(p: {
@@ -13,18 +15,27 @@ export function DescriptionComposer(p: {
   disabled: boolean;
   onChange: (text: string) => void;
   onSend: () => void;
+  // Shows the voice orb, which opens voice mode.
+  onVoice?: () => void;
+  voiceLabel?: string;
 }) {
   const { text, sample } = p;
   const [focused, setFocused] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   const ready = Boolean(text.trim()) && !p.disabled;
 
-  // Starts as one line and grows with the text, up to about six lines.
+  // Starts as one line and grows with the text, up to about six lines. An empty field is
+  // always one line: browsers count a wrapped placeholder in scrollHeight, which made it tall.
   useLayoutEffect(() => {
     const element = field.current;
     if (!element) return;
-    element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 168)}px`;
+    const fit = () => {
+      element.style.height = "40px";
+      if (text) element.style.height = `${Math.min(Math.max(element.scrollHeight, 40), 168)}px`;
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
   }, [text]);
 
   return (
@@ -37,10 +48,25 @@ export function DescriptionComposer(p: {
     >
       <div
         className={cn(
-          "flex items-end gap-2 rounded-[28px] border bg-card py-1.5 pr-1.5 pl-4 shadow-sm transition-[border-color,box-shadow]",
+          "flex items-end gap-2 rounded-[28px] border bg-card py-1.5 pr-1.5 shadow-sm transition-[border-color,box-shadow]",
+          p.onVoice ? "pl-1.5" : "pl-4",
           focused ? "border-foreground/40 shadow-md ring-4 ring-foreground/5" : "border-border-strong",
         )}
       >
+        {p.onVoice && (
+          <button
+            type="button"
+            aria-label={p.voiceLabel}
+            onClick={() => {
+              // Speaking during the tap lets iOS play the voice that follows.
+              unlockAudio();
+              p.onVoice?.();
+            }}
+            className="relative flex size-10 shrink-0 items-center justify-center self-end rounded-full shadow-[0_0_0_1px_rgb(139_92_246/0.18),0_2px_12px_rgb(99_102_241/0.45)] transition-transform hover:scale-110 active:scale-90"
+          >
+            <SiriOrb mode="idle" size={0.47} className="size-10 rounded-full" />
+          </button>
+        )}
         <label className="sr-only" htmlFor="description">
           {p.question || sample}
         </label>
@@ -59,7 +85,7 @@ export function DescriptionComposer(p: {
             event.currentTarget.form?.requestSubmit();
           }}
           placeholder={p.question ? (focused ? p.question : sample) : sample}
-          className="min-w-0 flex-1 resize-none self-center bg-transparent py-2 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
+          className="block h-10 min-w-0 flex-1 resize-none self-end overflow-y-auto bg-transparent px-1 py-2 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <button
           type="submit"

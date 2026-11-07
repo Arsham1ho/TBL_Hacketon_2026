@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, User, ArrowLeft } from "lucide-react";
+import { Building2, User, ArrowLeft, ChevronRight } from "lucide-react";
 import { MOCK_USERS, setStoredUser, type MockUser } from "@/lib/mock-users";
 import { Btn, StepMark } from "./ui";
 
@@ -50,9 +50,17 @@ export function LoginPage({ onLoginSuccess, onBackToApp }: LoginPageProps) {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center px-4 py-8">
+      <main className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-4 py-8 max-sm:pt-10 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-center">
         <div className="grid gap-6">
-          <h1 className="text-center text-2xl font-bold tracking-tight">Sign in to SafeStep</h1>
+          <div className="grid justify-items-center gap-3 sm:hidden">
+            <span className="flex size-16 items-center justify-center rounded-[22px] bg-foreground text-background shadow-lg">
+              <StepMark className="size-8" />
+            </span>
+          </div>
+          <div className="grid gap-1.5">
+            <h1 className="text-center text-2xl font-bold tracking-tight max-sm:text-[28px]">Sign in to SafeStep</h1>
+            <p className="text-center text-sm text-muted-foreground sm:hidden">Choose a demo account. You can switch at any time.</p>
+          </div>
 
           <div className="grid gap-3">
             {/* Consumer Card */}
@@ -66,24 +74,25 @@ export function LoginPage({ onLoginSuccess, onBackToApp }: LoginPageProps) {
                   handleLogin(consumerUser);
                 }
               }}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-border-strong bg-card p-4 transition-all hover:border-foreground/40 hover:bg-accent/20"
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border-strong bg-card p-4 transition-all hover:border-foreground/40 hover:bg-accent/20 max-sm:min-h-[76px] max-sm:rounded-2xl max-sm:active:scale-[.98] max-sm:active:bg-accent/40"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-foreground">
                   <User className="size-5" />
                 </div>
-                <div>
-                  <h2 className="font-semibold text-foreground">{consumerUser.name}</h2>
+                <div className="min-w-0">
+                  <h2 className="font-semibold leading-snug text-foreground">{consumerUser.name}</h2>
                   <p className="text-xs text-muted-foreground">Regular Customer</p>
                 </div>
               </div>
               <Btn
                 variant="primary"
-                className="min-h-9 px-4 text-xs pointer-events-none"
+                className="min-h-9 px-4 text-xs pointer-events-none max-sm:hidden"
                 tabIndex={-1}
               >
                 Log in
               </Btn>
+              <ChevronRight className="size-5 shrink-0 text-muted-foreground sm:hidden" aria-hidden />
             </div>
 
             {/* Small Business Card */}
@@ -97,28 +106,29 @@ export function LoginPage({ onLoginSuccess, onBackToApp }: LoginPageProps) {
                   handleLogin(businessUser);
                 }
               }}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-border-strong bg-card p-4 transition-all hover:border-foreground/40 hover:bg-accent/20"
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border-strong bg-card p-4 transition-all hover:border-foreground/40 hover:bg-accent/20 max-sm:min-h-[76px] max-sm:rounded-2xl max-sm:active:scale-[.98] max-sm:active:bg-accent/40"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-foreground">
                   <Building2 className="size-5" />
                 </div>
-                <div>
-                  <h2 className="font-semibold text-foreground">{businessUser.business?.companyName}</h2>
+                <div className="min-w-0">
+                  <h2 className="font-semibold leading-snug text-foreground">{businessUser.business?.companyName}</h2>
                   <p className="text-xs text-muted-foreground">Small Business</p>
                 </div>
               </div>
               <Btn
                 variant="primary"
-                className="min-h-9 px-4 text-xs pointer-events-none"
+                className="min-h-9 px-4 text-xs pointer-events-none max-sm:hidden"
                 tabIndex={-1}
               >
                 Log in
               </Btn>
+              <ChevronRight className="size-5 shrink-0 text-muted-foreground sm:hidden" aria-hidden />
             </div>
           </div>
 
-          <div className="text-center">
+          <div className="text-center max-sm:hidden">
             <button
               type="button"
               onClick={handleGuest}
@@ -127,6 +137,18 @@ export function LoginPage({ onLoginSuccess, onBackToApp }: LoginPageProps) {
               Continue as guest
             </button>
           </div>
+        </div>
+
+        {/* On phones the guest choice is a full button within thumb reach. */}
+        <div className="mt-auto grid gap-2 pt-8 sm:hidden">
+          <button
+            type="button"
+            onClick={handleGuest}
+            className="min-h-12 w-full rounded-full border border-border-strong bg-card text-base font-semibold text-foreground active:scale-[.98] active:bg-accent"
+          >
+            Continue as guest
+          </button>
+          <p className="text-center text-[11px] text-muted-foreground">Synthetic prototype. Demo accounts only.</p>
         </div>
       </main>
     </div>

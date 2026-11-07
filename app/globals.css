@@ -170,3 +170,37 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Voice mode: the app's own background, light or dark, with a soft glow behind the orb. */
+.voice-mode {
+  background:
+    radial-gradient(55% 38% at 50% 55%, rgb(99 102 241 / 0.1), transparent 70%),
+    var(--background);
+  animation: voice-in 0.5s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+}
+
+.voice-card { animation: voice-card-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+
+@keyframes voice-in {
+  from { clip-path: circle(0 at max(2.75rem, calc(50% - 276px)) calc(100% - 4.25rem)); }
+  to { clip-path: circle(150vmax at max(2.75rem, calc(50% - 276px)) calc(100% - 4.25rem)); }
+}
+@keyframes voice-card-in {
+  from { opacity: 0; transform: translateY(-14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+.voice-orb-stage { animation: orb-pop 0.6s 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.5) both; }
+@keyframes orb-pop { from { scale: 0.3; opacity: 0; } }
+
+/* Phone sheets slide up from the bottom edge. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+/* Desktop drawers slide in from the left edge. */
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
