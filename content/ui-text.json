@@ -60,14 +60,14 @@
     "sv": "En leverantör bad oss ändra sina bankuppgifter"
   },
   "pasteToggle": {
-    "en": "Paste the message you received",
-    "fi": "Liitä saamasi viesti",
-    "sv": "Klistra in meddelandet du fick"
+    "en": "Attach suspicious message, email or link",
+    "fi": "Liitä epäilyttävä viesti, sähköposti tai linkki",
+    "sv": "Bifoga misstänkt meddelande, mejl eller länk"
   },
   "pasteLabel": {
-    "en": "Message you received",
-    "fi": "Saamasi viesti",
-    "sv": "Meddelandet du fick"
+    "en": "Suspicious message or URL",
+    "fi": "Epäilyttävä viesti tai linkki",
+    "sv": "Misstänkt meddelande eller länk"
   },
   "send": {
     "en": "Send",
@@ -440,49 +440,49 @@
     "sv": "Fortsätt"
   },
   "demoLabel": {
-    "en": "Simulated DNA data for this demo",
-    "fi": "Simuloitu DNA-data tähän demoon",
-    "sv": "Simulerad DNA-data för denna demo"
+    "en": "DNA Network Threat Intelligence",
+    "fi": "DNA Verkkoturvan tilannekuva",
+    "sv": "DNA Nätverkssäkerhetsintelligens"
   },
   "demonone": {
-    "en": "None",
-    "fi": "Ei mitään",
-    "sv": "Ingen"
+    "en": "Normal (No network anomalies detected)",
+    "fi": "Normaali (Ei havaittuja verkkoanomalioita)",
+    "sv": "Normal (Inga nätverksavvikelser upptäckta)"
   },
   "demoflagged_link": {
-    "en": "A flagged link",
-    "fi": "Merkitty linkki",
-    "sv": "En flaggad länk"
+    "en": "DNA Web Guard: Flagged phishing URL",
+    "fi": "DNA Verkkosuoja: Merkitty haitallinen linkki",
+    "sv": "DNA Webbskydd: Flaggad skadlig länk"
   },
   "demowarned_call": {
-    "en": "A call warning",
-    "fi": "Puheluvaroitus",
-    "sv": "En samtalsvarning"
+    "en": "DNA Call Guard: Impostor call warning",
+    "fi": "DNA Puhelusuoja: Varoitus huijauspuhelusta",
+    "sv": "DNA Samtalsskydd: Varning för bluffsamtal"
   },
   "demosim_change": {
-    "en": "A recent SIM change",
-    "fi": "Äskettäinen SIM-muutos",
-    "sv": "En nylig SIM-ändring"
+    "en": "DNA SIM Guard: Recent unauthorized SIM swap",
+    "fi": "DNA SIM-suoja: Äskettäinen luvaton SIM-vaihto",
+    "sv": "DNA SIM-skydd: Nyligt obehörigt SIM-byte"
   },
   "demounknown_login": {
-    "en": "An unfamiliar login",
-    "fi": "Tuntematon kirjautuminen",
-    "sv": "En okänd inloggning"
+    "en": "DNA Identity Guard: Unfamiliar account login",
+    "fi": "DNA Tiliturva: Tuntematon kirjautuminen",
+    "sv": "DNA Kontoskydd: Okänd inloggning"
   },
   "demodevice_issue": {
-    "en": "A suspicious app",
-    "fi": "Epäilyttävä sovellus",
-    "sv": "En misstänkt app"
+    "en": "DNA Device Guard: Suspicious app / malware",
+    "fi": "DNA Laitesuoja: Epäilyttävä sovellus tai haittaohjelma",
+    "sv": "DNA Enhetsskydd: Misstänkt app eller skadeprogram"
   },
   "demobusiness_access": {
-    "en": "A former employee's active account",
-    "fi": "Entisen työntekijän aktiivinen tili",
-    "sv": "Ett aktivt konto för en tidigare anställd"
+    "en": "DNA Corporate Shield: Former employee account active",
+    "fi": "DNA Yrityssuoja: Entisen työntekijän aktiivinen tili",
+    "sv": "DNA Företagsskydd: Före detta anställds aktiva konto"
   },
   "options": {
-    "en": "Options",
-    "fi": "Asetukset",
-    "sv": "Alternativ"
+    "en": "Security Settings & Simulation",
+    "fi": "Turva-asetukset ja simulointi",
+    "sv": "Säkerhetsinställningar och simulering"
   },
   "close": {
     "en": "Close",
@@ -490,9 +490,9 @@
     "sv": "Stäng"
   },
   "examples": {
-    "en": "Examples",
-    "fi": "Esimerkit",
-    "sv": "Exempel"
+    "en": "Incident Scenarios (One-Click Test)",
+    "fi": "Hyökkäysskenaariot (Pikatestaus)",
+    "sv": "Attackscenarier (Snabbtest)"
   },
   "details": {
     "en": "Details",
