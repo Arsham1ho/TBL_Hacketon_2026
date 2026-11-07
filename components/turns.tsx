@@ -10,8 +10,6 @@ import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderCho
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
 import { ProviderLogo } from "./select-menu";
-import { XrayCard } from "./xray-card";
-import { SafetyCard } from "./discreet";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
 export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
@@ -577,8 +575,6 @@ export function LinkVerdictCard({ check, t }: { check: LinkCheck; t: Translate }
 // short, open in History so the whole conversation can be read back.
 export function PastItem({ item, open = false, t }: { item: HistoryItem; open?: boolean; t: Translate }) {
   if (item.link) return <LinkVerdictCard check={item.link} t={t} />;
-  if (item.xray) return <XrayCard xray={item.xray} t={t} />;
-  if (item.safety) return <SafetyCard t={t} />;
   if (item.kind === "question") {
     return (
       <div className="flex max-w-[92%] items-start gap-2.5">

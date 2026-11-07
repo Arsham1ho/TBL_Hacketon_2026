@@ -14,7 +14,6 @@ import { incidentCategory, incidentStory, likelyCategory } from "./incident-cate
 import { safeScreen } from "./output-guard";
 import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters/signals";
 import { handoffPreview } from "../adapters/handoff";
-import { xrayMessage, xraySource } from "./xray";
 import { applyAnswer, topicValue, type Case } from "./case";
 import { conflictingTopics, mergeFacts, validateFacts } from "./fact-validator";
 import { guardInput } from "./input-guard";
@@ -459,7 +458,7 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language, item.audience, item), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, linkCheck: journey.linkCheck ?? null, senderCheck: journey.senderCheck ?? null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm }, xray: journeyXray(journey), discreet: isDiscreet(journey) };
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, linkCheck: journey.linkCheck ?? null, senderCheck: journey.senderCheck ?? null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }
 
 // The summary's parts: what the user said, why it matters, and the steps done and not done.
@@ -490,14 +489,3 @@ export function handoffSummary(journey: Journey, facts: string[]): string[] {
   ];
 }
 
-// The received message, X-rayed for scam tricks. Only explains; the decision never reads it.
-export function journeyXray(journey: Journey) {
-  if (!journey.input) return null;
-  const source = xraySource(journey.input.openingMessage, journey.input.incidentContent);
-  return source ? xrayMessage(source, journey.item.language, [journey.linkCheck, journey.senderCheck]) : null;
-}
-
-// Someone close may be watching the device: the same test the personal-safety rule uses.
-export function isDiscreet(journey: Journey) {
-  return journey.item.facts.personalSafetyRisk === true || journey.item.facts.incidentType === "partner_monitoring";
-}

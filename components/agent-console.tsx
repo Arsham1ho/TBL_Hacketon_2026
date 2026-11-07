@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Ban, BadgeCheck, Building2, CircleCheck, Clock, EyeOff, Hand, Headset, Inbox, Info, Languages, Lock, MessageSquare, SendHorizontal, ShieldAlert, ShieldCheck, TriangleAlert, User } from "lucide-react";
+import { Ban, BadgeCheck, Building2, CircleCheck, Clock, EyeOff, Hand, Headset, Inbox, Info, Languages, Lock, MessageSquare, SendHorizontal, ShieldCheck, TriangleAlert, User } from "lucide-react";
 import type { AgentCase, CaseMessage, CaseStatus } from "@/adapters/handoff-queue";
 import type { Destination, Language, Risk, Urgency } from "@/engine/types";
 import { cn } from "@/lib/utils";
@@ -240,10 +240,7 @@ export function AgentConsole() {
                   </span>
                   <StatusPill status={item.caseStatus} />
                 </span>
-                <span className="flex items-center gap-1.5 truncate text-sm font-medium">
-                  {item.discreet && <ShieldAlert className="size-3.5 shrink-0 text-destructive" aria-label="Personal safety case" />}
-                  {item.likelyType ?? item.statusLabel ?? ROUTE[item.route]}
-                </span>
+                <span className="truncate text-sm font-medium">{item.likelyType ?? item.statusLabel ?? ROUTE[item.route]}</span>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{RISK[item.risk]}</span>·<span>{item.language.toUpperCase()}</span>·
                   <span className="flex items-center gap-1 tabular-nums">
@@ -346,16 +343,6 @@ function CaseDetail({ item, now, agentName, update, message }: { item: AgentCase
           {item.likelyType && <span className="text-muted-foreground">Likely: {item.likelyType}</span>}
         </div>
       </div>
-
-      {item.discreet && (
-        <div className="flex items-start gap-3 rounded-2xl border-2 border-destructive bg-danger-soft p-4 text-sm">
-          <ShieldAlert className="mt-px size-5 shrink-0 text-destructive" aria-hidden />
-          <p>
-            <span className="font-semibold">Personal safety case. Someone close may be monitoring the customer&apos;s phone.</span> Don&apos;t call or text their number first, and
-            don&apos;t advise removing apps yet. Use this chat, ask whether it&apos;s safe to talk, and offer to plan with a victim-support service. If they are in danger, tell them to call 112.
-          </p>
-        </div>
-      )}
 
       <div className="flex items-start gap-3 rounded-2xl border border-success/30 bg-success-soft p-4 text-sm">
         <BadgeCheck className="mt-px size-5 shrink-0 text-success" aria-hidden />

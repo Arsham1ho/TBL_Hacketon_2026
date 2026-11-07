@@ -1,6 +1,5 @@
 import type { IncidentCategory, IncidentStory } from "./incident-category";
 import type { EvidenceChannel, EvidenceFieldId, LinkCheck } from "./link-check";
-import type { Xray } from "./xray";
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
 
 // The contract between the engine and the UI. The API returns these and the UI only
@@ -88,11 +87,6 @@ export type ApiResponse = {
   senderCheck: LinkCheck | null;
   notice: string;
   dataReceipt: DataReceipt;
-  // The received message with scam tricks marked in place. Explains only; never changes the action.
-  xray?: Xray | null;
-  // A personal-safety case, such as a partner monitoring the phone: the UI hides traces and
-  // offers a quick exit, and the agent is told not to contact the customer's number first.
-  discreet?: boolean;
 };
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.

@@ -27,8 +27,6 @@ export type AgentCase = {
   details: HandoffDetails;
   omitted: string[];
   consentUsed: string[];
-  // Someone close may be watching the customer's phone.
-  discreet: boolean;
   messages: CaseMessage[];
 };
 

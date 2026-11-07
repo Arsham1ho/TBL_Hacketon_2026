@@ -11,7 +11,7 @@ import { guardInput } from "../../../engine/input-guard";
 import type { ApiResponse } from "../../../engine/screens";
 import { buildReport } from "../../../engine/report";
 import { lookupDomain } from "../../../adapters/domain-intel";
-import { handleEvent, isDiscreet, handoffDetails, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
+import { handleEvent, handoffDetails, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
 import { Audience, Destination, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
@@ -197,6 +197,5 @@ function queueCase(sessionId: string, journey: Journey) {
     details: handoffDetails(journey, facts),
     omitted: handoffPreview(destination, result.confirmedFacts, journey.item.language).omitted,
     consentUsed: [...journey.used],
-    discreet: isDiscreet(journey),
   });
 }
