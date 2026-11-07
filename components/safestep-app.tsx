@@ -23,7 +23,8 @@ import { cn } from "@/lib/utils";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
 import { LoginPage } from "./login-page";
-import { agentTurn, screenTurn, type Reply } from "./turns";
+import { AssessmentNote, agentTurn, screenTurn, type Reply } from "./turns";
+import { guessProvider, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { Btn, SecretNote, StepMark } from "./ui";
 import { UserProfileModal } from "./user-profile-modal";
 
@@ -249,7 +250,7 @@ export const RICH_BUSINESS_SCENARIOS: AttackScenario[] = [
 ];
 
 // What has been said so far.
-type Item = { from: "user" | "safestep"; text: string };
+type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"] };
 
 const WIDTH = "mx-auto w-full max-w-[640px] px-4";
 
@@ -271,6 +272,10 @@ export function SafeStepApp() {
   const [closed, setClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
+  const [stage, setStage] = useState(0);
+  const [revealed, setRevealed] = useState<("why" | "details")[]>([]);
+  const [providers, setProviders] = useState<ProviderChoice>({});
+  const lastStatus = useRef<string | null>(null);
   const log = useRef<HTMLDivElement>(null);
   const latest = useRef<HTMLDivElement>(null);
   const options = useRef<HTMLDialogElement>(null);
@@ -317,11 +322,44 @@ export function SafeStepApp() {
     if (!busy) log.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
   }, [items, response, agent, busy]);
 
+  // Remembered on this device, or taken from the logged-in profile.
+  useEffect(() => {
+    let saved: ProviderChoice = {};
+    try {
+      saved = JSON.parse(localStorage.getItem("safestep-providers") ?? "{}");
+    } catch {}
+    setProviders({
+      bank: saved.bank ?? guessProvider("bank", currentUser?.business?.corporateBank ?? currentUser?.personal.primaryBank),
+      operator: saved.operator ?? guessProvider("operator", currentUser?.personal.operatorSubscription),
+    });
+  }, [currentUser]);
+
+  function choose(kind: ProviderKind, id: string) {
+    const next = { ...providers, [kind]: id };
+    setProviders(next);
+    try {
+      localStorage.setItem("safestep-providers", JSON.stringify(next));
+    } catch {}
+  }
+
+  // A new answer from SafeStep starts its result from the first card. Each time the AI's
+  // assessment changes, it's shown in the chat before the conversation carries on.
+  function arrived(next: ApiResponse) {
+    setStage(0);
+    setRevealed([]);
+    const status = next.state?.status;
+    if (status && status !== lastStatus.current && (status !== "needs_verification" || lastStatus.current)) {
+      setItems((previous) => [...previous, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
+    }
+    lastStatus.current = status ?? lastStatus.current;
+    setResponse(next);
+  }
+
   async function send(request: ApiRequest) {
     setBusy(true);
     setFailed(null);
     try {
-      setResponse(await client.send(request));
+      arrived(await client.send(request));
       setAgent(null);
     } catch {
       setFailed(request);
@@ -345,7 +383,7 @@ export function SafeStepApp() {
     try {
       const next = await client.send(request);
       const preview = approved ? await client.agentView() : null;
-      setResponse(next);
+      arrived(next);
       setAgent(preview);
     } catch {
       setFailed(request);
@@ -359,6 +397,7 @@ export function SafeStepApp() {
     setResponse(null);
     setAgent(null);
     setItems([]);
+    lastStatus.current = null;
     setClosed(false);
     setFailed(null);
     setMessage("");
@@ -771,6 +810,12 @@ export function SafeStepApp() {
       record({ from: "safestep", text: recap }, { from: "user", text: label });
       setClosed(true);
     },
+    stage,
+    next: () => setStage((value) => value + 1),
+    revealed,
+    reveal: (part: "why" | "details") => setRevealed((value) => [...value, part]),
+    providers,
+    choose,
   };
   const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
   const replies: Reply[] = failed
@@ -822,7 +867,9 @@ export function SafeStepApp() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <main ref={log} role="log" className={cn(WIDTH, "grid gap-4 pt-14 pb-4")}>
           {items.map((item, index) =>
-            item.from === "user" ? (
+            item.assessment ? (
+              <AssessmentNote key={index} state={item.assessment} t={t} />
+            ) : item.from === "user" ? (
               <p key={index} className="ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3.5 py-2 leading-relaxed">
                 {item.text}
               </p>

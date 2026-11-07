@@ -68,6 +68,9 @@ export type ApiResponse = {
     urgency: Urgency;
     destination: Destination | null;
     externalContacts: ExternalContact[];
+    // For showing the AI's current assessment in the chat as it changes.
+    statusLabel?: string;
+    likelyType?: string | null;
   };
   summary: string[];
   secretWarning: string | null;

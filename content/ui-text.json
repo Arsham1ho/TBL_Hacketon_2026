@@ -633,5 +633,65 @@
     "en": "You can keep writing here if anything changes or you have a question.",
     "fi": "Voit jatkaa kirjoittamista tähän, jos jokin muuttuu tai sinulla on kysyttävää.",
     "sv": "Du kan fortsätta skriva här om något ändras eller om du har en fråga."
+  },
+  "next": {
+    "en": "Next",
+    "fi": "Seuraava",
+    "sv": "Nästa"
+  },
+  "aiAssessment": {
+    "en": "AI assessment",
+    "fi": "Tekoälyn arvio",
+    "sv": "AI-bedömning"
+  },
+  "whichBank": {
+    "en": "Which bank do you use? Then we can show you the right contact.",
+    "fi": "Mitä pankkia käytät? Näytämme sitten oikean yhteystiedon.",
+    "sv": "Vilken bank använder du? Då kan vi visa rätt kontakt."
+  },
+  "whichOperator": {
+    "en": "Which mobile operator do you use?",
+    "fi": "Mitä mobiilioperaattoria käytät?",
+    "sv": "Vilken mobiloperatör använder du?"
+  },
+  "otherProvider": {
+    "en": "Other",
+    "fi": "Muu",
+    "sv": "Annan"
+  },
+  "contactTitle": {
+    "en": "Who to contact",
+    "fi": "Keneen ottaa yhteyttä",
+    "sv": "Vem du ska kontakta"
+  },
+  "officialWebsite": {
+    "en": "Official website",
+    "fi": "Virallinen verkkosivu",
+    "sv": "Officiell webbplats"
+  },
+  "cardBlocking": {
+    "en": "Card blocking, all Finnish banks",
+    "fi": "Korttien sulkupalvelu, kaikki suomalaiset pankit",
+    "sv": "Spärrtjänst för kort, alla finländska banker"
+  },
+  "policeReport": {
+    "en": "Report the crime to the police online",
+    "fi": "Tee rikosilmoitus poliisille verkossa",
+    "sv": "Gör en polisanmälan på nätet"
+  },
+  "emergency": {
+    "en": "Emergency",
+    "fi": "Hätänumero",
+    "sv": "Nödnummer"
+  },
+  "findBankContact": {
+    "en": "Find your bank's official contact on its website or in its app.",
+    "fi": "Löydät pankkisi virallisen yhteystiedon sen verkkosivuilta tai sovelluksesta.",
+    "sv": "Du hittar bankens officiella kontakt på dess webbplats eller i appen."
+  },
+  "call": {
+    "en": "Call",
+    "fi": "Soita",
+    "sv": "Ring"
   }
 }
