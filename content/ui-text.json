@@ -384,6 +384,11 @@
     "fi": "Aloita uusi tarkistus",
     "sv": "Starta en ny kontroll"
   },
+  "askFollowUp": {
+    "en": "Ask a question or add details...",
+    "fi": "Kysy kysymys tai kerro lisää...",
+    "sv": "Ställ en fråga eller berätta mer..."
+  },
   "subscription.recent_events": {
     "en": "Recent SIM and subscription changes",
     "fi": "Viimeisimmät SIM- ja liittymämuutokset",

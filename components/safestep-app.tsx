@@ -42,6 +42,7 @@ export function SafeStepApp() {
   const [browserLanguage, setBrowserLanguage] = useState<Language>("fi");
   const [audience, setAudience] = useState<Audience>("consumer");
   const [message, setMessage] = useState("");
+  const [followUp, setFollowUp] = useState("");
   const [incident, setIncident] = useState("");
   const [demo, setDemo] = useState<DemoScenario>("none");
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -123,6 +124,7 @@ export function SafeStepApp() {
     setClosed(false);
     setFailed(null);
     setMessage("");
+    setFollowUp("");
     setIncident("");
     setDemo("none");
   }
@@ -313,6 +315,35 @@ export function SafeStepApp() {
           <div ref={latest} />
         </main>
       </div>
+
+      {response?.screen.type === "result" && (
+        <div className={WIDTH}>
+          <DescriptionComposer
+            question=""
+            sample={t("askFollowUp")}
+            sendLabel={t("send")}
+            text={followUp}
+            disabled={busy}
+            onChange={setFollowUp}
+            onSend={() => {
+              if (!followUp.trim()) return;
+              const text = followUp.trim();
+              setFollowUp("");
+              record({ from: "user", text: maskSecrets(text).text });
+              const nextMessage = `${message ? message + "\n" : ""}${text}`;
+              setMessage(nextMessage);
+              void send({
+                kind: "start",
+                audience,
+                language: choice,
+                message: nextMessage,
+                ...(incident.trim() ? { incident } : {}),
+                ...(demo !== "none" ? { demoScenario: demo } : {}),
+              });
+            }}
+          />
+        </div>
+      )}
 
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>

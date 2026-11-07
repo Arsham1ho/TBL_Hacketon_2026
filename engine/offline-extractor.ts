@@ -26,14 +26,14 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
   ["ransomware", re(String.raw`(files?|tiedosto\p{L}*|filer\p{L}*).{0,40}(won't open|encrypted|locked|eivät aukea|ei aukea|salattu|salattiin|lukittu|går inte att öppna|krypter\p{L}*)|ransom|lunnas|lösen(summa|pengar|krav)|(pay|maksa|betala|send|demands?)\b.{0,40}(bitcoin|btc)\b|(bitcoin|btc)\b.{0,30}(payment|ransom|demand)|krypterad\w* filer`)],
   ["mailbox_takeover", re(String.raw`forwarding rule|edelleenlähetyssään|vidarebefordringsregel|wrong account number|väärä tilinumero|väärällä tilinumerolla|fel kontonummer`)],
   ["former_staff_access", re(String.raw`(former|ex-?employee|entinen|tidigare).{0,40}(employee|staff|työntekijä|anställd)|(employee|työntekijä|anställd).{0,30}(left|lähti|lähtenyt|slutade|slutat)`)],
-  ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number is being (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|to another operator|toiselle operaattorille|annan operatör|(lost|no) signal|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`)],
+  ["sim_or_number_change", re(String.raw`e-?sim.{0,60}(activ|aktiv|uud|new|ny)|(activ|aktivoi|aktiver).{0,40}e-?sim|number transfer|number (is being|was|has been) (moved|transferred)|numero(n)?siirto|numeron siirto|numero\w* siirr|nummerflytt|numret flyttas|to another operator|toiselle operaattorille|annan operatör|(lost|no) (signal|network)|ei kenttää|kenttä (katosi|hävisi|lähti)|katosi kenttä|ingen täckning|tappade täckning`)],
   ["unexpected_order_or_bill", re(String.raw`order confirmation|tilausvahvistus|orderbekräftelse|beställningsbekräftelse`)],
   ["approval_prompts", re(String.raw`approval (request|prompt)|login approval|approve|hyväksymispyyn|hyväksy(n|t)|kirjautumispyyn|godkänn|inloggningsbegär`)],
   ["unknown_login", re(String.raw`(trying|tries|tried) to (log|sign) in|yrittä\w* kirjautu|försök\w* logga in|logged in (to .{0,20})?from|loggat in .{0,30}från|took over|locked out|hacked|kaappasi|kaapattu|hakkeroi|tog över|utelåst|hackad|hackat|kirjauduttu|kirjauduttiin|kirjautuminen .{0,20}(maasta|espanja|ulkomail)|sisäänkirjautum|inloggning från|inloggad från`)],
   ["data_breach_notice", re(String.raw`breach|data leak|leaked|tietovuo|tietomur|vuoti|vuotanut|vuotaneet|dataintrång|dataläcka|läckt`)],
   ["unrequested_reset", re(String.raw`password reset|reset (email|link)|salasanan (nollaus|vaihto|palautus)|nollauspyyn|återställ.{0,12}lösenord|lösenordsåterställ`)],
   ["router_or_network", re(String.raw`router|reititin|reitittim|modeemi`)],
-  ["payment_detail_change", re(String.raw`(bank account|account number|tilinumero|pankkitili|kontonummer|bankkonto).{0,60}(chang|new|muuttu|uusi|uuteen|uudelle|ändr|nytt)|(new|uusi|uudelle|nytt|changed).{0,30}(bank account|account number|tilinumero|bankkonto|kontonummer)|uudelle tilille|new account`)],
+  ["payment_detail_change", re(String.raw`(bank account|account number|tilinumero|pankkitili|kontonummer|bankkonto).{0,60}(chang|updat|new|muuttu|paivitt|uusi|uuteen|uudelle|andr|uppdater|nytt)|(new|uusi|uudelle|nytt|changed).{0,30}(bank account|account number|tilinumero|bankkonto|kontonummer)|uudelle tilille|new account`)],
   ["payment_request", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd:?n?|managing director)\b`)],
   ["ransomware", re(String.raw`(screen|näyttö|skärm).{0,30}(demand|vaati|kräv)`)],
   ["remote_session", re(String.raw`remote (support|access|session|program)|etäy|etätuki|etäyhteys|fjärr`)],
@@ -45,11 +45,11 @@ const INCIDENT_PATTERNS: [IncidentType, RegExp][] = [
 
 const POSES: [NonNullable<Facts["pretendsToBe"]>, RegExp][] = [
   ["police", re(String.raw`\b(police|poliisi\w*|polis\w*)\b`)],
-  ["bank", re(String.raw`banksid|nätbank|bankapp|mobilbank|\b(bank|bank's|pankki\w*|pankin|pankista|bankid|verkkopank\w*|banken|banken?s)\b|[\p{L}]+pankki|[\p{L}]+pankin|verkkopank|bank identification|pankkitunnu`)],
-  ["operator", re(String.raw`operator|operaattor|operatör|subscription|liittymä|abonnemang|sim upgrade|sim-|e-?sim`)],
-  ["family", re(String.raw`my (child|son|daughter|mother|mum|dad|grandchild|grandson|granddaughter)|claiming to be my|(?<![\p{L}])(lapse|tyttäre|poika|äiti|isä|lapsenlaps|barn|dotter|mamma|pappa)|new number|uusi numero|uudesta numerosta|nytt nummer`)],
   ["ceo", re(String.raw`\b(ceo|toimitusjohtaj\w*|pomo\w*|boss|chef\w*|vd)\b`)],
   ["supplier", re(String.raw`supplier|toimittaja|leverantör`)],
+  ["operator", re(String.raw`operator|operaattor|operatör|subscription|liittymä|abonnemang|sim upgrade|sim-|e-?sim`)],
+  ["family", re(String.raw`my (child|son|daughter|mother|mum|dad|grandchild|grandson|granddaughter)|claiming to be my|(?<![\p{L}])(lapse|tyttäre|poika|äiti|isä|lapsenlaps|barn|dotter|mamma|pappa)|new number|uusi numero|uudesta numerosta|nytt nummer`)],
+  ["bank", re(String.raw`banksid|nätbank|bankapp|mobilbank|\b(bank(?! account)|bank's|pankki(?!tili)\w*|pankin|pankista|bankid|verkkopank\w*|banken|banken?s)\b|[\p{L}]+pankki(?!tili)|[\p{L}]+pankin|verkkopank|bank identification|pankkitunnu`)],
   ["authority", re(String.raw`tax (office|refund)|vero|skatteverket|skatte|authority|viranomai|myndighet`)],
   ["support", re(String.raw`support|tuki|asiakaspalvelu|tech support|microsoft|kundtjänst|delivery|parcel|paketti|paket|streaming|tullissa|customs`)],
 ];
@@ -102,6 +102,7 @@ const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contrac
 const ORDER_PLACED_BY = re(String.raw`\((admin|pääkäyttäjä|administratör)\)`);
 
 const PRESSURE = re(String.raw`urgent|immediately|within \d+|by today|keep it (confidential|secret)|confidential|suspended|expire|expiring|locked|overdue|kiire|välittömästi|heti|tunnin sisällä|luottamuksellis|lukittu|erääntyy|vanhenee|suljetaan|bråttom|omedelbart|inom \d+|hemlig|konfidentiell|spärrad|löper ut|stängs|virus|don't remember|en muista|minns inte|same thread|samma tråd|samassa ketjussa`);
+const DEFENSIVE_IMMEDIATE = re(String.raw`(deleted|hung up|closed|removed|changed|reported|ignored|poistin|suljin|vaihdoin|ilmoitin|lopetin|raderade|lade på|stängde|bytte|anmälde).{0,25}(immediately|heti|välittömästi|omedelbart)`);
 const LIVE = re(String.raw`still on the (phone|line)|on the (phone|line) (now|right now)|calling (me )?(right )?now|right now|juuri nyt|on (vielä )?linjalla|puhelu on käynnissä|just nu|fortfarande i (telefon|luren)|på linjen`);
 const TRACE = re(String.raw`who owns|find out who|find (me )?(this|the) scammer|scammer's (address|name)|expose (him|her|them|this|the scammer)|publish (their|his|her) name|kuka omistaa|selvittää kuka|selvitä kuka|paljasta (hänet|huijari)|julkaista (hänen|huijarin)|etsi .{0,30}huijari|huijarin (osoite|nimi)|vem som äger|ta reda på vem|hitta bedragaren|bedragarens (adress|namn)|hänga ut|publicera (hans|hennes|namnet)`);
 
@@ -233,8 +234,8 @@ export function offlineExtract(input: ExtractionInput): Facts {
     passwordReused: flag(REUSED, userText, "passwordReused"),
     serviceLost: flag(SERVICE_LOST, userText, "serviceLost"),
     happeningNow: flag(LIVE, userText, "happeningNow"),
-    // Pressure comes from whoever contacted the user, not the user's own "today".
-    pressureOrSecrecy: flag(PRESSURE, incidentText || userText, "pressureOrSecrecy"),
+    // Pressure comes from whoever contacted the user, not the user's own defensive speed or "today".
+    pressureOrSecrecy: flag(PRESSURE, incidentText || (first(DEFENSIVE_IMMEDIATE, userText) ? "" : userText), "pressureOrSecrecy"),
     personalSafetyRisk: incidentType === "partner_monitoring" ? flag(PARTNER, all, "personalSafetyRisk") : null,
     asksToTracePerson: flag(TRACE, userText, "asksToTracePerson") === true,
     evidence,

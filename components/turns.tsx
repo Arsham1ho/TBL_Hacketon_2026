@@ -210,20 +210,35 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const routes = screen.supportRoutes.slice(0, 3).map((route) => contact(recap, route));
       const firstRoute = screen.supportRoutes[0];
       const stillHappening = firstRoute ? contact(recap, firstRoute, t("stillHappening")) : { ...talk(recap), label: t("stillHappening") };
-      const startAgain: Reply = { label: t("startAgain"), run: restart };
+      const startAgain: Reply = { label: t("startNew"), run: restart };
       const replies: Reply[] = safe
-        ? [{ ...startAgain, primary: true }]
+        ? [startAgain]
         : live && !closed
           ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")) }, stillHappening]
           : routes.length > 0
             ? [{ ...routes[0]!, primary: true }, ...routes.slice(1), startAgain]
-            : [talk(recap), { ...startAgain, primary: true }];
+            : [talk(recap), startAgain];
       return {
         recap,
         body: (
           <>
-            <StatusLabel status={state.status} label={screen.statusLabel} />
-            {screen.classification && <Heading>{screen.classification.title}</Heading>}
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusLabel status={state.status} label={screen.statusLabel} />
+              <span className="rounded-md bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">
+                {t("risk")}: {t(RISK_TEXT[state.risk])}
+              </span>
+              <span className="rounded-md bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">
+                {t("urgency")}: {t(URGENCY_TEXT[state.urgency])}
+              </span>
+            </div>
+            {screen.classification && (
+              <div className="grid gap-0.5">
+                <Heading>{screen.classification.title}</Heading>
+                {screen.classification.description && (
+                  <p className="text-sm text-muted-foreground">{screen.classification.description}</p>
+                )}
+              </div>
+            )}
             {screen.branches ? (
               <>
                 {!screen.classification && <Heading>{t("eachCase")}</Heading>}

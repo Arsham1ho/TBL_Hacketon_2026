@@ -42,7 +42,7 @@ export function DescriptionComposer(p: {
             event.preventDefault();
             event.currentTarget.form?.requestSubmit();
           }}
-          placeholder={focused ? p.question : sample}
+          placeholder={p.question ? (focused ? p.question : sample) : sample}
           className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         <Btn
