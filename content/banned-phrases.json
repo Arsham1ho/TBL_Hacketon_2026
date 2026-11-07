@@ -1,0 +1,86 @@
+{
+  "unsafeClaims": [
+    {
+      "id": "pay_the_fee",
+      "patterns": [
+        "\\b(go ahead and |you can |just |simply |safe to )pay\\b",
+        "\\bpay (the|this) (small )?(fee|amount|charge|customs)\\b",
+        "\\b(voit|kannattaa|voi) maksaa\\b",
+        "\\bmaksa (se|summa|maksu|pois|vain)\\b",
+        "\\b(du kan betala|betala (avgiften|beloppet))\\b"
+      ]
+    },
+    {
+      "id": "open_link_to_check",
+      "patterns": [
+        "\\b(open|click|visit|follow|tap) (the |that )?link (to|and) (check|see|verify|confirm|make sure|find out)\\b",
+        "\\b(avaa|klikkaa|käy|paina) (linkki|linkissä|linkin kautta).{0,30}(tarkist|varmist|katso|näe)\\b",
+        "\\b(öppna|klicka på) länken (för att|och) (kontrollera|se)\\b"
+      ]
+    },
+    {
+      "id": "log_in_via_link",
+      "patterns": [
+        "\\b(log ?in|sign ?in|enter your (details|credentials|password|code)).{0,30}(via|through|using|from|on) (the|this|that) (link|page|site)\\b",
+        "\\b(kirjaudu|syötä tunnuksesi).{0,30}(linki(n kautta|stä)|sivulla)\\b",
+        "\\blogga in.{0,20}via länken\\b"
+      ]
+    },
+    {
+      "id": "call_number_in_message",
+      "patterns": [
+        "\\bcall (the|this) number (in|from|given in|shown in) the (message|email|text|letter)\\b",
+        "\\bcall (them|the caller|it) back\\b",
+        "\\bsoita (viestissä|viestin|kirjeessä) (olevaan|antamaan|mainittuun) numeroon\\b",
+        "\\bsoita (heille|takaisin|siihen numeroon)\\b",
+        "\\bring (tillbaka|numret i meddelandet)\\b"
+      ]
+    },
+    {
+      "id": "share_code",
+      "patterns": [
+        "\\b(give|tell|read out|share|send) (them |the caller |the sender )?(the |your )?(sms |verification |bank )?(code|pin|password)\\b",
+        "\\b(anna|kerro|lue|lähetä|jaa) (koodi|tunnusluku|salasana) (heille|soittajalle)\\b",
+        "\\b(ge|läs upp|dela|skicka) (koden|lösenordet) (till dem|till den som ringer)\\b"
+      ]
+    },
+    {
+      "id": "give_remote_access",
+      "patterns": [
+        "\\b(allow|grant|give) (remote access|control|them access)\\b",
+        "\\b(anna|salli) (etäyhteys|pääsy laitteeseen)\\b",
+        "\\b(ge|tillåt) (fjärråtkomst|åtkomst till enheten)\\b"
+      ]
+    },
+    {
+      "id": "approve_prompt",
+      "patterns": [
+        "\\b(approve|accept) (the |this )?(request|login|prompt|mfa|push notification)\\b",
+        "\\b(hyväksy|kuittaa) (pyyntö|kirjautuminen|mfa)\\b",
+        "\\b(godkänn|acceptera) (begäran|inloggningen)\\b"
+      ]
+    },
+    {
+      "id": "remove_stalkerware_immediately",
+      "patterns": [
+        "\\b(delete|remove|uninstall) (the |this )?(spyware|stalkerware|tracking app|monitoring app) (immediately|right now|now)\\b",
+        "\\b(poista|asenna pois) (vakoiluohjelma|seurantasovellus) (heti|välittömästi)\\b",
+        "\\b(ta bort|avinstallera) (spionprogrammet|spårningsappen) (direkt|genast)\\b"
+      ]
+    },
+    {
+      "id": "false_reassurance",
+      "patterns": [
+        "\\b(100%|completely|guaranteed|definitely|absolutely) safe\\b",
+        "\\btäysin turvallinen|taatusti vaaraton|100% turvallinen\\b",
+        "\\bhelt säkert|garanterat ofarligt\\b"
+      ]
+    }
+  ],
+  "negations": {
+    "en": ["not", "don't", "dont", "never", "avoid", "nobody", "won't", "cannot", "can't", "shouldn't", "nor", "no need"],
+    "fi": ["älä", "äläkä", "älkää", "älkääkä", "ei", "eikä", "en", "emme", "ette", "eivät", "koskaan", "ilman"],
+    "sv": ["inte", "aldrig", "undvik", "ingen", "inga", "behöver inte"]
+  }
+}
+

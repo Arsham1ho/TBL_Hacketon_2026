@@ -1,5 +1,5 @@
 import { maskSecrets } from "./input-guard";
-import { evidenceForm } from "./link-check";
+import { evidenceQuestions, evidenceRetry } from "./link-check";
 import type { Screen } from "./screens";
 import { linkContextCopy } from "./link-context";
 import type { Language } from "./types";
@@ -51,9 +51,9 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
     return screen.message === copy.message && screen.hint === copy.hint;
   }
   if (screen.type === "evidence") {
-    const form = evidenceForm(screen.channel, language);
-    return screen.message === form.message && (screen.hint === form.hint || screen.hint === form.retry)
-      && JSON.stringify(screen.fields) === JSON.stringify(form.fields);
+    const asked = evidenceQuestions(screen.channel, language).find((question) => question.id === screen.field);
+    return Boolean(asked) && screen.question === asked!.question && screen.placeholder === asked!.placeholder
+      && (screen.hint === asked!.hint || screen.hint === evidenceRetry(language));
   }
   if (screen.type === "ask") return screen.question.trim().endsWith("?") && screen.question.length <= 160;
   if (screen.type === "rescue") return stepLines.includes(screen.step.detail);

@@ -16,7 +16,9 @@
     "eval:dev": "tsx --env-file-if-exists=.env.local eval/run-dev.ts",
     "eval:holdout": "tsx eval/run-holdout.ts",
     "eval:scenarios": "tsx eval/run-scenarios.ts",
-    "eval:frozen": "SCENARIO_FILE=eval/scenarios/frozen.json tsx eval/run-scenarios.ts"
+    "eval:frozen": "SCENARIO_FILE=eval/scenarios/frozen.json tsx eval/run-scenarios.ts",
+    "eval:judge": "SCENARIO_FILE=eval/scenarios/judge.json tsx --env-file-if-exists=.env.local eval/run-scenarios.ts",
+    "eval:judge:ai": "LLM=1 SCENARIO_FILE=eval/scenarios/judge.json tsx --env-file-if-exists=.env.local eval/run-scenarios.ts eval/judge-results.json"
   },
   "dependencies": {
     "clsx": "^2.1.1",

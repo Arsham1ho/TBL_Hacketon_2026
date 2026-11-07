@@ -30,15 +30,18 @@ import { nextSample, sampleText } from "@/lib/samples";
 import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
 import { LoginPage } from "./login-page";
-import { AssessmentNote, PastItem, agentTurn, screenTurn, type Reply } from "./turns";
+import { AssessmentNote, PastItem, screenTurn, type Reply } from "./turns";
+import { SupportConnecting, SupportDock, useSupportCase, type SupportCase } from "./support-chat";
+import { QuickExitButton, neutralUrl, useDisguisedTitle, useQuickExit } from "./discreet";
 import { guessProvider, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { Btn, SecretNote, StepMark } from "./ui";
 import { UserProfileModal } from "./user-profile-modal";
 import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
+import { parseLink } from "@/engine/link-check";
 import { HistoryPanel } from "./history-panel";
 import { ReportView } from "./report-view";
-import { clearHistory, newConversationId, recapItem, recapText, saveConversation, type Conversation, type HistoryItem, type Recap, type SavedReport } from "@/lib/history";
+import { clearHistory, deleteConversation, newConversationId, recapItem, recapText, saveConversation, type Conversation, type HistoryItem, type Recap, type SavedReport } from "@/lib/history";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -340,6 +343,12 @@ export function SafeStepApp() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [agent, setAgent] = useState<AgentPreview | null>(null);
+  // The customer's case with DNA Support. Its chat stays open across steps until a new chat starts.
+  const [supportCase, setSupportCase] = useState<SupportCase | null>(null);
+  const support = useSupportCase(supportCase);
+  // Discreet mode: someone close may be watching this device. Stays on for this chat.
+  const [discreet, setDiscreet] = useState(false);
+  const discreetRef = useRef(false);
   const [items, setItems] = useState<Item[]>([]);
   // This chat's place in the browser history. A new id each time the user starts over.
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -406,8 +415,19 @@ export function SafeStepApp() {
     return () => clearInterval(timer);
   }, [message, response]);
   const t = translator(shown);
+
+  // Leaves at once for a neutral page: the session ends, the chat is dropped from this device,
+  // and the page is replaced so Back doesn't return here.
+  function quickExit() {
+    void client.end().catch(() => null);
+    if (conversation.current) deleteConversation(conversation.current.id);
+    setItems([]);
+    window.location.replace(neutralUrl(shown));
+  }
+  useQuickExit(discreet, quickExit);
+  useDisguisedTitle(discreet, t("safetyTabTitle"));
   const consumer = audience === "consumer";
-  const question = t(consumer ? "whatHappened" : "whatHappenedBusiness");
+  const question = t(consumer ? "whatHappenedQuestion" : "whatHappenedBusiness");
 
   useEffect(() => {
     document.documentElement.lang = shown;
@@ -424,7 +444,7 @@ export function SafeStepApp() {
 
   // Each chat is saved in this browser as it goes, so it can be read again from History.
   useEffect(() => {
-    if (items.length === 0) return;
+    if (items.length === 0 || discreet) return;
     // Only opening a saved chat isn't new activity, so it keeps its date and place in History.
     if (skipSave.current) {
       skipSave.current = false;
@@ -510,6 +530,19 @@ export function SafeStepApp() {
       fresh.forEach((check) => shownChecks.current.add(`${check.subject}|${check.display}|${check.verdict}`));
       setItems((previous) => [...previous, ...fresh.map((check) => ({ from: "safestep" as const, text: check.title, link: check }))]);
     }
+    // A personal-safety case switches discreet mode on once, with its safety card first.
+    if (next.discreet && !discreetRef.current) {
+      discreetRef.current = true;
+      setDiscreet(true);
+      if (conversation.current) deleteConversation(conversation.current.id);
+      setItems((previous) => [...previous, { from: "safestep", text: t("safetyTitle"), safety: true }]);
+    }
+    // The received message, X-rayed, appears once per distinct message.
+    if (next.xray && !shownChecks.current.has(`xray|${next.xray.text}`)) {
+      const xray = next.xray;
+      shownChecks.current.add(`xray|${xray.text}`);
+      setItems((previous) => [...previous, { from: "safestep", text: t("xrayTitle"), xray }]);
+    }
     setResponse(next);
   }
 
@@ -543,6 +576,7 @@ export function SafeStepApp() {
       const preview = approved ? await client.agentView() : null;
       arrived(next);
       setAgent(preview);
+      if (preview?.caseId && preview.caseToken) setSupportCase({ caseId: preview.caseId, token: preview.caseToken });
     } catch {
       setFailed(request);
     } finally {
@@ -589,6 +623,9 @@ export function SafeStepApp() {
     lastStatus.current = saved.status ?? null;
     setResponse(null);
     setAgent(null);
+    setSupportCase(null);
+    setDiscreet(false);
+    discreetRef.current = false;
     setClosed(false);
     setEnded(false);
     setFailed(null);
@@ -613,6 +650,9 @@ export function SafeStepApp() {
     await client.end().catch(() => null);
     setResponse(null);
     setAgent(null);
+    setSupportCase(null);
+    setDiscreet(false);
+    discreetRef.current = false;
     setItems([]);
     lastStatus.current = null;
     shownChecks.current = new Set();
@@ -889,7 +929,9 @@ export function SafeStepApp() {
     ended,
     openReport: report ? () => setReportOpen(true) : undefined,
   };
-  const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
+  const turn = busy || failed || !response ? null : agent
+        ? { recap: t("supportTitle"), body: <SupportConnecting agent={agent} view={support.view} t={t} />, replies: [{ label: t("supportKeepGoing"), primary: true, run: () => setAgent(null) }] }
+        : screenTurn(response, actions);
   const replies: Reply[] = failed
     ? [
         { label: t("tryAgain"), primary: true, run: () => void send(failed) },
@@ -937,6 +979,7 @@ export function SafeStepApp() {
       >
         <SquarePen className="size-5" aria-hidden />
       </button>
+      {discreet && <QuickExitButton onExit={quickExit} t={t} />}
       {reportOpen && report && <ReportView report={report} t={t} language={shown} onClose={closeReport} />}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -976,6 +1019,14 @@ export function SafeStepApp() {
         </main>
       </div>
 
+      {/* The live chat with DNA Support stays here while the customer keeps going with their steps. */}
+      {/* Hidden while the connecting card already shows the status, unless the agent has joined. */}
+      {support.view && (!agent || support.view.caseStatus !== "new") && (
+        <div className={WIDTH}>
+          <SupportDock view={support.view} send={support.send} t={t} />
+        </div>
+      )}
+
       {/* Quick replies sit above the text box, so the choices come first. */}
       {replies.length > 0 && (
         <div className={cn(WIDTH, "flex flex-wrap gap-2 pt-1 pb-2")}>
@@ -1010,6 +1061,30 @@ export function SafeStepApp() {
           />
         </div>
       )}
+
+      {response?.screen.type === "evidence" && (() => {
+        const evidenceScreen = response.screen;
+        return (
+          <div className={WIDTH}>
+            <DescriptionComposer
+              question=""
+              sample={evidenceScreen.placeholder}
+              sendLabel={t("send")}
+              text={followUp}
+              disabled={busy}
+              onChange={setFollowUp}
+              onSend={() => {
+                if (!followUp.trim()) return;
+                const text = followUp.trim();
+                setFollowUp("");
+                // A link is shown without its query or fragment; anything else with secrets masked.
+                const shown = evidenceScreen.field === "link" ? (parseLink(text)?.display ?? text) : maskSecrets(text).text;
+                reply({ text: evidenceScreen.question, kind: "question", detail: [evidenceScreen.hint] }, shown, { kind: "evidence", value: text });
+              }}
+            />
+          </div>
+        );
+      })()}
 
       {response?.screen.type === "describe" && (
         <div className={WIDTH}>

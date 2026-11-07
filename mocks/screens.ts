@@ -1,5 +1,5 @@
 import type { ApiResponse, DataReceipt, Screen } from "../engine/screens";
-import { evidenceForm } from "../engine/link-check";
+import { evidenceQuestions } from "../engine/link-check";
 
 // One example of every screen, so the UI can be built before the session API exists.
 const receipt: DataReceipt = {
@@ -87,7 +87,7 @@ const SCREENS: Record<Screen["type"], Screen> = {
     actions: ["If someone is asking you for money, a code or access right now, stop and end the contact.", "Talk to a person."],
   },
   end: { type: "end", message: "This session has ended and its data has been cleared." },
-  evidence: { type: "evidence", channel: "sms", ...evidenceForm("sms", "en"), retry: false },
+  evidence: { type: "evidence", channel: "sms", field: "sender", ...evidenceQuestions("sms", "en")[0]!, retry: false },
 };
 
 export function mockResponse(type: Screen["type"]): ApiResponse {

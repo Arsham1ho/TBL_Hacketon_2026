@@ -1,5 +1,6 @@
 import type { IncidentCategory, IncidentStory } from "./incident-category";
-import type { EvidenceChannel, EvidenceField, LinkCheck } from "./link-check";
+import type { EvidenceChannel, EvidenceFieldId, LinkCheck } from "./link-check";
+import type { Xray } from "./xray";
 import type { Destination, ExternalContact, GatedSignal, Language, Risk, Status, Topic, Urgency } from "./types";
 
 // The contract between the engine and the UI. The API returns these and the UI only
@@ -27,9 +28,9 @@ export type Screen =
   | { type: "describe"; reason: "greeting" | "off_topic" | "link_context"; message: string; hint: string }
   // A live follow-up question written by the LLM for an unclear report. Answers become facts.
   | { type: "ask"; id: string; question: string }
-  // Asks for what the user received, with fields that fit it: a link, the sender and the message
-  // text, or for a call the number and what was said. All optional. retry: the link couldn't be read.
-  | { type: "evidence"; channel: EvidenceChannel; message: string; hint: string; fields: EvidenceField[]; retry: boolean }
+  // One question about what the user received: who sent it, what it said, or the link. Answered
+  // in the chat box, and each can be skipped. retry: the pasted link couldn't be read.
+  | { type: "evidence"; channel: EvidenceChannel; field: EvidenceFieldId; question: string; hint: string; placeholder: string; retry: boolean }
   | { type: "unlock"; signal: GatedSignal; what: string; why: string; limit: string; ifRefused: string }
   | {
       type: "result";
@@ -87,6 +88,11 @@ export type ApiResponse = {
   senderCheck: LinkCheck | null;
   notice: string;
   dataReceipt: DataReceipt;
+  // The received message with scam tricks marked in place. Explains only; never changes the action.
+  xray?: Xray | null;
+  // A personal-safety case, such as a partner monitoring the phone: the UI hides traces and
+  // offers a quick exit, and the agent is told not to contact the customer's number first.
+  discreet?: boolean;
 };
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.
@@ -99,7 +105,7 @@ export type ApiRequest =
   | { kind: "add_details"; text: string }
   | { kind: "ai_answer"; id: string; answer?: "yes" | "no" | "unsure"; text?: string }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
-  | { kind: "evidence"; link?: string; sender?: string; content?: string }
-  | { kind: "skip_evidence" }
+  | { kind: "evidence"; value: string }
+  | { kind: "skip_evidence"; all?: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
   | { kind: "handoff"; approved: boolean };

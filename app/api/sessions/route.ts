@@ -10,11 +10,13 @@ import type { Topic as TopicId } from "../../../engine/types";
 import { guardInput } from "../../../engine/input-guard";
 import type { ApiResponse } from "../../../engine/screens";
 import { buildReport } from "../../../engine/report";
-import { handleEvent, handoffDetails, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
+import { lookupDomain } from "../../../adapters/domain-intel";
+import { handleEvent, isDiscreet, handoffDetails, handoffSummary, journeyDestination, present, type Journey } from "../../../engine/handle-event";
 import { detectLanguage } from "../../../engine/language";
-import { Audience, GatedSignal, Language, Topic } from "../../../engine/types";
+import { Audience, Destination, GatedSignal, Language, Topic } from "../../../engine/types";
 import { DEMO_SCENARIOS, demoSignalsFor } from "../../../adapters/signals";
 import { handoffPreview } from "../../../adapters/handoff";
+import { tokenForSession, upsertCase } from "../../../adapters/handoff-queue";
 import { assess } from "../../../engine/assess";
 
 const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, language: z.union([Language, z.literal("auto")]), fallbackLanguage: Language.optional(), message: z.string().trim().min(1).max(10000), incident: z.string().max(10000).optional(), demoSignals: z.array(GatedSignal).max(7).optional(), demoScenario: z.enum(DEMO_SCENARIOS).optional() });
@@ -29,8 +31,8 @@ const Rescue = z.strictObject({ kind: z.literal("rescue"), sessionId: z.string()
 const Route = z.enum(["bank", "police", "operator_support_agent", "security_specialist", "business_security_support", "human_advisor"]);
 const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.string().uuid(), route: Route.optional() });
 const Handoff = z.strictObject({ kind: z.literal("handoff"), sessionId: z.string().uuid(), approved: z.boolean() });
-const Evidence = z.strictObject({ kind: z.literal("evidence"), sessionId: z.string().uuid(), link: z.string().max(2000).optional(), sender: z.string().max(200).optional(), content: z.string().max(5000).optional() });
-const SkipEvidence = z.strictObject({ kind: z.literal("skip_evidence"), sessionId: z.string().uuid() });
+const Evidence = z.strictObject({ kind: z.literal("evidence"), sessionId: z.string().uuid(), value: z.string().trim().min(1).max(5000) });
+const SkipEvidence = z.strictObject({ kind: z.literal("skip_evidence"), sessionId: z.string().uuid(), all: z.boolean().optional() });
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
     try {
       const llm = llmAvailable();
       const demo = demoSignalsFor(start.data.demoScenario ?? "none");
-      const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, linkReader: llm ? readLink : undefined, askForLink: true, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
+      const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, linkReader: llm ? readLink : undefined, domainLookup: lookupDomain, askForLink: true, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
       const sessionId = createJourneySession(journey as Journey);
       return NextResponse.json({ ...(await respond(sessionId, journey, response)), sessionId });
     } catch {
@@ -55,8 +57,8 @@ export async function POST(request: Request) {
     try {
       const { sessionId, ...payload } = event.data;
       const llm = llmAvailable();
-      const next = payload.kind === "evidence" ? { ...payload, linkReader: llm ? readLink : undefined, extractor: llm ? extractFacts : undefined, sentToLlm: llm }
-        : payload.kind === "add_details" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm, linkReader: llm ? readLink : undefined }
+      const next = payload.kind === "evidence" ? { ...payload, linkReader: llm ? readLink : undefined, domainLookup: lookupDomain, extractor: llm ? extractFacts : undefined, sentToLlm: llm }
+        : payload.kind === "add_details" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm, linkReader: llm ? readLink : undefined, domainLookup: lookupDomain }
         : payload.kind === "answer_text" || payload.kind === "ai_answer" || payload.kind === "continue" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
       if (journey && payload.kind === "ai_answer" && llm && (payload.answer === "yes" || payload.answer === "no")) {
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
         }
       }
       session.journey = journey;
+      if (journey && payload.kind === "handoff" && payload.approved) queueCase(sessionId, journey);
       return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response));
     } catch {
       return NextResponse.json({ error: "invalid_event" }, { status: 409 });
@@ -169,5 +172,31 @@ export async function GET(request: Request) {
   const result = assess(journey.item, journey.asked);
   const destination = journeyDestination(journey);
   if (!destination) return NextResponse.json({ error: "no_handoff" }, { status: 404 });
-  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)), details: handoffDetails(journey, result.confirmedFacts.map(fact => fact.text)) });
+  return NextResponse.json({ simulated: true, ...handoffPreview(destination, result.confirmedFacts, journey.item.language), route: journey.personRoute ?? destination, summary: handoffSummary(journey, result.confirmedFacts.map(fact => fact.text)), details: handoffDetails(journey, result.confirmedFacts.map(fact => fact.text)), caseId: tokenForSession(sessionId)?.caseId ?? null, caseToken: tokenForSession(sessionId)?.token ?? null });
+}
+
+// After approval, the reviewed summary enters the simulated agent queue. Nothing else does.
+function queueCase(sessionId: string, journey: Journey) {
+  const destination = journeyDestination(journey);
+  if (!destination || !journey.handoffApproved) return;
+  const result = assess(journey.item, journey.asked);
+  const { state } = present(sessionId, journey);
+  const facts = result.confirmedFacts.map(fact => fact.text);
+  // The bank and police are contacts the user calls; the DNA team receiving the case is a Destination.
+  const team = Destination.safeParse(journey.personRoute).success ? (journey.personRoute as typeof destination) : destination;
+  upsertCase(sessionId, {
+    route: team,
+    destination: team,
+    audience: journey.item.audience,
+    language: journey.item.language,
+    status: state.status,
+    statusLabel: state.statusLabel ?? null,
+    likelyType: state.likelyType ?? null,
+    risk: state.risk,
+    urgency: state.urgency,
+    details: handoffDetails(journey, facts),
+    omitted: handoffPreview(destination, result.confirmedFacts, journey.item.language).omitted,
+    consentUsed: [...journey.used],
+    discreet: isDiscreet(journey),
+  });
 }

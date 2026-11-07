@@ -47,6 +47,47 @@ describe("link rules", () => {
   });
 });
 
+describe("public domain records", () => {
+  const now = Date.parse("2026-11-07T12:00:00Z");
+  const old = { registeredAt: "2019-03-01T00:00:00Z", registered: true, resolves: true };
+
+  it("says no warning signs for an established domain with a clean analysis, but never 'safe'", () => {
+    const check = checkLink("https://sinceai.app/teams", "en", null, { registeredAt: "2026-04-20T21:38:02Z", registered: true, resolves: true }, now)!;
+    expect(check.verdict).toBe("ok");
+    expect(check.title).toBe("No warning signs found");
+    expect(check.analysis?.rows.find((row) => row.id === "age")).toMatchObject({ status: "warn" });
+    expect(checkLink("https://example-store.com/login", "en", null, old, now)?.verdict).toBe("ok");
+  });
+
+  it("treats a days-old or unregistered domain as a scam sign", () => {
+    expect(checkLink("https://parcel-help.com/pay", "en", null, { registeredAt: "2026-11-03T00:00:00Z", registered: true, resolves: true }, now)).toMatchObject({ verdict: "avoid" });
+    expect(checkLink("https://parcel-help.com", "en", null, { registeredAt: null, registered: false, resolves: false }, now)?.verdict).toBe("avoid");
+  });
+
+  it("keeps warning signs even on an old domain", () => {
+    expect(checkLink("https://old-site.top/login", "en", null, old, now)?.verdict).toBe("avoid");
+    expect(checkLink("http://old-site.com", "en", null, old, now)?.verdict).toBe("risky");
+    expect(checkLink("https://bit.ly/3abc", "en", null, old, now)?.verdict).toBe("risky");
+  });
+
+  it("lists every check in the analysis, and the AI's guess at the owner only as unverified context", () => {
+    const check = checkLink("https://sinceai.app/teams", "en", { impersonates: null, owner: "Since AI", signs: [] }, old, now)!;
+    expect(check.analysis?.rows.map((row) => row.id)).toEqual(["owner", "age", "exists", "lookalike", "https", "ending", "tricks", "download", "page"]);
+    expect(check.analysis?.rows[0]).toMatchObject({ status: "info", value: "Probably Since AI (AI, not verified)" });
+    // Without domain records, an AI-recognised owner still isn't enough to clear a site.
+    expect(checkLink("https://sinceai.app/teams", "en", { impersonates: null, owner: "Since AI", signs: [] }, null, now)?.verdict).toBe("risky");
+  });
+
+  it("looks up only the bare domain, and skips official sites", async () => {
+    const lookup = vi.fn(async () => old);
+    await runLinkCheck("https://shop.example.co.uk/basket?id=1", "en", undefined, lookup);
+    expect(lookup).toHaveBeenCalledWith("example.co.uk");
+    lookup.mockClear();
+    await runLinkCheck("https://www.nordea.fi", "en", undefined, lookup);
+    expect(lookup).not.toHaveBeenCalled();
+  });
+});
+
 describe("the AI reading", () => {
   it("can make a verdict stricter but never makes an unknown site safe", async () => {
     const reader = vi.fn(async () => ({ impersonates: "Posti", signs: ["login_or_payment_page"] }));
@@ -82,44 +123,53 @@ describe("sender check", () => {
   });
 });
 
-describe("what the user received, in the conversation", () => {
-  it("asks for the link, sender and message of a text, checks them, and carries on", async () => {
-    let flow = await handleEvent("t", null, { kind: "start", input: input("I got a text with a link saying my parcel is held."), sentToLlm: false, askForLink: true });
-    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "sms" });
-    const fields = flow.response.screen.type === "evidence" ? flow.response.screen.fields.map((field) => field.id) : [];
-    expect(fields).toEqual(["sender", "content", "link"]);
-    flow = await handleEvent("t", flow.journey, { kind: "evidence", link: "not a link" });
-    expect(flow.response.screen).toMatchObject({ type: "evidence", retry: true });
-    flow = await handleEvent("t", flow.journey, { kind: "evidence", sender: "+44 7700 900123", content: "Posti: your parcel is held. Pay the 2,99 EUR customs fee today: https://posti-paketti.info/maksu" });
-    expect(flow.response.linkCheck?.verdict).toBe("avoid");
+describe("what the user received, asked one question at a time", () => {
+  it("asks who sent a text, then for the message, checks each answer, and carries on", async () => {
+    let flow = await handleEvent("t", null, { kind: "start", input: input("I got a text message saying my parcel is held."), sentToLlm: false, askForLink: true });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "sms", field: "sender" });
+    flow = await handleEvent("t", flow.journey, { kind: "evidence", value: "+44 7700 900123" });
     expect(flow.response.senderCheck?.subject).toBe("sender");
+    expect(flow.response.screen).toMatchObject({ type: "evidence", field: "content" });
+    flow = await handleEvent("t", flow.journey, { kind: "evidence", value: "Posti: your parcel is held. Pay the 2,99 EUR customs fee today: https://posti-paketti.info/maksu" });
+    // The link was in the message, so it isn't asked for separately.
+    expect(flow.response.linkCheck?.verdict).toBe("avoid");
     expect(flow.journey!.item.signals.linkVerdict).toBe("malicious");
     expect(flow.journey!.input?.incidentContent).toContain("customs fee");
     expect(flow.response.screen.type).not.toBe("evidence");
   });
 
-  it("asks for the caller's number and what they said for a call", async () => {
-    const flow = await handleEvent("t", null, { kind: "start", input: input("Someone called yesterday saying they were from my bank."), sentToLlm: false, askForLink: true });
-    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "call" });
-  });
-
-  it("feeds a fake-looking caller into the call warning signal", async () => {
-    let flow = await handleEvent("t", null, { kind: "start", input: input("Someone called yesterday saying they were from my bank."), sentToLlm: false, askForLink: true });
-    flow = await handleEvent("t", flow.journey, { kind: "evidence", sender: "+44 7700 900123" });
-    expect(flow.journey!.item.signals.callWarning).toBe("suspected_scam");
-  });
-
-  it("checks a link already in the first message without asking", async () => {
-    const flow = await handleEvent("t", null, { kind: "start", input: input("Is this real? https://dna-fi.top/renew"), sentToLlm: false, askForLink: true });
+  it("asks for the link again when the answer isn't one", async () => {
+    let flow = await handleEvent("t", null, { kind: "start", input: input("Is this website a scam? I got a link."), sentToLlm: false, askForLink: true });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", field: "link" });
+    flow = await handleEvent("t", flow.journey, { kind: "evidence", value: "I'm not sure" });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", field: "link", retry: true });
+    flow = await handleEvent("t", flow.journey, { kind: "evidence", value: "nordea-verify.top/login" });
     expect(flow.response.linkCheck?.verdict).toBe("avoid");
   });
 
-  it("moves on when the user doesn't have it", async () => {
+  it("asks a caller's number, then what they said, for a call", async () => {
+    let flow = await handleEvent("t", null, { kind: "start", input: input("Someone called yesterday saying they were from my bank."), sentToLlm: false, askForLink: true });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "call", field: "sender" });
+    flow = await handleEvent("t", flow.journey, { kind: "evidence", value: "+44 7700 900123" });
+    // A fake-looking caller feeds the call-warning signal.
+    expect(flow.journey!.item.signals.callWarning).toBe("suspected_scam");
+    expect(flow.response.screen).toMatchObject({ type: "evidence", field: "content" });
+  });
+
+  it("skips one question, or all of them", async () => {
     let flow = await handleEvent("t", null, { kind: "start", input: input("I clicked a link in an email."), sentToLlm: false, askForLink: true });
-    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "email" });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", channel: "email", field: "sender" });
     flow = await handleEvent("t", flow.journey, { kind: "skip_evidence" });
+    expect(flow.response.screen).toMatchObject({ type: "evidence", field: "content" });
+    flow = await handleEvent("t", flow.journey, { kind: "skip_evidence", all: true });
     expect(flow.response.screen.type).not.toBe("evidence");
     expect(flow.response.linkCheck).toBeNull();
+  });
+
+  it("checks a link already in the first message without asking for it", async () => {
+    const flow = await handleEvent("t", null, { kind: "start", input: input("Is this real? https://dna-fi.top/renew"), sentToLlm: false, askForLink: true });
+    expect(flow.response.linkCheck?.verdict).toBe("avoid");
+    expect(flow.response.screen.type === "evidence" && flow.response.screen.field === "link").toBe(false);
   });
 
   it("never lowers a stricter verdict from DNA's own link signal", async () => {
@@ -128,7 +178,7 @@ describe("what the user received, in the conversation", () => {
     expect(flow.journey!.item.signals.linkVerdict).toBe("malicious");
   });
 
-  it("doesn't ask outside the app, where nobody can paste anything", async () => {
+  it("doesn't ask outside the app, where nobody can answer", async () => {
     const flow = await handleEvent("t", null, { kind: "start", input: input("I got a text with a link saying my parcel is held."), sentToLlm: false });
     expect(flow.response.screen.type).not.toBe("evidence");
   });

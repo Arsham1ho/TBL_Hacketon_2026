@@ -1,17 +1,17 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { ApiRequest, ApiResponse, DataReceipt, Screen, SupportRoute } from "@/engine/screens";
 import type { Risk, Urgency } from "@/engine/types";
-import type { AgentPreview } from "@/lib/client";
 import type { HistoryItem, Recap } from "@/lib/history";
-import { parseLink, type EvidenceField, type LinkCheck } from "@/engine/link-check";
-import { maskSecrets } from "@/engine/input-guard";
+import type { LinkCheck } from "@/engine/link-check";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { ArrowUpRight, AtSign, Mail, MessageSquareText, BadgeCheck, BookOpen, ChevronRight, Link2, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { ArrowUpRight, AtSign, CircleMinus, CircleX, BadgeCheck, BookOpen, ChevronRight, Link2, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
 import { ProviderLogo } from "./select-menu";
+import { XrayCard } from "./xray-card";
+import { SafetyCard } from "./discreet";
 
 // One step of the conversation: what SafeStep says, and the replies on offer.
 export type Reply = { label: string; primary?: boolean; run: () => void; icon?: ReactNode };
@@ -448,18 +448,28 @@ function HandoffCard({ screen, state, t }: { screen: Extract<Screen, { type: "ha
 // The verdict is always written out too, so colour is never the only cue.
 const LINK_TONE = {
   safe: { badge: "bg-success text-background", soft: "bg-success-soft text-success", bar: "bg-success", border: "border-success/40", Icon: ShieldCheck },
+  ok: { badge: "bg-success text-background", soft: "bg-success-soft text-success", bar: "bg-success", border: "border-success/40", Icon: BadgeCheck },
   risky: { badge: "bg-warning text-background", soft: "bg-warning-soft text-warning", bar: "bg-warning", border: "border-warning/40", Icon: TriangleAlert },
   avoid: { badge: "bg-destructive text-alert-foreground", soft: "bg-danger-soft text-destructive", bar: "bg-destructive", border: "border-destructive/50", Icon: Ban },
 };
 const LINK_LEVELS = ["safe", "risky", "avoid"] as const;
-const LINK_LEVEL_TEXT = { safe: "linkVerdictSafe", risky: "linkVerdictRisky", avoid: "linkVerdictAvoid" } as const;
+const LINK_LEVEL_TEXT = { safe: "linkVerdictSafe", ok: "linkVerdictSafe", risky: "linkVerdictRisky", avoid: "linkVerdictAvoid" } as const;
+// "No warning signs" sits in the green zone of the scale, next to confirmed official sites.
+const LINK_LEVEL = { safe: 0, ok: 0, risky: 1, avoid: 2 } as const;
+// Each analysis row's result, as an icon and colour, always with the value written beside it.
+const ROW_STATUS = {
+  pass: { Icon: CircleCheck, tone: "text-success" },
+  warn: { Icon: TriangleAlert, tone: "text-warning" },
+  fail: { Icon: CircleX, tone: "text-destructive" },
+  info: { Icon: CircleMinus, tone: "text-muted-foreground" },
+};
 
 // The result of checking a received link, laid out like the incident summary: a header with the
-// verdict, a three-step scale, the address, why, and what to do.
+// verdict, a three-step scale, the address, the key findings, the full analysis, and what to do.
 export function LinkVerdictCard({ check, t }: { check: LinkCheck; t: Translate }) {
   const tone = LINK_TONE[check.verdict];
   const path = check.display.replace(/^https?:\/\/[^/]+/, "");
-  const level = LINK_LEVELS.indexOf(check.verdict);
+  const level = LINK_LEVEL[check.verdict];
   const sender = check.subject === "sender";
   const AddressIcon = sender ? (check.display.includes("@") ? AtSign : Phone) : Link2;
   return (
@@ -514,12 +524,33 @@ export function LinkVerdictCard({ check, t }: { check: LinkCheck; t: Translate }
             {check.reasons.map((reason, index) => (
               <li key={reason} className="flex items-center gap-3 rounded-xl bg-accent p-3 motion-safe:animate-[fade-up_.4s_ease-out_both]" style={{ animationDelay: `${120 + index * 100}ms` }}>
                 <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg", tone.soft)} aria-hidden>
-                  {check.verdict === "safe" ? <CircleCheck className="size-5" /> : <TriangleAlert className="size-5" />}
+                  {check.verdict === "safe" || check.verdict === "ok" ? <CircleCheck className="size-5" /> : <TriangleAlert className="size-5" />}
                 </span>
                 <span className="text-sm leading-snug font-medium">{reason}</span>
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* The full analysis, one check per row, like a security report. */}
+      {check.analysis && (
+        <div className="grid gap-2">
+          <PartLabel>{check.analysis.title}</PartLabel>
+          <dl className="grid overflow-hidden rounded-xl border border-border sm:grid-cols-2">
+            {check.analysis.rows.map((row) => {
+              const status = ROW_STATUS[row.status];
+              return (
+                <div key={row.id} className="flex items-start gap-2.5 border-b border-border px-3 py-2.5 sm:odd:border-r [&:nth-last-child(-n+1)]:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
+                  <status.Icon className={cn("mt-0.5 size-4 shrink-0", status.tone)} aria-label={row.status} />
+                  <div className="grid min-w-0 gap-0.5">
+                    <dt className="text-xs font-medium text-muted-foreground">{row.label}</dt>
+                    <dd className="text-sm leading-snug font-semibold [overflow-wrap:anywhere]">{row.value}</dd>
+                  </div>
+                </div>
+              );
+            })}
+          </dl>
         </div>
       )}
 
@@ -541,97 +572,13 @@ export function LinkVerdictCard({ check, t }: { check: LinkCheck; t: Translate }
   );
 }
 
-const CHANNEL_ICON = { email: Mail, sms: Smartphone, call: Phone, web: Link2 };
-const FIELD_ICON = { link: Link2, content: MessageSquareText, sender: AtSign };
-type EvidenceValues = Partial<Record<EvidenceField["id"], string>>;
-
-// The form for what the user received: only the fields that fit the situation, all optional.
-// Nothing here is opened or run; the text is read as evidence.
-function EvidenceForm({ screen, t, onSubmit }: { screen: Extract<Screen, { type: "evidence" }>; t: Translate; onSubmit: (values: EvidenceValues) => void }) {
-  const [values, setValues] = useState<EvidenceValues>({});
-  const filled = Object.values(values).some((value) => value?.trim());
-  const ChannelIcon = CHANNEL_ICON[screen.channel];
-  const submit = () => filled && onSubmit(values);
-  const inputClass = "w-full rounded-xl border border-border-strong bg-background px-3.5 py-2.5 text-[15px] placeholder:text-muted-foreground focus-visible:border-foreground focus-visible:outline-none";
-  return (
-    <section className={cn("grid gap-4 rounded-2xl border bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]", screen.retry ? "border-warning/50" : "border-border-strong")}>
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-foreground" aria-hidden>
-          <ChannelIcon className="size-6" />
-        </span>
-        <h1 tabIndex={-1} className="text-base leading-snug font-semibold focus:outline-none">{screen.message}</h1>
-      </div>
-      <p className={cn("flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm leading-snug", screen.retry ? "bg-warning-soft font-medium" : "bg-accent text-muted-foreground")}>
-        {screen.retry ? <TriangleAlert className="mt-px size-4 shrink-0 text-warning" aria-hidden /> : <ShieldCheck className="mt-px size-4 shrink-0" aria-hidden />}
-        {screen.hint}
-      </p>
-      <form
-        className="grid gap-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-      >
-        {screen.fields.map((field) => {
-          const Icon = field.id === "sender" && screen.channel !== "email" ? Phone : FIELD_ICON[field.id];
-          const id = `evidence-${field.id}`;
-          const common = {
-            id,
-            value: values[field.id] ?? "",
-            placeholder: field.placeholder,
-            onChange: (event: { target: { value: string } }) => setValues((previous) => ({ ...previous, [field.id]: event.target.value })),
-          };
-          return (
-            <div key={field.id} className="grid gap-1.5">
-              <label htmlFor={id} className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                <Icon className="size-3.5" aria-hidden />
-                {field.label}
-              </label>
-              {field.multiline ? (
-                <textarea {...common} rows={4} className={cn(inputClass, "min-h-24 resize-y leading-relaxed")} />
-              ) : (
-                <input
-                  {...common}
-                  type={field.id === "link" ? "url" : "text"}
-                  inputMode={field.id === "link" ? "url" : undefined}
-                  autoComplete="off"
-                  spellCheck={false}
-                  className={cn(inputClass, field.id === "link" && "font-mono text-sm", field.id === "link" && screen.retry && "border-warning")}
-                />
-              )}
-            </div>
-          );
-        })}
-        <button
-          type="submit"
-          disabled={!filled}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-base font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
-        >
-          <ShieldCheck className="size-4" aria-hidden />
-          {t("checkEvidence")}
-        </button>
-      </form>
-    </section>
-  );
-}
-
-// What the user sent, as one short chat line: the link, the sender, and the start of the message.
-function evidenceSummary(values: EvidenceValues): string {
-  const link = values.link?.trim();
-  const sender = values.sender?.trim();
-  const content = values.content?.trim();
-  return [
-    link && (parseLink(link)?.display ?? link),
-    sender,
-    content && `“${maskSecrets(content).text.slice(0, 90)}${content.length > 90 ? "…" : ""}”`,
-  ].filter(Boolean).join(" · ");
-}
-
 // An earlier SafeStep step, as the chat and History keep it. Questions read as questions,
 // action steps as actions, and cards keep their lines: folded in the live chat to keep it
 // short, open in History so the whole conversation can be read back.
 export function PastItem({ item, open = false, t }: { item: HistoryItem; open?: boolean; t: Translate }) {
   if (item.link) return <LinkVerdictCard check={item.link} t={t} />;
+  if (item.xray) return <XrayCard xray={item.xray} t={t} />;
+  if (item.safety) return <SafetyCard t={t} />;
   if (item.kind === "question") {
     return (
       <div className="flex max-w-[92%] items-start gap-2.5">
@@ -819,135 +766,6 @@ const Heading = ({ children }: { children: ReactNode }) => (
   </h1>
 );
 
-// The priority banner's look for each risk level: colour, plus an icon so it's never colour alone.
-const PRIORITY: Record<Risk, { box: string; badge: string; Icon: typeof Siren }> = {
-  critical: { box: "border-destructive/40 bg-danger-soft", badge: "bg-destructive text-alert-foreground", Icon: Siren },
-  high: { box: "border-destructive/30 bg-danger-soft", badge: "bg-destructive text-alert-foreground", Icon: TriangleAlert },
-  medium: { box: "border-warning/30 bg-warning-soft", badge: "bg-warning text-background", Icon: TriangleAlert },
-  low: { box: "border-success/30 bg-success-soft", badge: "bg-success text-background", Icon: ShieldCheck },
-  none: { box: "border-success/30 bg-success-soft", badge: "bg-success text-background", Icon: ShieldCheck },
-};
-
-// What the support agent receives, drawn as a case ticket: who has it, how urgent it is, what
-// the customer reported, why, and what is already done. Each part is its own block.
-function AgentCard({ agent, state, t }: { agent: AgentPreview; state: ApiResponse["state"]; t: Translate }) {
-  const details = agent.details;
-  const priority = PRIORITY[state.risk];
-  return (
-    <section aria-labelledby="agent-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden>
-          <Headset className="size-6" />
-        </span>
-        <div className="grid min-w-0 flex-1 gap-0.5">
-          <PartLabel>{t("agentView")}</PartLabel>
-          <h1 id="agent-title" tabIndex={-1} className="truncate text-base font-semibold focus:outline-none">{t(agent.route)}</h1>
-        </div>
-        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 text-xs font-semibold text-success">
-          <CircleCheck className="size-3.5" aria-hidden />
-          {t("caseReceived")}
-        </span>
-      </div>
-
-      <div className={cn("flex items-center gap-3 rounded-xl border p-3", priority.box)}>
-        <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-lg", priority.badge)} aria-hidden>
-          <priority.Icon className="size-5" />
-        </span>
-        <div className="grid min-w-0 flex-1 gap-0.5">
-          <PartLabel>{t("agentPriority")}</PartLabel>
-          <span className="text-lg leading-tight font-bold">
-            {t(RISK_TEXT[state.risk])} <span className="text-muted-foreground">·</span> {t(URGENCY_TEXT[state.urgency])}
-          </span>
-        </div>
-        {state.statusLabel && (
-          <span className="hidden sm:block">
-            <StatusLabel status={state.status} label={state.statusLabel} />
-          </span>
-        )}
-      </div>
-
-      {details ? (
-        <>
-          {details.facts.length > 0 && (
-            <div className="grid gap-2">
-              <PartLabel>{t("agentReported")}</PartLabel>
-              <ul className="flex flex-wrap gap-1.5">
-                {details.facts.map((fact) => (
-                  <li key={fact} className="flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning-soft px-3 py-1.5 text-sm font-semibold">
-                    <TriangleAlert className="size-3.5 shrink-0 text-warning" aria-hidden />
-                    {fact.replace(/\.$/, "")}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex items-start gap-3 rounded-xl border-l-4 border-foreground bg-accent p-3">
-            <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <div className="grid gap-0.5">
-              <PartLabel>{t("handoffReason")}</PartLabel>
-              <p className="text-[15px] leading-snug font-medium">{details.reason}</p>
-            </div>
-          </div>
-
-          {details.completed.length > 0 && (
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <PartLabel>{t("storyDone")}</PartLabel>
-                <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success tabular-nums">
-                  {details.completed.length}/{details.completed.length + details.unable.length}
-                </span>
-              </div>
-              <ul className="grid gap-1.5">
-                {details.completed.map((step) => (
-                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-success-soft/60 px-3 py-2.5 text-sm leading-snug font-medium">
-                    <CircleCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
-                    {step}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {details.unable.length > 0 && (
-            <div className="grid gap-2">
-              <PartLabel>{t("handoffUnable")}</PartLabel>
-              <ul className="grid gap-1.5">
-                {details.unable.map((step) => (
-                  <li key={step} className="flex items-start gap-2.5 rounded-xl bg-warning-soft px-3 py-2.5 text-sm leading-snug font-medium">
-                    <Ban className="mt-px size-4 shrink-0 text-warning" aria-hidden />
-                    {step}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </>
-      ) : (
-        <ul className="grid gap-1 text-sm">
-          {agent.summary.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      )}
-
-      <p className="flex items-start gap-2 rounded-xl border border-dashed border-border-strong p-3 text-xs text-muted-foreground">
-        <ShieldCheck className="mt-px size-4 shrink-0 text-success" aria-hidden />
-        <span>
-          <span className="font-semibold text-foreground">{t("neverShared")}:</span> {agent.omitted.join(", ")}
-        </span>
-      </p>
-    </section>
-  );
-}
-
-export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t }: Actions, onContinue: () => void): Turn {
-  return {
-    recap: t(agent.route),
-    body: <AgentCard agent={agent} state={state} t={t} />,
-    replies: [{ label: t("continue"), primary: true, run: onContinue }],
-  };
-}
-
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
   const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport } = actions;
   const { screen, state } = response;
@@ -1020,18 +838,15 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           : [],
       };
     case "evidence": {
-      const recap: Recap = { text: screen.message, kind: "question", detail: [screen.fields.map((field) => field.label).join(" · ")] };
+      // A normal question, answered in the chat box below. The replies are for not having it.
+      const recap: Recap = { text: screen.question, kind: "question", detail: [screen.hint] };
       return {
-        recap: screen.message,
-        body: (
-          <EvidenceForm
-            key={`${screen.channel}-${screen.retry}`}
-            screen={screen}
-            t={t}
-            onSubmit={(values) => reply(recap, evidenceSummary(values), { kind: "evidence", link: values.link?.trim() || undefined, sender: values.sender?.trim() || undefined, content: values.content?.trim() || undefined })}
-          />
-        ),
-        replies: [{ label: t("skipEvidence"), run: () => reply(recap, t("skipEvidence"), { kind: "skip_evidence" }), icon: <SkipForward className="size-4" aria-hidden /> }],
+        recap: screen.question,
+        body: <QuestionCard question={screen.question} hint={screen.hint} />,
+        replies: [
+          { label: t("dontHaveIt"), run: () => reply(recap, t("dontHaveIt"), { kind: "skip_evidence" }) },
+          { label: t("skipToAdvice"), run: () => reply(recap, t("skipToAdvice"), { kind: "skip_evidence", all: true }), icon: <SkipForward className="size-4" aria-hidden /> },
+        ],
       };
     }
     case "unlock": {

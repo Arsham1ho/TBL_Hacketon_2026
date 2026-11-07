@@ -4,13 +4,20 @@ import { fold } from "./offline-extractor";
 import type { Language } from "./types";
 
 // Checks a link the user received, without ever opening it. Code decides the verdict from the
-// address itself. An optional AI reading of the address can add warning signs, which can only
-// make the verdict stricter: nothing but an exact official domain is ever called safe.
+// address itself and public facts about its domain (age, whether it exists). An optional AI
+// reading of the address can add warning signs and name a likely owner, but it can only make the
+// verdict stricter: only an exact official domain is "safe", and only an established domain with
+// a clean analysis gets "no warning signs found".
 
-export type LinkVerdict = "safe" | "risky" | "avoid";
+// ok: no warning signs on an established domain, which is not the same as confirmed safe.
+export type LinkVerdict = "safe" | "ok" | "risky" | "avoid";
 export type LinkSign =
   | "official_domain" | "lookalike" | "impersonation" | "ip_address" | "punycode" | "userinfo" | "shortener"
-  | "download_file" | "suspicious_tld" | "login_or_payment" | "not_https" | "many_subdomains" | "random_characters" | "unknown_site";
+  | "download_file" | "suspicious_tld" | "login_or_payment" | "not_https" | "many_subdomains" | "random_characters" | "unknown_site"
+  | "new_domain" | "recent_domain" | "established_domain" | "not_resolving" | "not_registered" | "no_red_flags" | "ai_owner";
+
+// One row of the analysis, like a line in a security report.
+export type LinkCheckRow = { id: string; label: string; value: string; status: "pass" | "warn" | "fail" | "info" };
 
 export type LinkCheck = {
   // What was checked: a received link, or who sent the message or made the call.
@@ -24,17 +31,24 @@ export type LinkCheck = {
   title: string;
   advice: string;
   reasons: string[];
+  // The full analysis, for links. Senders have reasons only.
+  analysis?: { title: string; rows: LinkCheckRow[] };
   checkedBy: string;
   usedAi: boolean;
 };
 
-// What the AI may say about an address. Strict: no verdict, no free text.
+// What the AI may say about an address. Strict: no verdict, no free text beyond a name.
 export const LinkReading = z.strictObject({
   impersonates: z.string().max(40).nullable(),
+  owner: z.string().max(60).nullable().optional(),
   signs: z.array(z.enum(["lookalike_domain", "random_characters", "login_or_payment_page", "download_file"])).max(4),
 });
 export type LinkReading = z.infer<typeof LinkReading>;
 export type LinkReader = (input: { url: string; language: Language }) => Promise<unknown>;
+
+// Public facts about a domain. null means it couldn't be looked up, never "no".
+export type DomainIntel = { registeredAt: string | null; registered: boolean | null; resolves: boolean | null };
+export type DomainLookup = (domain: string) => Promise<DomainIntel>;
 
 // Official domains of the services Finnish users meet most, and the name to show.
 const OFFICIAL: Record<string, string> = {
@@ -67,8 +81,12 @@ const LINK_WORDS = new RegExp(fold(String.raw`(?<![\p{L}])(link|links|url|websit
 export const findUrl = (text: string | null | undefined): string | null => text?.match(URL_IN_TEXT)?.[0]?.replace(/[).,;!?]+$/, "") ?? null;
 export const mentionsLink = (text: string) => LINK_WORDS.test(fold(text)) || Boolean(findUrl(text));
 
-// The registrable part of a host: "secure.nordea.fi" -> "nordea.fi".
-const registrable = (host: string) => host.split(".").slice(-2).join(".");
+// The registrable part of a host: "secure.nordea.fi" -> "nordea.fi", "shop.example.co.uk" -> "example.co.uk".
+const TWO_PART_SUFFIXES = new Set(["co.uk", "org.uk", "ac.uk", "gov.uk", "com.au", "net.au", "co.nz", "co.jp", "com.br", "com.tr", "co.za", "com.cn", "com.mx", "co.in"]);
+export const registrable = (host: string) => {
+  const labels = host.split(".");
+  return labels.slice(TWO_PART_SUFFIXES.has(labels.slice(-2).join(".")) ? -3 : -2).join(".");
+};
 
 // Returns null when the text isn't a web address at all.
 export function parseLink(raw: string): { url: URL; https: boolean; display: string } | null {
@@ -89,11 +107,23 @@ export function parseLink(raw: string): { url: URL; https: boolean; display: str
   return { url, https, display };
 }
 
-function say(template: string, brand: string | null) {
-  return template.replace(/\{brand\}/g, brand ?? "");
+function fill(template: string, values: Record<string, string | null | undefined>) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? "");
 }
 
-export function checkLink(raw: string, language: Language, reading?: LinkReading | null): LinkCheck | null {
+const LOCALE: Record<Language, string> = { en: "en-GB", fi: "fi-FI", sv: "sv-FI" };
+
+// "3 years", "5 months", "12 days", in the user's language.
+function ageText(days: number, language: Language): string {
+  const units = copy.analysis[language].units;
+  if (days >= 730) return `${Math.floor(days / 365)} ${units.years}`;
+  if (days >= 365) return `1 ${units.year}`;
+  if (days >= 60) return `${Math.floor(days / 30)} ${units.months}`;
+  if (days >= 30) return `1 ${units.month}`;
+  return `${Math.max(1, Math.round(days))} ${days < 1.5 ? units.day : units.days}`;
+}
+
+export function checkLink(raw: string, language: Language, reading?: LinkReading | null, intel?: DomainIntel | null, now = Date.now()): LinkCheck | null {
   const parsed = parseLink(raw);
   if (!parsed) return null;
   const { url, https, display } = parsed;
@@ -106,12 +136,13 @@ export function checkLink(raw: string, language: Language, reading?: LinkReading
   const userinfo = Boolean(url.username) || raw.includes("@");
   const tld = host.split(".").at(-1) ?? "";
   const borrowed = BRANDS.find(([, pattern]) => pattern.test(unleet(host)))?.[0] ?? null;
+  const extension = url.pathname.match(DOWNLOAD)?.[1]?.toLowerCase() ?? null;
 
   if (ip) signs.add("ip_address");
   if (punycode) signs.add("punycode");
   if (userinfo) signs.add("userinfo");
   if (SHORTENERS.has(host)) signs.add("shortener");
-  if (DOWNLOAD.test(url.pathname)) signs.add("download_file");
+  if (extension) signs.add("download_file");
   if (!officialBrand && borrowed) signs.add("lookalike");
   if (SUSPICIOUS_TLDS.has(tld)) signs.add("suspicious_tld");
   if (!officialBrand && LOGIN_OR_PAYMENT.test(host + url.pathname)) signs.add("login_or_payment");
@@ -120,6 +151,7 @@ export function checkLink(raw: string, language: Language, reading?: LinkReading
 
   // The AI's reading adds signs. It can't remove any, and it can't make an unknown site safe.
   const impersonates = reading?.impersonates?.trim() || null;
+  const aiOwner = !officialBrand && !impersonates ? reading?.owner?.trim() || null : null;
   if (reading) {
     if (impersonates && !officialBrand) signs.add("impersonation");
     if (reading.signs.includes("lookalike_domain") && !officialBrand) signs.add("lookalike");
@@ -128,19 +160,72 @@ export function checkLink(raw: string, language: Language, reading?: LinkReading
     if (reading.signs.includes("download_file")) signs.add("download_file");
   }
 
-  const strong: LinkSign[] = ["lookalike", "impersonation", "ip_address", "punycode", "userinfo", "download_file"];
+  // Public domain records: age and whether the name exists.
+  const registeredMs = intel?.registeredAt ? Date.parse(intel.registeredAt) : NaN;
+  const ageDays = Number.isNaN(registeredMs) ? null : (now - registeredMs) / 86_400_000;
+  if (!officialBrand && !ip) {
+    if (intel?.registered === false) signs.add("not_registered");
+    else if (intel?.resolves === false) signs.add("not_resolving");
+    if (ageDays !== null && ageDays < 30) signs.add("new_domain");
+    else if (ageDays !== null && ageDays < 180) signs.add("recent_domain");
+    else if (ageDays !== null && ageDays >= 365) signs.add("established_domain");
+  }
+
+  const strong: LinkSign[] = ["lookalike", "impersonation", "ip_address", "punycode", "userinfo", "download_file", "new_domain", "not_registered"];
+  const caution: LinkSign[] = ["shortener", "suspicious_tld", "random_characters", "many_subdomains", "not_https", "recent_domain", "not_resolving"];
   const official = Boolean(officialBrand) && https && !userinfo && !punycode && !signs.has("download_file");
   if (official) signs.add("official_domain");
-  else if (!officialBrand) signs.add("unknown_site");
+  // "No warning signs" needs real evidence: the domain exists, is at least six months old, and
+  // nothing in the analysis is a warning. A sign-in page is normal on an established site.
+  const established = ageDays !== null && ageDays >= 180 && intel?.resolves !== false;
+  const clean = established && !strong.some((sign) => signs.has(sign)) && !caution.some((sign) => signs.has(sign));
   const verdict: LinkVerdict = official ? "safe"
     : strong.some((sign) => signs.has(sign)) || (signs.has("suspicious_tld") && signs.has("login_or_payment")) ? "avoid"
+    : clean ? "ok"
     : "risky";
+  if (verdict === "ok") signs.add("no_red_flags");
+  if (verdict === "risky" && !officialBrand && caution.every((sign) => !signs.has(sign))) signs.add("unknown_site");
+  if (aiOwner) signs.add("ai_owner");
 
   const brand = officialBrand ?? (signs.has("lookalike") ? borrowed ?? impersonates : impersonates);
-  // Most telling signs first; "not on our list" only when nothing more specific was found.
-  const ORDER: LinkSign[] = ["official_domain", "lookalike", "impersonation", "download_file", "ip_address", "punycode", "userinfo", "shortener", "suspicious_tld", "login_or_payment", "random_characters", "many_subdomains", "not_https", "unknown_site"];
-  const shown = ORDER.filter((sign) => signs.has(sign)).filter((sign) => sign !== "unknown_site" || signs.size === 1 || verdict === "risky").slice(0, 4);
+  const age = ageDays !== null ? ageText(ageDays, language) : null;
+  const values = { brand, owner: aiOwner, age };
+  // Most telling first. Good news only when the verdict is good.
+  const ORDER: LinkSign[] = ["official_domain", "not_registered", "lookalike", "impersonation", "new_domain", "download_file", "ip_address", "punycode", "userinfo", "not_resolving", "shortener", "suspicious_tld", "login_or_payment", "recent_domain", "random_characters", "many_subdomains", "not_https", "established_domain", "no_red_flags", "ai_owner", "unknown_site"];
+  const shown = ORDER.filter((sign) => signs.has(sign))
+    .filter((sign) => verdict === "ok" || !["established_domain", "no_red_flags"].includes(sign))
+    // A sign-in page is normal on an established or official site, so it isn't listed as a finding there.
+    .filter((sign) => sign !== "login_or_payment" || (verdict !== "ok" && verdict !== "safe"))
+    .slice(0, 4);
+
+  // The full analysis, one row per check.
+  const A = copy.analysis[language];
+  const V = A.values;
+  const row = (id: string, label: string, value: string, status: LinkCheckRow["status"]): LinkCheckRow => ({ id, label, value, status });
+  const date = !Number.isNaN(registeredMs) ? new Intl.DateTimeFormat(LOCALE[language], { month: "short", year: "numeric" }).format(registeredMs) : null;
+  const tricks = [ip && V.ip, userinfo && V.at_sign, punycode && V.lookalike_letters, signs.has("shortener") && V.shortened].filter(Boolean) as string[];
+  const rows: LinkCheckRow[] = [
+    officialBrand ? row("owner", A.owner, fill(V.official, values), "pass")
+      : brand && (signs.has("lookalike") || signs.has("impersonation")) ? row("owner", A.owner, fill(V.pretends, values), "fail")
+      : aiOwner ? row("owner", A.owner, fill(V.ai_owner, values), "info")
+      : row("owner", A.owner, V.unknown, "warn"),
+    officialBrand ? row("age", A.age, date ? fill(V.since, { date, age }) : V.yes, "pass")
+      : intel?.registered === false ? row("age", A.age, V.not_registered, "fail")
+      : ageDays === null ? row("age", A.age, V.lookup_failed, "info")
+      : ageDays < 30 ? row("age", A.age, fill(V.days_old, values), "fail")
+      : row("age", A.age, fill(V.since, { date, age }), ageDays >= 365 ? "pass" : "warn"),
+    row("exists", A.exists, intel?.resolves === true || officialBrand ? V.yes : intel?.resolves === false ? V.no : V.lookup_failed, intel?.resolves === false && !officialBrand ? "fail" : intel?.resolves === true || officialBrand ? "pass" : "info"),
+    row("lookalike", A.lookalike, signs.has("lookalike") || signs.has("impersonation") ? fill(V.imitates, values) : V.none_found, signs.has("lookalike") || signs.has("impersonation") ? "fail" : "pass"),
+    row("https", A.https, https ? V.https : V.http, https ? "pass" : "warn"),
+    row("ending", A.ending, fill(SUSPICIOUS_TLDS.has(tld) ? V.risky_ending : V.common_ending, { tld }), SUSPICIOUS_TLDS.has(tld) ? "warn" : "pass"),
+    row("tricks", A.tricks, tricks.length ? tricks.join(", ") : V.none, ip || userinfo || punycode ? "fail" : tricks.length ? "warn" : "pass"),
+    row("download", A.download, signs.has("download_file") ? fill(V.download_yes, { ext: extension ?? "app" }) : V.no, signs.has("download_file") ? "fail" : "pass"),
+    row("page", A.page, signs.has("login_or_payment") ? V.signin : V.regular, signs.has("login_or_payment") && verdict !== "ok" && !official ? "warn" : "pass"),
+  ];
+
   const verdictCopy = copy.verdict[verdict][language];
+  const year = !Number.isNaN(registeredMs) ? String(new Date(registeredMs).getFullYear()) : "";
+  const by = reading && intel ? "rules_ai_intel" : intel ? "rules_intel" : reading ? "rules_ai" : "rules";
   return {
     subject: "link",
     display,
@@ -149,52 +234,56 @@ export function checkLink(raw: string, language: Language, reading?: LinkReading
     brand,
     signs: [...signs],
     title: verdictCopy.title,
-    advice: say(verdictCopy.advice, brand),
-    reasons: shown.map((sign) => say(copy.signs[sign][language], brand)),
-    checkedBy: copy.checkedBy[reading ? "rules_ai" : "rules"][language],
+    advice: fill(verdictCopy.advice, { brand, year }),
+    reasons: shown.map((sign) => fill(copy.signs[sign][language], values)),
+    analysis: { title: A.title, rows },
+    checkedBy: copy.checkedBy[by][language],
     usedAi: Boolean(reading),
   };
 }
 
-// Reads the address with the AI when one is available, then decides with the rules. Any AI
-// failure, timeout or invalid reply falls back to the rules alone.
-export async function runLinkCheck(raw: string, language: Language, reader?: LinkReader): Promise<LinkCheck | null> {
+// Reads the address with the AI and looks up the domain's public records at the same time, then
+// decides with the rules. Any failure, timeout or invalid reply just leaves that part unknown.
+export async function runLinkCheck(raw: string, language: Language, reader?: LinkReader, lookup?: DomainLookup): Promise<LinkCheck | null> {
   const parsed = parseLink(raw);
   if (!parsed) return null;
-  let reading: LinkReading | null = null;
-  if (reader) {
-    try {
-      const result = LinkReading.safeParse(await reader({ url: parsed.display, language }));
-      reading = result.success ? result.data : null;
-    } catch {
-      reading = null;
-    }
-  }
-  return checkLink(raw, language, reading);
+  const host = parsed.url.hostname.toLowerCase().replace(/^www\./, "");
+  const ip = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith("[");
+  const [reading, intel] = await Promise.all([
+    reader
+      ? reader({ url: parsed.display, language }).then((value) => {
+          const result = LinkReading.safeParse(value);
+          return result.success ? result.data : null;
+        }).catch(() => null)
+      : Promise.resolve(null),
+    lookup && !ip && !OFFICIAL[registrable(host)] ? lookup(registrable(host)).catch(() => null) : Promise.resolve(null),
+  ]);
+  return checkLink(raw, language, reading, intel);
 }
 
 // How a verdict feeds the decision rules: the same signal a DNA link check would give.
-export const verdictSignal = (verdict: LinkVerdict): "clean" | "malicious" | "suspicious" => (verdict === "safe" ? "clean" : verdict === "avoid" ? "malicious" : "suspicious");
+// "No warning signs" stays unknown to the rules: it is evidence, not confirmation.
+export const verdictSignal = (verdict: LinkVerdict): "clean" | "unknown" | "malicious" | "suspicious" => (verdict === "safe" ? "clean" : verdict === "ok" ? "unknown" : verdict === "avoid" ? "malicious" : "suspicious");
 
 // --- What the user received: the form, and the sender check ---
 
 export type EvidenceChannel = "email" | "sms" | "call" | "web";
 export type EvidenceFieldId = "link" | "sender" | "content";
-export type EvidenceField = { id: EvidenceFieldId; label: string; placeholder: string; multiline: boolean };
+export type EvidenceQuestion = { id: EvidenceFieldId; question: string; hint: string; placeholder: string };
 
-// The fields that fit the situation, most telling first. Every one is optional.
-export function evidenceForm(channel: EvidenceChannel, language: Language): { message: string; hint: string; retry: string; fields: EvidenceField[] } {
-  const text = copy.evidence[language];
-  const field = (id: EvidenceFieldId, key: keyof typeof text.fields): EvidenceField => ({ id, ...text.fields[key], multiline: id === "content" });
-  const fields: Record<EvidenceChannel, EvidenceField[]> = {
-    email: [field("sender", "sender_email"), field("content", "content_email"), field("link", "link")],
-    sms: [field("sender", "sender_sms"), field("content", "content_sms"), field("link", "link")],
-    call: [field("sender", "sender_call"), field("content", "content_call")],
-    web: [field("link", "link"), field("content", "content_web")],
+// The questions that fit the situation, one at a time and most telling first. Each can be skipped.
+export function evidenceQuestions(channel: EvidenceChannel, language: Language): EvidenceQuestion[] {
+  const text = copy.evidence[language].questions;
+  const ask = (id: EvidenceFieldId, key: keyof typeof text): EvidenceQuestion => ({ id, ...text[key] });
+  const order: Record<EvidenceChannel, EvidenceQuestion[]> = {
+    call: [ask("sender", "sender_call"), ask("content", "content_call")],
+    email: [ask("sender", "sender_email"), ask("content", "content_email"), ask("link", "link")],
+    sms: [ask("sender", "sender_sms"), ask("content", "content_sms"), ask("link", "link")],
+    web: [ask("link", "link"), ask("content", "content_web")],
   };
-  return { message: channel === "call" ? text.message_call : text.message, hint: text.hint, retry: text.retry, fields: fields[channel] };
+  return order[channel];
 }
-export const evidenceCopy = (language: Language) => copy.evidence[language];
+export const evidenceRetry = (language: Language) => copy.evidence[language].retry;
 
 const FREE_MAIL = new Set(["gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "msn.com", "yahoo.com", "icloud.com", "me.com", "aol.com", "protonmail.com", "proton.me", "gmx.com", "gmx.net", "mail.com", "yandex.com", "luukku.com", "suomi24.fi"]);
 const HIDDEN = /^(hidden|private|unknown|no caller id|withheld|piilotettu|tuntematon|salainen|dolt|okänt|privat)$/i;

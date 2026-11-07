@@ -4,6 +4,8 @@ import { handleEvent, type Journey } from "../engine/handle-event";
 import type { ApiResponse } from "../engine/screens";
 import { detectLanguage } from "../engine/language";
 import type { Language } from "../engine/types";
+import { extractFacts, llmAvailable, llmModel } from "../adapters/llm";
+import type { ExtractionInput } from "../engine/offline-extractor";
 
 // Full conversations against the real engine. Expected answers were written before this
 // suite first ran, and each one is judged on what a user would actually experience.
@@ -33,6 +35,24 @@ const scenarios: Scenario[] = JSON.parse(readFileSync(file, "utf8"));
 const LANGUAGES: Language[] = ["en", "fi", "sv"];
 const MAX_TURNS = 16;
 
+// LLM=1 runs the same fact extraction the live app uses, so the result reflects what a judge
+// typing into the demo would get. Calls are paced and retried for free-tier rate limits; a call
+// that still fails falls back to the keyword reader, and the report counts how often that happened.
+const USE_LLM = process.env.LLM === "1" && llmAvailable();
+const DELAY_MS = Number(process.env.LLM_DELAY_MS ?? (USE_LLM ? 4200 : 0));
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+async function pacedExtractor(input: ExtractionInput): Promise<unknown> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await pause(DELAY_MS * (attempt + 1));
+    try {
+      return await extractFacts(input, { timeoutMs: 20000 });
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
+  }
+  throw new Error("unreachable");
+}
+
 async function converse(scenario: Scenario, language: Language) {
   const input: CaseInput = {
     audience: scenario.audience ?? "consumer",
@@ -43,7 +63,7 @@ async function converse(scenario: Scenario, language: Language) {
     signals: { hasLink: Boolean(scenario.incident), linkVerdict: null, callWarning: null, callerSpoofed: false },
     consent: { requires: [], preGranted: [] },
   };
-  let { journey, response } = await handleEvent("test", null, { kind: "start", input, sentToLlm: false });
+  let { journey, response } = await handleEvent("test", null, { kind: "start", input, sentToLlm: USE_LLM, extractor: USE_LLM ? pacedExtractor : undefined });
   const seen: ApiResponse[] = [response];
   let stopped = response.screen.type === "stop";
   let questions = 0;
@@ -67,7 +87,7 @@ async function converse(scenario: Scenario, language: Language) {
 
   const item = (journey as Journey).item;
   const final = assess(item, (journey as Journey).asked);
-  return { response, seen, stopped, questions, final, firstScreen: seen[0]!.screen.type };
+  return { response, seen, stopped, questions, final, firstScreen: seen[0]!.screen.type, usedLlm: Boolean((journey as Journey).sentToLlm) };
 }
 
 function judge(scenario: Scenario, language: Language, run: Awaited<ReturnType<typeof converse>>): string[] {
@@ -105,7 +125,7 @@ function judge(scenario: Scenario, language: Language, run: Awaited<ReturnType<t
   return problems;
 }
 
-const rows: { id: string; group: string; language: Language; audience: string; problems: string[]; action: string; status: string; questions: number; stopped: boolean }[] = [];
+const rows: { id: string; group: string; language: Language; audience: string; problems: string[]; action: string; status: string; questions: number; stopped: boolean; usedLlm: boolean }[] = [];
 for (const scenario of scenarios) {
   for (const language of LANGUAGES) {
     const run = await converse(scenario, language);
@@ -119,6 +139,7 @@ for (const scenario of scenarios) {
       status: run.final.decision.status,
       questions: run.questions,
       stopped: run.stopped,
+      usedLlm: run.usedLlm,
     });
   }
 }
@@ -132,6 +153,7 @@ const by = (key: "group" | "language") => {
 };
 
 console.log(`Scenarios: ${scenarios.length}, conversations: ${rows.length}`);
+console.log(`Extractor: ${USE_LLM ? `${llmModel()} (used in ${rows.filter((row) => row.usedLlm).length}/${rows.length}, rest fell back to keywords)` : "keyword reader (offline)"}`);
 console.log(`Passed: ${passed}/${rows.length}`);
 console.log(`Severe (scam called safe, missed live danger, secret leaked): ${severe.length}`);
 console.log(`By group: ${by("group")}`);

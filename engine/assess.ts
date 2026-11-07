@@ -47,7 +47,8 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
   // The keyword reader gets plain text: the wrapper tags are for the LLM only.
   const plain = { ...extraction, incidentText: guarded.maskedIncident ?? "" };
   const backstop = validateFacts(offlineExtract(plain), guarded) ?? offlineExtract({ ...plain, userText: "", incidentText: "" });
-  const facts = primary ? { ...mergeFacts(primary, backstop), language: input.language } : backstop;
+  const merged = primary ? { ...mergeFacts(primary, backstop), language: input.language } : backstop;
+  const facts = tooVagueToClassify(guarded.userText, incidentText, merged) ? withoutGuesses(merged) : merged;
   return {
     extractedBy: primary || extract === offlineExtract ? "primary" : "fallback",
     secretsFound: guarded.secretsFound,
@@ -56,7 +57,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
       language: input.language,
       facts,
       conflicts: primary ? conflictingTopics(primary, backstop) : [],
-      answers: {},
+      answers: typedNothing(guarded.userText) ? { card_details_entered: "no", credentials_entered: "no" } : {},
       unsure: [],
       signals: { ...input.signals, hasLink },
       pregrantedSignals: gated(input.consent.preGranted),
@@ -129,3 +130,25 @@ export function assess(item: Case, asked = 0): Assessment {
 }
 
 export type { Answers };
+
+// "hacked??" names a worry, not a situation. With only a word or two and nothing concrete
+// (what was done, asked for or exposed), what happened and who started it are guesses:
+// they go back to unknown so the user is asked instead of being sent into recovery steps.
+function tooVagueToClassify(userText: string, incidentText: string, facts: Intake["item"]["facts"]): boolean {
+  if (incidentText.trim()) return false;
+  const words = userText.match(/[\p{L}\p{N}]+/gu) ?? [];
+  if (words.length > 2) return false;
+  return facts.userAlreadyDid.length === 0 && facts.asksFor.length === 0 && facts.dataExposed.length === 0 && facts.happeningNow !== true && facts.personalSafetyRisk !== true;
+}
+
+function withoutGuesses(facts: Intake["item"]["facts"]): Intake["item"]["facts"] {
+  return { ...facts, incidentType: null, selfInitiated: null, evidence: facts.evidence.filter(({ fact }) => fact !== "incidentType" && fact !== "selfInitiated") };
+}
+
+// "I closed it straight away, didn't type anything" already answers whether a card number or
+// login was entered, so SafeStep doesn't ask again. Only the user's own words count, and only a
+// plain denial with nothing after it about typing something in.
+const TYPED_NOTHING = /\b(didn'?t|did not|never) (type|enter|fill in|give|put in) (anything|any details|anything in)\b|\b(typed|entered) nothing\b|\ben (kirjoittanut|syöttänyt|antanut|täyttänyt) (mitään|yhtään mitään|mitään tietoja)\b|\b(skrev|fyllde i|angav|gav) (inget|ingenting|inga uppgifter)\b|\bjag skrev inte (in )?något\b/iu;
+function typedNothing(userText: string): boolean {
+  return TYPED_NOTHING.test(userText);
+}

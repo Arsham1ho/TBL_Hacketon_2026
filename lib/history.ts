@@ -1,4 +1,5 @@
 import type { ApiResponse } from "../engine/screens";
+import type { Xray } from "../engine/xray";
 import type { DecisionReport } from "../engine/report";
 import type { LinkCheck } from "../engine/link-check";
 import type { Audience, Language, Risk, Status } from "../engine/types";
@@ -8,7 +9,7 @@ import type { Audience, Language, Risk, Status } from "../engine/types";
 
 // kind and detail keep what SafeStep showed, not just its title: a question with its context,
 // an action step, or a card with its lines, so History can show the whole conversation.
-export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; kind?: "question" | "step" | "card"; detail?: string[]; link?: LinkCheck };
+export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; kind?: "question" | "step" | "card"; detail?: string[]; link?: LinkCheck; xray?: Xray; safety?: boolean };
 
 // What SafeStep said before a reply: plain text, or the text with its kind and lines.
 export type Recap = string | { text: string; kind?: HistoryItem["kind"]; detail?: string[] };

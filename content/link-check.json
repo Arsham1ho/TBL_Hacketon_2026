@@ -21,15 +21,15 @@
     },
     "risky": {
       "en": {
-        "title": "Risky: we can't confirm this site",
+        "title": "Be careful with this site",
         "advice": "Don't enter any details on it. If it claims to be a service you use, open that service's own app or type its address yourself."
       },
       "fi": {
-        "title": "Riskialtis: emme voi vahvistaa sivustoa",
+        "title": "Ole varovainen tämän sivuston kanssa",
         "advice": "Älä syötä sille mitään tietoja. Jos se väittää olevansa käyttämäsi palvelu, avaa palvelun oma sovellus tai kirjoita osoite itse."
       },
       "sv": {
-        "title": "Riskabel: vi kan inte bekräfta webbplatsen",
+        "title": "Var försiktig med den här webbplatsen",
         "advice": "Ange inga uppgifter på den. Om den påstår sig vara en tjänst du använder, öppna tjänstens egen app eller skriv in adressen själv."
       }
     },
@@ -45,6 +45,20 @@
       "sv": {
         "title": "Undvik: öppna inte länken",
         "advice": "Den har tydliga tecken på bedrägeri. Radera meddelandet, och ange inget om du redan har öppnat den."
+      }
+    },
+    "ok": {
+      "en": {
+        "title": "No warning signs found",
+        "advice": "The site has existed since {year} and shows none of the usual scam signs. Still, never enter codes or passwords on a page you reached from a message."
+      },
+      "fi": {
+        "title": "Varoitusmerkkejä ei löytynyt",
+        "advice": "Sivusto on ollut olemassa vuodesta {year}, eikä siinä ole tavallisia huijauksen merkkejä. Älä silti koskaan syötä koodeja tai salasanoja sivulla, jolle tulit viestin kautta."
+      },
+      "sv": {
+        "title": "Inga varningstecken hittades",
+        "advice": "Webbplatsen har funnits sedan {year} och visar inga av de vanliga tecknen på bedrägeri. Ange ändå aldrig koder eller lösenord på en sida du kom till från ett meddelande."
       }
     }
   },
@@ -118,6 +132,41 @@
       "en": "It isn't on our list of official sites, so we can't confirm who runs it.",
       "fi": "Se ei ole virallisten sivustojen listallamme, joten emme voi vahvistaa, kuka sitä ylläpitää.",
       "sv": "Den finns inte på vår lista över officiella webbplatser, så vi kan inte bekräfta vem som driver den."
+    },
+    "new_domain": {
+      "en": "The domain was registered only {age} ago. Scam sites are usually brand new.",
+      "fi": "Verkkotunnus rekisteröitiin vasta {age} sitten. Huijaussivustot ovat yleensä aivan uusia.",
+      "sv": "Domänen registrerades för bara {age} sedan. Bedrägerisidor är oftast helt nya."
+    },
+    "recent_domain": {
+      "en": "The domain is fairly new: registered {age} ago.",
+      "fi": "Verkkotunnus on melko uusi: rekisteröity {age} sitten.",
+      "sv": "Domänen är ganska ny: registrerad för {age} sedan."
+    },
+    "established_domain": {
+      "en": "The domain has been registered for {age}, which scam sites rarely are.",
+      "fi": "Verkkotunnus on ollut rekisteröitynä {age}, mitä huijaussivustot harvoin ovat.",
+      "sv": "Domänen har varit registrerad i {age}, vilket bedrägerisidor sällan är."
+    },
+    "not_resolving": {
+      "en": "The site doesn't exist on the internet right now, so the link leads nowhere real.",
+      "fi": "Sivustoa ei tällä hetkellä ole internetissä, joten linkki ei vie mihinkään todelliseen.",
+      "sv": "Webbplatsen finns inte på internet just nu, så länken leder ingenstans på riktigt."
+    },
+    "not_registered": {
+      "en": "Nobody has registered this domain, so the link can't be genuine.",
+      "fi": "Kukaan ei ole rekisteröinyt tätä verkkotunnusta, joten linkki ei voi olla aito.",
+      "sv": "Ingen har registrerat domänen, så länken kan inte vara äkta."
+    },
+    "no_red_flags": {
+      "en": "No look-alike name, hidden tricks, risky ending or file download.",
+      "fi": "Ei samannäköistä nimeä, piilotettuja temppuja, riskialtista päätettä eikä tiedostolatausta.",
+      "sv": "Inget likadant namn, inga dolda knep, ingen riskabel ändelse och ingen filnedladdning."
+    },
+    "ai_owner": {
+      "en": "AI recognises it as {owner}'s site (not verified).",
+      "fi": "Tekoäly tunnistaa sen palvelun {owner} sivustoksi (ei vahvistettu).",
+      "sv": "AI känner igen den som {owner}s webbplats (inte bekräftat)."
     }
   },
   "checkedBy": {
@@ -135,126 +184,151 @@
       "en": "Checked by SafeStep's sender rules.",
       "fi": "Tarkistettu SafeStepin lähettäjäsäännöillä.",
       "sv": "Kontrollerad med SafeSteps avsändarregler."
+    },
+    "rules_intel": {
+      "en": "Checked by SafeStep's link rules and public domain records. We never open the link.",
+      "fi": "Tarkistettu SafeStepin linkkisäännöillä ja julkisilla verkkotunnustiedoilla. Emme koskaan avaa linkkiä.",
+      "sv": "Kontrollerad med SafeSteps länkregler och offentliga domänuppgifter. Vi öppnar aldrig länken."
+    },
+    "rules_ai_intel": {
+      "en": "Checked by SafeStep's link rules, public domain records and AI reading of the address. We never open the link.",
+      "fi": "Tarkistettu SafeStepin linkkisäännöillä, julkisilla verkkotunnustiedoilla ja tekoälyn lukemalla osoitteella. Emme koskaan avaa linkkiä.",
+      "sv": "Kontrollerad med SafeSteps länkregler, offentliga domänuppgifter och AI-läsning av adressen. Vi öppnar aldrig länken."
     }
   },
   "evidence": {
     "en": {
-      "message": "Show us what you received, and we'll check it.",
-      "message_call": "Tell us about the call, and we'll check it.",
-      "hint": "Fill in what you have, everything is optional. We only read it, never open links, and codes or passwords are hidden automatically.",
-      "retry": "We couldn't read that as a web address. Check the link, or leave it empty.",
-      "fields": {
-        "link": {
-          "label": "Link",
-          "placeholder": "https://…"
-        },
-        "sender_email": {
-          "label": "Sender's email address",
-          "placeholder": "name@example.com"
-        },
-        "sender_sms": {
-          "label": "Sender (number or name)",
-          "placeholder": "+358 40… or Posti"
-        },
+      "retry": "That doesn't look like a web address. Paste the whole link, for example https://example.fi/…",
+      "questions": {
         "sender_call": {
-          "label": "Caller's number",
+          "question": "What number did they call from?",
+          "hint": "If the number was hidden, just say so.",
           "placeholder": "+358 40…"
         },
+        "content_call": {
+          "question": "What did the caller say or ask you to do?",
+          "hint": "A few words is enough.",
+          "placeholder": "Said they were from the bank and asked for a code…"
+        },
+        "sender_email": {
+          "question": "What email address did it come from?",
+          "hint": "It's shown next to the sender's name.",
+          "placeholder": "name@example.com"
+        },
         "content_email": {
-          "label": "The email text",
-          "placeholder": "Paste the email here…"
+          "question": "Can you paste the email text here?",
+          "hint": "Copy it without clicking anything in it. Codes and passwords are hidden automatically.",
+          "placeholder": "Paste the email…"
+        },
+        "sender_sms": {
+          "question": "Who was the message from?",
+          "hint": "A number or a name is fine.",
+          "placeholder": "+358 40… or Posti"
         },
         "content_sms": {
-          "label": "The message text",
-          "placeholder": "Paste the message here…"
+          "question": "Can you paste the message here?",
+          "hint": "Codes and passwords are hidden automatically.",
+          "placeholder": "Paste the message…"
         },
-        "content_call": {
-          "label": "What did the caller say or ask for?",
-          "placeholder": "For example: said they were from the bank and asked for a code…"
+        "link": {
+          "question": "Can you paste the link? Copy it without opening it.",
+          "hint": "We only read the address and never open it.",
+          "placeholder": "https://…"
         },
         "content_web": {
-          "label": "The message the link came in",
-          "placeholder": "Paste the message here…"
+          "question": "Where did the link come from? You can paste the message it was in.",
+          "hint": "Codes and passwords are hidden automatically.",
+          "placeholder": "Paste the message, or say where it came from…"
         }
       }
     },
     "fi": {
-      "message": "Näytä meille, mitä sait, niin tarkistamme sen.",
-      "message_call": "Kerro puhelusta, niin tarkistamme sen.",
-      "hint": "Täytä se, mitä sinulla on – kaikki on vapaaehtoista. Luemme vain tekstin, emme avaa linkkejä, ja koodit tai salasanat piilotetaan automaattisesti.",
-      "retry": "Emme pystyneet lukemaan tätä verkko-osoitteena. Tarkista linkki tai jätä kenttä tyhjäksi.",
-      "fields": {
-        "link": {
-          "label": "Linkki",
-          "placeholder": "https://…"
-        },
-        "sender_email": {
-          "label": "Lähettäjän sähköpostiosoite",
-          "placeholder": "nimi@esimerkki.fi"
-        },
-        "sender_sms": {
-          "label": "Lähettäjä (numero tai nimi)",
-          "placeholder": "+358 40… tai Posti"
-        },
+      "retry": "Tämä ei näytä verkko-osoitteelta. Liitä koko linkki, esimerkiksi https://esimerkki.fi/…",
+      "questions": {
         "sender_call": {
-          "label": "Soittajan numero",
+          "question": "Mistä numerosta he soittivat?",
+          "hint": "Jos numero oli piilotettu, kerro se vain.",
           "placeholder": "+358 40…"
         },
+        "content_call": {
+          "question": "Mitä soittaja sanoi tai pyysi sinua tekemään?",
+          "hint": "Muutama sana riittää.",
+          "placeholder": "Sanoi olevansa pankista ja pyysi koodia…"
+        },
+        "sender_email": {
+          "question": "Mistä sähköpostiosoitteesta viesti tuli?",
+          "hint": "Se näkyy lähettäjän nimen vieressä.",
+          "placeholder": "nimi@esimerkki.fi"
+        },
         "content_email": {
-          "label": "Sähköpostin teksti",
-          "placeholder": "Liitä sähköposti tähän…"
+          "question": "Voitko liittää sähköpostin tekstin tähän?",
+          "hint": "Kopioi se klikkaamatta mitään. Koodit ja salasanat piilotetaan automaattisesti.",
+          "placeholder": "Liitä sähköposti…"
+        },
+        "sender_sms": {
+          "question": "Keneltä viesti tuli?",
+          "hint": "Numero tai nimi riittää.",
+          "placeholder": "+358 40… tai Posti"
         },
         "content_sms": {
-          "label": "Viestin teksti",
-          "placeholder": "Liitä viesti tähän…"
+          "question": "Voitko liittää viestin tähän?",
+          "hint": "Koodit ja salasanat piilotetaan automaattisesti.",
+          "placeholder": "Liitä viesti…"
         },
-        "content_call": {
-          "label": "Mitä soittaja sanoi tai pyysi?",
-          "placeholder": "Esimerkiksi: sanoi olevansa pankista ja pyysi koodia…"
+        "link": {
+          "question": "Voitko liittää linkin? Kopioi se avaamatta sitä.",
+          "hint": "Luemme vain osoitteen emmekä koskaan avaa sitä.",
+          "placeholder": "https://…"
         },
         "content_web": {
-          "label": "Viesti, jossa linkki tuli",
-          "placeholder": "Liitä viesti tähän…"
+          "question": "Mistä linkki tuli? Voit liittää viestin, jossa se oli.",
+          "hint": "Koodit ja salasanat piilotetaan automaattisesti.",
+          "placeholder": "Liitä viesti tai kerro, mistä se tuli…"
         }
       }
     },
     "sv": {
-      "message": "Visa oss vad du fick, så kontrollerar vi det.",
-      "message_call": "Berätta om samtalet, så kontrollerar vi det.",
-      "hint": "Fyll i det du har – allt är frivilligt. Vi läser bara texten, öppnar aldrig länkar, och koder eller lösenord döljs automatiskt.",
-      "retry": "Vi kunde inte läsa det som en webbadress. Kontrollera länken eller lämna fältet tomt.",
-      "fields": {
-        "link": {
-          "label": "Länk",
-          "placeholder": "https://…"
-        },
-        "sender_email": {
-          "label": "Avsändarens e-postadress",
-          "placeholder": "namn@exempel.fi"
-        },
-        "sender_sms": {
-          "label": "Avsändare (nummer eller namn)",
-          "placeholder": "+358 40… eller Posti"
-        },
+      "retry": "Det ser inte ut som en webbadress. Klistra in hela länken, till exempel https://exempel.fi/…",
+      "questions": {
         "sender_call": {
-          "label": "Uppringarens nummer",
+          "question": "Från vilket nummer ringde de?",
+          "hint": "Om numret var dolt, säg bara det.",
           "placeholder": "+358 40…"
         },
+        "content_call": {
+          "question": "Vad sa uppringaren eller bad dig göra?",
+          "hint": "Några ord räcker.",
+          "placeholder": "Sa att de var från banken och bad om en kod…"
+        },
+        "sender_email": {
+          "question": "Från vilken e-postadress kom det?",
+          "hint": "Den visas bredvid avsändarens namn.",
+          "placeholder": "namn@exempel.fi"
+        },
         "content_email": {
-          "label": "E-postens text",
-          "placeholder": "Klistra in e-posten här…"
+          "question": "Kan du klistra in e-postens text här?",
+          "hint": "Kopiera den utan att klicka på något. Koder och lösenord döljs automatiskt.",
+          "placeholder": "Klistra in e-posten…"
+        },
+        "sender_sms": {
+          "question": "Vem kom meddelandet från?",
+          "hint": "Ett nummer eller ett namn räcker.",
+          "placeholder": "+358 40… eller Posti"
         },
         "content_sms": {
-          "label": "Meddelandets text",
-          "placeholder": "Klistra in meddelandet här…"
+          "question": "Kan du klistra in meddelandet här?",
+          "hint": "Koder och lösenord döljs automatiskt.",
+          "placeholder": "Klistra in meddelandet…"
         },
-        "content_call": {
-          "label": "Vad sa eller bad uppringaren om?",
-          "placeholder": "Till exempel: sa att de var från banken och bad om en kod…"
+        "link": {
+          "question": "Kan du klistra in länken? Kopiera den utan att öppna den.",
+          "hint": "Vi läser bara adressen och öppnar den aldrig.",
+          "placeholder": "https://…"
         },
         "content_web": {
-          "label": "Meddelandet länken kom i",
-          "placeholder": "Klistra in meddelandet här…"
+          "question": "Var kom länken ifrån? Du kan klistra in meddelandet den fanns i.",
+          "hint": "Koder och lösenord döljs automatiskt.",
+          "placeholder": "Klistra in meddelandet eller berätta var den kom ifrån…"
         }
       }
     }
@@ -358,6 +432,146 @@
       "en": "A caller's number can be faked to look like a real one.",
       "fi": "Soittajan numeron voi väärentää näyttämään oikealta.",
       "sv": "Uppringarens nummer kan förfalskas så att det ser äkta ut."
+    }
+  },
+  "analysis": {
+    "en": {
+      "title": "Analysis",
+      "owner": "Who runs it",
+      "age": "Domain age",
+      "exists": "Site exists",
+      "lookalike": "Look-alike name",
+      "https": "Secure connection",
+      "ending": "Web ending",
+      "tricks": "Hidden tricks",
+      "download": "File download",
+      "page": "Page type",
+      "values": {
+        "official": "Official {brand} site",
+        "ai_owner": "Probably {owner} (AI, not verified)",
+        "pretends": "Pretends to be {brand}",
+        "unknown": "Not known",
+        "since": "Since {date} · {age}",
+        "days_old": "Only {age} old",
+        "lookup_failed": "Couldn't look up",
+        "yes": "Yes",
+        "no": "No",
+        "none_found": "None found",
+        "imitates": "Imitates {brand}",
+        "https": "Yes (https)",
+        "http": "No (http)",
+        "common_ending": ".{tld}",
+        "risky_ending": ".{tld} – common in scams",
+        "none": "None",
+        "shortened": "Shortened link",
+        "ip": "Number address",
+        "at_sign": "Hidden behind @",
+        "lookalike_letters": "Look-alike letters",
+        "download_yes": "Yes – .{ext} file",
+        "signin": "Sign-in or payment page",
+        "regular": "Regular page",
+        "not_registered": "Not registered"
+      },
+      "units": {
+        "day": "day",
+        "days": "days",
+        "month": "month",
+        "months": "months",
+        "year": "year",
+        "years": "years"
+      }
+    },
+    "fi": {
+      "title": "Analyysi",
+      "owner": "Kuka ylläpitää",
+      "age": "Verkkotunnuksen ikä",
+      "exists": "Sivusto olemassa",
+      "lookalike": "Samannäköinen nimi",
+      "https": "Suojattu yhteys",
+      "ending": "Verkkopääte",
+      "tricks": "Piilotetut temput",
+      "download": "Tiedostolataus",
+      "page": "Sivun tyyppi",
+      "values": {
+        "official": "Palvelun {brand} virallinen sivusto",
+        "ai_owner": "Todennäköisesti {owner} (tekoäly, ei vahvistettu)",
+        "pretends": "Esittää olevansa {brand}",
+        "unknown": "Ei tiedossa",
+        "since": "{date} alkaen · {age}",
+        "days_old": "Vain {age} vanha",
+        "lookup_failed": "Ei saatu selville",
+        "yes": "Kyllä",
+        "no": "Ei",
+        "none_found": "Ei löytynyt",
+        "imitates": "Jäljittelee: {brand}",
+        "https": "Kyllä (https)",
+        "http": "Ei (http)",
+        "common_ending": ".{tld}",
+        "risky_ending": ".{tld} – yleinen huijauksissa",
+        "none": "Ei mitään",
+        "shortened": "Lyhennetty linkki",
+        "ip": "Numero-osoite",
+        "at_sign": "Piilotettu @-merkin taakse",
+        "lookalike_letters": "Samannäköisiä merkkejä",
+        "download_yes": "Kyllä – .{ext}-tiedosto",
+        "signin": "Kirjautumis- tai maksusivu",
+        "regular": "Tavallinen sivu",
+        "not_registered": "Ei rekisteröity"
+      },
+      "units": {
+        "day": "päivä",
+        "days": "päivää",
+        "month": "kuukausi",
+        "months": "kuukautta",
+        "year": "vuosi",
+        "years": "vuotta"
+      }
+    },
+    "sv": {
+      "title": "Analys",
+      "owner": "Vem driver den",
+      "age": "Domänens ålder",
+      "exists": "Webbplatsen finns",
+      "lookalike": "Likadant namn",
+      "https": "Säker anslutning",
+      "ending": "Webbändelse",
+      "tricks": "Dolda knep",
+      "download": "Filnedladdning",
+      "page": "Sidtyp",
+      "values": {
+        "official": "Officiell webbplats för {brand}",
+        "ai_owner": "Troligen {owner} (AI, inte bekräftat)",
+        "pretends": "Låtsas vara {brand}",
+        "unknown": "Inte känt",
+        "since": "Sedan {date} · {age}",
+        "days_old": "Bara {age} gammal",
+        "lookup_failed": "Kunde inte kontrolleras",
+        "yes": "Ja",
+        "no": "Nej",
+        "none_found": "Inget hittades",
+        "imitates": "Härmar {brand}",
+        "https": "Ja (https)",
+        "http": "Nej (http)",
+        "common_ending": ".{tld}",
+        "risky_ending": ".{tld} – vanlig i bedrägerier",
+        "none": "Inga",
+        "shortened": "Förkortad länk",
+        "ip": "Sifferadress",
+        "at_sign": "Dold bakom @",
+        "lookalike_letters": "Likadana tecken",
+        "download_yes": "Ja – .{ext}-fil",
+        "signin": "Inloggnings- eller betalningssida",
+        "regular": "Vanlig sida",
+        "not_registered": "Inte registrerad"
+      },
+      "units": {
+        "day": "dag",
+        "days": "dagar",
+        "month": "månad",
+        "months": "månader",
+        "year": "år",
+        "years": "år"
+      }
     }
   }
 }

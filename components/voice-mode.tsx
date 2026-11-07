@@ -39,7 +39,7 @@ const VOICE_TEXT = {
     sayDone: "Say done when you've finished, or say you can't do it.",
     step: "Step {n} of {total}.",
     unlockAsk: "May I check this? Say yes or no.",
-    linkSkip: "Read out the message or what the caller said, or say skip.",
+    linkSkip: "Or say skip.",
     shareAsk: "Shall I share this summary with {name}? Say yes or no.",
     stopAsk: "Tell me when you have done this.",
     whatToDo: "What to do now:",
@@ -70,7 +70,7 @@ const VOICE_TEXT = {
     sayDone: "Sano valmis, kun olet tehnyt sen, tai sano, jos et voi.",
     step: "Vaihe {n}/{total}.",
     unlockAsk: "Saanko tarkistaa tämän? Sano kyllä tai ei.",
-    linkSkip: "Lue viesti ääneen tai kerro, mitä soittaja sanoi, tai sano ohita.",
+    linkSkip: "Tai sano ohita.",
     shareAsk: "Jaanko tämän yhteenvedon: {name}? Sano kyllä tai ei.",
     stopAsk: "Kerro, kun olet tehnyt tämän.",
     whatToDo: "Tee nyt näin:",
@@ -101,7 +101,7 @@ const VOICE_TEXT = {
     sayDone: "Säg klart när du är färdig, eller säg om du inte kan.",
     step: "Steg {n} av {total}.",
     unlockAsk: "Får jag kontrollera det här? Säg ja eller nej.",
-    linkSkip: "Läs upp meddelandet eller vad uppringaren sa, eller säg hoppa över.",
+    linkSkip: "Eller säg hoppa över.",
     shareAsk: "Ska jag dela sammanfattningen med {name}? Säg ja eller nej.",
     stopAsk: "Säg till när du har gjort det här.",
     whatToDo: "Gör så här nu:",
@@ -149,7 +149,7 @@ export function speechFor(screen: Screen, t: Translate, v: VoiceText): string {
     case "describe":
       return say(screen.message, screen.hint);
     case "evidence":
-      return say(screen.message, v.linkSkip);
+      return say(screen.question, v.linkSkip);
     case "unlock":
       return say(`${t("unlockTitle")} ${screen.what}`, screen.why, screen.limit, v.unlockAsk);
     case "rescue":
@@ -185,7 +185,7 @@ export function requestFor(screen: Screen | null, text: string, language: Langua
     // "Skip" moves on without anything.
     case "evidence":
       if (SKIP.test(text)) return { kind: "skip_evidence" };
-      return { kind: "evidence", content: text, link: findUrl(text) ?? undefined };
+      return { kind: "evidence", value: screen.field === "link" ? (findUrl(text) ?? text) : text };
     case "unlock": {
       const read = answer();
       return read === "unsure" ? "retry" : { kind: "consent", signal: screen.signal, granted: read === "yes" };

@@ -928,9 +928,12 @@ export const SITUATIONS: Situation[] = [
     // Safe needs positive evidence. Finding nothing risky is not evidence of safety:
     // a clean link check or an unreadable message must fall through to unclear.
     id: "looks_genuine",
+    // A website the user found on their own is not vouched for by having found it: an unknown
+    // shop with a too-good price is "self-started" too. It needs a clean link check to be Safe.
     when: (c) =>
       uncontradicted(c) &&
-      (selfStarted(c) === "yes" || (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
+      ((selfStarted(c) === "yes" && (!is(c, "link_or_site") || c.signals.linkVerdict === "clean")) ||
+        (c.facts.asksNothing === true && (!c.signals.hasLink || c.signals.linkVerdict === "clean"))),
     then: () => explainBenign("looks_genuine", ["guidance_legitimate_notifications", "guidance_proportionate_advice"]),
   },
   {

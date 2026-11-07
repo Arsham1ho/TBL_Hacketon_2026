@@ -216,10 +216,17 @@ describe("session flow", () => {
       }
     });
 
-    it("reads a Finnish click after the link is named", async () => {
-      const message = "Sain viestin että paketti on jumissa ja linkki, klikkasin sitä mutta en antanut mitään tietoja.";
+    it("asks what the page wanted after a Finnish click", async () => {
+      const message = "Sain viestin että paketti on jumissa ja linkki, klikkasin sitä.";
       const { response } = await handleEvent("test", null, { kind: "start", input: input(message, "fi"), sentToLlm: false });
       expect(response.screen).toMatchObject({ type: "describe", reason: "link_context" });
+    });
+
+    it("doesn't ask again when the user already said they entered nothing", async () => {
+      const message = "Sain viestin että paketti on jumissa ja linkki, klikkasin sitä mutta en antanut mitään tietoja.";
+      const { response } = await handleEvent("test", null, { kind: "start", input: input(message, "fi"), sentToLlm: false });
+      expect(response.screen.type).not.toBe("describe");
+      expect(response.state.status).not.toBe("safe");
     });
 
     it("offers the bank first when a caller poses as the bank", async () => {

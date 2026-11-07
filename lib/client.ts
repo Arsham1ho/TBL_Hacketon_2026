@@ -5,7 +5,7 @@ import type { DecisionReport } from "../engine/report";
 // The UI's only connection to the engine. A configurable URL keeps a Capacitor app possible.
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export type AgentPreview = { destination: Destination; route: SupportRoute; summary: string[]; omitted: string[]; details?: HandoffDetails };
+export type AgentPreview = { destination: Destination; route: SupportRoute; summary: string[]; omitted: string[]; details?: HandoffDetails; caseId?: string | null; caseToken?: string | null };
 
 export type SafeStepClient = {
   send: (request: ApiRequest) => Promise<ApiResponse>;
