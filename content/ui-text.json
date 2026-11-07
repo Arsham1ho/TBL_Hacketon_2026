@@ -545,9 +545,9 @@
     "sv": "Så håller du dig säker"
   },
   "investigate": {
-    "en": "Look closer: why this happened",
-    "fi": "Tutki tarkemmin: miksi näin kävi",
-    "sv": "Titta närmare: varför det hände"
+    "en": "Why this happened",
+    "fi": "Miksi näin kävi",
+    "sv": "Varför det hände"
   },
   "investigateWhy": {
     "en": "Why they approached you",

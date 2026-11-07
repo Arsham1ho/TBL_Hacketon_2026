@@ -3,7 +3,7 @@ import type { ApiRequest, ApiResponse, DataReceipt, SupportRoute } from "@/engin
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,8 @@ type Actions = {
   stage: number;
   // Records the card and the user's choice as chat lines, then shows the next card.
   advance: (recap: string, label: string) => void;
+  // Action steps the user confirmed with Done, shown under "What has been done".
+  confirmed: string[];
   revealed: ("why" | "details")[];
   reveal: (part: "why" | "details") => void;
   providers: ProviderChoice;
@@ -43,8 +45,7 @@ function Receipt({ receipt, t }: { receipt: DataReceipt; t: Translate }) {
     { title: t("receiptNotAccessed"), items: receipt.notAccessed },
   ].filter((section) => section.items.length > 0);
   return (
-    <div className="grid gap-2">
-      <p className="font-medium text-foreground">{t("receiptTitle")}</p>
+    <div className="grid gap-1">
       {sections.map((section) => (
         <p key={section.title}>
           {section.title}: {section.items.map((item) => t(item)).join(", ")}
@@ -62,10 +63,14 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
   </section>
 );
 
+// Bigger markers and more space than a plain bullet list, so each point reads on its own.
 const List = ({ items }: { items: string[] }) => (
-  <ul className="grid list-disc gap-1 pl-5">
+  <ul className="grid gap-2">
     {items.map((item) => (
-      <li key={item}>{item}</li>
+      <li key={item} className="flex items-start gap-3 text-[15px] leading-relaxed">
+        <span className="mt-[9px] size-2.5 shrink-0 rounded-full bg-foreground/70" aria-hidden />
+        {item}
+      </li>
     ))}
   </ul>
 );
@@ -152,6 +157,124 @@ function QuestionCard({ question, hint, context }: { question: string; hint?: st
     </section>
   );
 }
+
+// An icon for each prevention tip, picked from its words in Finnish, English or Swedish.
+const TIP_ICONS: [RegExp, typeof Zap][] = [
+  [/two-step|two-factor|kaksivaihe|tvåsteg/iu, ShieldCheck],
+  [/password|salasan|lösenord/iu, KeyRound],
+  [/urgent|pause|pressure|kiire|pysähdy|brådsk|stanna/iu, Hourglass],
+  [/link|linkki|länk/iu, Link2Off],
+  [/app|sovellu/iu, Smartphone],
+  [/call|soit|ring|puhel|samtal/iu, PhoneOff],
+  [/bank|pankk/iu, Landmark],
+  [/code|koodi|kod/iu, KeyRound],
+  [/device|update|laite|päivit|enhet|uppdater/iu, WifiOff],
+];
+const tipIcon = (tip: string) => TIP_ICONS.find(([pattern]) => pattern.test(tip))?.[1] ?? ShieldCheck;
+
+// Habits that stop this happening again, one tile each.
+function PreventCard({ title, tips }: { title: string; tips: string[] }) {
+  return (
+    <section className="grid gap-3 rounded-2xl border border-success/30 bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-full bg-success-soft text-success" aria-hidden>
+          <ShieldCheck className="size-6" />
+        </span>
+        <h2 className="flex-1 text-base font-semibold">{title}</h2>
+        <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success tabular-nums">{tips.length}</span>
+      </div>
+      <ul className="grid gap-2">
+        {tips.map((tip, index) => {
+          const Icon = tipIcon(tip);
+          return (
+            <li
+              key={tip}
+              className="flex items-center gap-3 rounded-xl bg-accent p-3 motion-safe:animate-[fade-up_.4s_ease-out_both]"
+              style={{ animationDelay: `${150 + index * 120}ms` }}
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-card text-success" aria-hidden>
+                <Icon className="size-5" />
+              </span>
+              <span className="text-sm leading-snug font-medium">{tip}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+// A card with a round icon badge and a title, shared by the result's extra cards.
+const SHELL_TONE = {
+  info: { border: "border-navy/20", badge: "bg-accent text-foreground" },
+  neutral: { border: "border-border-strong", badge: "bg-accent text-foreground" },
+};
+function CardShell({ icon, title, tone, children }: { icon: ReactNode; title: string; tone: keyof typeof SHELL_TONE; children: ReactNode }) {
+  return (
+    <section className={cn("grid gap-3 rounded-2xl border bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]", SHELL_TONE[tone].border)}>
+      <div className="flex items-center gap-3">
+        <span className={cn("flex size-11 items-center justify-center rounded-full", SHELL_TONE[tone].badge)} aria-hidden>{icon}</span>
+        <h2 className="text-base font-semibold">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// One insight with its own icon, label and full text.
+const InsightTile = ({ icon, label, text, index }: { icon: ReactNode; label: string; text: string; index: number }) => (
+  <div className="flex items-start gap-3 rounded-xl bg-accent p-3.5 motion-safe:animate-[fade-up_.4s_ease-out_both]" style={{ animationDelay: `${120 + index * 120}ms` }}>
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card" aria-hidden>{icon}</span>
+    <div className="grid gap-0.5">
+      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</span>
+      <span className="text-[15px] leading-relaxed">{text}</span>
+    </div>
+  </div>
+);
+
+const DetailRow = ({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) => (
+  <div className="flex items-start gap-3 border-t border-border pt-3 first-of-type:border-0 first-of-type:pt-0">
+    <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-muted-foreground" aria-hidden>{icon}</span>
+    <div className="grid min-w-0 gap-0.5 text-sm">
+      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{label}</span>
+      <div className="leading-relaxed">{children}</div>
+    </div>
+  </div>
+);
+
+// What is already done, as a short completed timeline.
+function DoneCard({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section className="grid gap-3 rounded-2xl border border-success/30 bg-card p-4 motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-full bg-success text-background" aria-hidden>
+          <Check className="size-6" strokeWidth={3} />
+        </span>
+        <h2 className="flex-1 text-base font-semibold">{title}</h2>
+        <span className="rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success tabular-nums">{items.length}</span>
+      </div>
+      <ol className="grid">
+        {items.map((item, index) => (
+          <li key={item} className="relative flex gap-3 pb-3 last:pb-0 motion-safe:animate-[fade-up_.4s_ease-out_both]" style={{ animationDelay: `${120 + index * 120}ms` }}>
+            {/* The line joining each step to the next. */}
+            {index < items.length - 1 && <span className="absolute top-8 bottom-0 left-[15px] w-0.5 rounded-full bg-success/30" aria-hidden />}
+            <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-success-soft text-success" aria-hidden>
+              <CircleCheck className="size-5" />
+            </span>
+            <span className="flex-1 rounded-xl bg-success-soft/60 px-3.5 py-2.5 text-[15px] leading-relaxed font-medium">{item}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+const KeepChatting = ({ text }: { text: string }) => (
+  <p className="flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-xs text-muted-foreground">
+    <PenLine className="size-3.5" aria-hidden />
+    {text}
+  </p>
+);
 
 // One action at a time: a big icon, the step, quick buttons to act on it, and progress dots.
 function ActionStep({ title, step, index, total, urgent, quick }: { title: string; step: string; index: number; total: number; urgent: boolean; quick: ReactNode[] }) {
@@ -282,9 +405,9 @@ export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t 
 }
 
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
-  const { t, reply, handoff, restart, business, closed, close, stage, advance, revealed, reveal, providers, choose } = actions;
+  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose } = actions;
   const { screen, state } = response;
-  const talk = (recap: string): Reply => ({ label: t("talk"), run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
+  const talk = (recap: string): Reply => ({ label: t("talk"), icon: <Headset className="size-4" aria-hidden />, run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
   const contact = (recap: string, route: SupportRoute, label = t("contactRoute").replace("{name}", t(route))): Reply => ({
     label,
     run: () => reply(recap, label, { kind: "talk_to_person", route }),
@@ -421,6 +544,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const done = [
         ...(screen.stopped ? [t("didStop")] : []),
         ...screen.completed,
+        ...confirmed.filter((step) => !screen.completed.includes(step)),
         ...(screen.sharedWith ? [t("didShare").replace("{name}", t(screen.sharedWith))] : []),
       ];
       const recap = screen.statusLabel;
@@ -499,9 +623,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         });
       }
       if (done.length > 0) {
-        cards.push({ title: t("storyDone"), recap: t("storyDone"), node: <Panel tone="success" icon={<CircleCheck className="size-4" aria-hidden />} title={t("storyDone")}><List items={done} /></Panel> });
+        cards.push({ title: t("storyDone"), recap: t("storyDone"), node: <DoneCard title={t("storyDone")} items={done} /> });
       }
-      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), node: <Panel tone="info" icon={<ShieldCheck className="size-4" aria-hidden />} title={t("storyPrevent")}><List items={story.prevent} /></Panel> });
+      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), node: <PreventCard title={t("storyPrevent")} tips={story.prevent} /> });
       if (needsBank || needsOperator || needsPolice) {
         const bank = providerById("bank", providers.bank);
         const operator = providerById("operator", providers.operator);
@@ -536,22 +660,39 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const shown = Math.min(stage, cards.length - 1);
       const extras = [
         ...(revealed.includes("why")
-          ? [<Panel key="why" tone="calm" icon={<Search className="size-4" aria-hidden />} title={t("investigate")}>
-              <p><span className="font-medium">{t("investigateWhy")}: </span>{story.investigation.why}</p>
-              <p><span className="font-medium">{t("investigateWanted")}: </span>{story.investigation.wanted}</p>
-              <p><span className="font-medium">{t("investigateSpot")}: </span>{story.investigation.spot}</p>
-            </Panel>]
+          ? [
+              <CardShell key="why" icon={<Search className="size-6" aria-hidden />} title={t("investigate")} tone="info">
+                <InsightTile icon={<Target className="size-5" aria-hidden />} label={t("investigateWhy")} text={story.investigation.why} index={0} />
+                <InsightTile icon={<Wallet className="size-5" aria-hidden />} label={t("investigateWanted")} text={story.investigation.wanted} index={1} />
+                <InsightTile icon={<Eye className="size-5" aria-hidden />} label={t("investigateSpot")} text={story.investigation.spot} index={2} />
+              </CardShell>,
+            ]
           : []),
         ...(revealed.includes("details")
-          ? [<Panel key="details" tone="calm" icon={<FileText className="size-4" aria-hidden />} title={t("details")}>
-              {type && <p>{type.description}</p>}
-              <p>{screen.reason}</p>
-              <p>{t("howSure")}: {screen.confidence}</p>
-              {screen.unknowns.length > 0 && <p>{t("stillUnknown")}: {screen.unknowns.join(" ")}</p>}
-              {screen.sources.length > 0 && <p>{t("syntheticGuidance")}: {screen.sources.map((source) => source.title).join(", ")}</p>}
-              <Receipt receipt={response.dataReceipt} t={t} />
-              <p>{response.notice}</p>
-            </Panel>]
+          ? [
+              <CardShell key="details" icon={<FileText className="size-6" aria-hidden />} title={t("details")} tone="neutral">
+                {type && <DetailRow icon={<Tag className="size-4" aria-hidden />} label={t("scamType")}>{type.description}</DetailRow>}
+                <DetailRow icon={<Info className="size-4" aria-hidden />} label={t("whatHappened")}>{screen.reason}</DetailRow>
+                <DetailRow icon={<BadgeCheck className="size-4" aria-hidden />} label={t("howSure")}>{screen.confidence}</DetailRow>
+                {screen.unknowns.length > 0 && <DetailRow icon={<CircleQuestionMark className="size-4" aria-hidden />} label={t("stillUnknown")}>{screen.unknowns.join(" ")}</DetailRow>}
+                {screen.sources.length > 0 && (
+                  <DetailRow icon={<BookOpen className="size-4" aria-hidden />} label={t("syntheticGuidance")}>
+                    <span className="flex flex-wrap gap-1.5 pt-0.5">
+                      {screen.sources.map((source) => (
+                        <span key={source.id} className="rounded-full border border-border-strong px-2.5 py-0.5 text-xs font-medium">{source.title}</span>
+                      ))}
+                    </span>
+                  </DetailRow>
+                )}
+                <DetailRow icon={<Database className="size-4" aria-hidden />} label={t("receiptTitle")}>
+                  <Receipt receipt={response.dataReceipt} t={t} />
+                </DetailRow>
+                <p className="flex items-start gap-2 rounded-xl bg-accent p-3 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                  {response.notice}
+                </p>
+              </CardShell>,
+            ]
           : []),
       ];
 
@@ -575,9 +716,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies = [...OPERATORS.map((operator) => ({ label: operator.name, run: () => choose("operator", operator.id) })), { label: t("otherProvider"), run: () => choose("operator", "other") }];
       } else {
         replies = [
-          ...(live && !closed ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")) }] : []),
-          ...(revealed.includes("why") ? [] : [{ label: t("investigate"), run: () => reveal("why") }]),
-          ...(revealed.includes("details") ? [] : [{ label: t("details"), run: () => reveal("details") }]),
+          ...(live && !closed ? [{ label: t("isStopped"), primary: true, run: () => close(recap, t("isStopped")), icon: <CircleCheck className="size-4" aria-hidden /> }] : []),
+          ...(revealed.includes("why") ? [] : [{ label: t("investigate"), run: () => reveal("why"), icon: <Search className="size-4" aria-hidden /> }]),
+          ...(revealed.includes("details") ? [] : [{ label: t("details"), run: () => reveal("details"), icon: <FileText className="size-4" aria-hidden /> }]),
           ...(sensitive ? [talk(recap)] : []),
         ];
       }
@@ -587,9 +728,16 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           <>
             {/* Only the current card is shown. Earlier ones stay in the chat as one line each. */}
             <div key={shown}>{current.node}</div>
-            {closed && <p className="font-medium">{t("stoppedThanks")}</p>}
+            {closed && (
+              <p className="flex items-center gap-3 rounded-2xl border border-success/30 bg-success-soft p-3.5 font-medium motion-safe:animate-[fade-up_.35s_ease-out]">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-success text-background" aria-hidden>
+                  <Check className="size-5" strokeWidth={3} />
+                </span>
+                {t("stoppedThanks")}
+              </p>
+            )}
             {extras}
-            {shown === cards.length - 1 && <p className="text-sm text-muted-foreground">{t("keepChatting")}</p>}
+            {shown === cards.length - 1 && <KeepChatting text={t("keepChatting")} />}
           </>
         ),
         replies,
@@ -615,7 +763,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         body: (
           <>
             <Heading>{screen.message}</Heading>
-            <p className="text-sm text-muted-foreground">{t("keepChatting")}</p>
+            <KeepChatting text={t("keepChatting")} />
           </>
         ),
         replies: [{ label: t("newConversation"), run: restart }],

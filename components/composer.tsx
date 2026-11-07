@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
-import { Btn } from "./ui";
+import { cn } from "@/lib/utils";
 
 // The sample is only a placeholder. It is never submitted.
 export function DescriptionComposer(p: {
@@ -16,6 +16,16 @@ export function DescriptionComposer(p: {
 }) {
   const { text, sample } = p;
   const [focused, setFocused] = useState(false);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const ready = Boolean(text.trim()) && !p.disabled;
+
+  // Starts as one line and grows with the text, up to about six lines.
+  useLayoutEffect(() => {
+    const element = field.current;
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 168)}px`;
+  }, [text]);
 
   return (
     <form
@@ -25,13 +35,19 @@ export function DescriptionComposer(p: {
         if (text.trim()) p.onSend();
       }}
     >
-      <div className="flex items-end gap-2 rounded-xl border border-border-strong bg-card p-1.5 focus-within:border-primary">
+      <div
+        className={cn(
+          "flex items-end gap-2 rounded-[28px] border bg-card py-1.5 pr-1.5 pl-4 shadow-sm transition-[border-color,box-shadow]",
+          focused ? "border-foreground/40 shadow-md ring-4 ring-foreground/5" : "border-border-strong",
+        )}
+      >
         <label className="sr-only" htmlFor="description">
-          {p.question}
+          {p.question || sample}
         </label>
         <textarea
+          ref={field}
           id="description"
-          rows={2}
+          rows={1}
           maxLength={10000}
           value={text}
           onChange={(event) => p.onChange(event.target.value)}
@@ -43,18 +59,20 @@ export function DescriptionComposer(p: {
             event.currentTarget.form?.requestSubmit();
           }}
           placeholder={p.question ? (focused ? p.question : sample) : sample}
-          className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
+          className="min-w-0 flex-1 resize-none self-center bg-transparent py-2 text-base leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
-        <Btn
+        <button
           type="submit"
           aria-label={p.sendLabel}
           title={p.sendLabel}
-          disabled={p.disabled || !text.trim()}
-          className="size-11 min-h-11 shrink-0 px-0 py-0"
-          variant="primary"
+          disabled={!ready}
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full transition-all duration-200",
+            ready ? "scale-100 bg-foreground text-background hover:opacity-90" : "scale-95 bg-muted text-muted-foreground",
+          )}
         >
-          <ArrowUp className="size-5" aria-hidden />
-        </Btn>
+          <ArrowUp className="size-5" strokeWidth={2.5} aria-hidden />
+        </button>
       </div>
     </form>
   );

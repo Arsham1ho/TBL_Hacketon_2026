@@ -339,6 +339,7 @@ export function SafeStepApp() {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
   const [stage, setStage] = useState(0);
+  const [confirmed, setConfirmed] = useState<string[]>([]);
   const [revealed, setRevealed] = useState<("why" | "details")[]>([]);
   const [providers, setProviders] = useState<ProviderChoice>({});
   const lastStatus = useRef<string | null>(null);
@@ -438,6 +439,7 @@ export function SafeStepApp() {
   function arrived(next: ApiResponse) {
     setStage(0);
     setRevealed([]);
+    setConfirmed([]);
     const status = next.state?.status;
     // A result has its own summary card with the same gauge, so no note there.
     if (status && status !== lastStatus.current && (status !== "needs_verification" || lastStatus.current) && next.screen.type !== "result") {
@@ -716,8 +718,10 @@ export function SafeStepApp() {
       setClosed(true);
     },
     stage,
+    confirmed,
     advance: (recap: string, label: string) => {
       record({ from: "safestep", text: recap }, { from: "user", text: label });
+      if (label === t("done")) setConfirmed((steps) => [...steps, recap]);
       setStage((value) => value + 1);
     },
     revealed,
@@ -782,7 +786,9 @@ export function SafeStepApp() {
                 {item.text}
               </p>
             ) : (
-              <p key={index} className="max-w-[92%] text-muted-foreground">
+              // Earlier SafeStep steps, as a compact timeline.
+              <p key={index} className="flex max-w-[92%] items-start gap-2.5 text-sm text-muted-foreground">
+                <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-border-strong" aria-hidden />
                 {item.text}
               </p>
             ),
