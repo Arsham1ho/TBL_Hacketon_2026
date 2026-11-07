@@ -111,13 +111,14 @@ function explainBenign(id: string, guidance: string[], risk: Risk = "none"): Out
 }
 
 function bankIncident(id: string, item: Case, guidance: string[], police: boolean, steps: string[] = []): Outcome {
+  const bankStep = item.audience === "small_business" ? "contact_bank_business_fraud" : "contact_bank_now";
   return outcome(
     id,
     "contact_bank_and_block_cards",
     "incident_occurred",
     "critical",
     "immediate",
-    ["contact_bank_now", "block_card", "check_statements", ...steps],
+    [bankStep, "block_card", "check_statements", ...steps],
     guidance,
     { externalContacts: police ? ["bank", "police"] : ["bank"], rescue: true },
   );
@@ -160,7 +161,9 @@ export const SITUATIONS: Situation[] = [
       && c.gatedFindings?.["device.security_findings"] === "suspicious_app",
     then: (c) => outcome(
       "signaled_device_compromise", "isolate_device_and_scan", "incident_occurred", "critical", "immediate",
-      ["disconnect_device", "remove_app_or_profile", "get_device_checked"],
+      c.audience === "small_business"
+        ? ["disconnect_device", "inform_staff", "remove_app_or_profile", "get_device_checked"]
+        : ["disconnect_device", "remove_app_or_profile", "get_device_checked"],
       ["guidance_remote_access", "guidance_device_compromise"],
       { destination: person(c, "security_specialist"), rescue: true },
     ),
@@ -170,7 +173,9 @@ export const SITUATIONS: Situation[] = [
     when: (c) => is(c, "former_staff_access") && c.gatedFindings?.["business.staff_accounts"] === "active_former_staff",
     then: (c) => outcome(
       "signaled_former_staff_access", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
-      ["revoke_access", "change_password", "review_sessions"],
+      c.audience === "small_business"
+        ? ["revoke_access", "change_password", "review_sessions", "notify_data_protection"]
+        : ["revoke_access", "change_password", "review_sessions"],
       ["guidance_offboarding", "guidance_shared_accounts"],
       { destination: person(c, "security_specialist"), rescue: true },
     ),
@@ -185,7 +190,9 @@ export const SITUATIONS: Situation[] = [
         "incident_occurred",
         "critical",
         "immediate",
-        ["disconnect_device", "dont_pay_or_transfer", "get_device_checked", "keep_evidence"],
+        c.audience === "small_business"
+          ? ["disconnect_device", "inform_staff", "dont_pay_or_transfer", "get_device_checked", "keep_evidence"]
+          : ["disconnect_device", "dont_pay_or_transfer", "get_device_checked", "keep_evidence"],
         ["guidance_ransomware"],
         { destination: person(c, "security_specialist"), externalContacts: ["ncsc", "police"], rescue: true },
       ),
@@ -216,7 +223,9 @@ export const SITUATIONS: Situation[] = [
         "incident_occurred",
         "critical",
         "immediate",
-        ["change_password", "check_forwarding_rules", "inform_staff", "review_sessions"],
+        c.audience === "small_business"
+          ? ["change_password", "check_forwarding_rules", "inform_staff", "review_sessions", "notify_data_protection"]
+          : ["change_password", "check_forwarding_rules", "inform_staff", "review_sessions"],
         ["guidance_business_email_compromise", "guidance_invoice_fraud"],
         { destination: person(c, "security_specialist"), externalContacts: ["police", "ncsc"], rescue: true },
       ),
@@ -224,14 +233,16 @@ export const SITUATIONS: Situation[] = [
   {
     id: "former_staff_access",
     when: (c) => is(c, "former_staff_access"),
-    then: () =>
+    then: (c) =>
       outcome(
         "former_staff_access",
         "change_password_and_enable_mfa",
         "incident_occurred",
         "high",
         "today",
-        ["change_password", "review_sessions", "revoke_access"],
+        c.audience === "small_business"
+          ? ["change_password", "review_sessions", "revoke_access", "notify_data_protection"]
+          : ["change_password", "review_sessions", "revoke_access"],
         ["guidance_offboarding", "guidance_shared_accounts"],
         { rescue: true, wantsSignals: ["business.staff_accounts"] },
       ),
@@ -446,7 +457,9 @@ export const SITUATIONS: Situation[] = [
     when: (c) => did(c, "shared_code"),
     then: (c) => outcome(
       "non_bank_code_given", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
-      ["change_password", "review_sessions", "dont_share_codes"],
+      c.audience === "small_business"
+        ? ["change_password", "audit_staff_accounts", "review_sessions", "dont_share_codes"]
+        : ["change_password", "review_sessions", "dont_share_codes"],
       ["guidance_one_time_codes", "guidance_credential_compromise"],
       { destination: person(c, "security_specialist"), rescue: true },
     ),
@@ -454,19 +467,27 @@ export const SITUATIONS: Situation[] = [
   {
     id: "account_password_exposed",
     when: (c) => did(c, "entered_login") || yes(c, "credentials_entered"),
-    then: (c) =>
-      outcome(
+    // For business users the question asks whether it was a work account. Yes adds staff
+    // audit steps and escalates to business support; No follows the personal path.
+    // For consumers, Yes and No produce the same outcome, so the question is never asked.
+    flips: ["business_access"],
+    then: (c) => {
+      const workAccount = c.audience === "small_business" && yes(c, "business_access");
+      return outcome(
         "account_password_exposed",
         "change_password_and_enable_mfa",
         "incident_occurred",
         "high",
         "immediate",
-        c.audience === "small_business"
-          ? ["change_password", "check_password_reuse", "review_sessions", "check_forwarding_rules"]
+        workAccount
+          ? ["change_password", "check_forwarding_rules", "audit_staff_accounts", "check_password_reuse", "review_sessions"]
           : ["change_password", "check_password_reuse", "review_sessions"],
         ["guidance_credential_compromise", "guidance_password_reuse"],
-        { rescue: true },
-      ),
+        workAccount
+          ? { rescue: true, destination: "business_security_support" }
+          : { rescue: true },
+      );
+    },
   },
   {
     id: "own_click",
@@ -842,7 +863,7 @@ export const SITUATIONS: Situation[] = [
             "incident_occurred",
             "high",
             "immediate",
-            ["change_password", "check_password_reuse", "review_sessions", "check_forwarding_rules"],
+            ["change_password", "check_forwarding_rules", "audit_staff_accounts", "check_password_reuse", "review_sessions"],
             ["guidance_business_email_compromise", "guidance_credential_compromise"],
             { rescue: true },
           )

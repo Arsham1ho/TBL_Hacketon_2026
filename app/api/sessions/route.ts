@@ -114,7 +114,7 @@ async function interview(sessionId: string, journey: Journey | null, response: A
     journey.item.facts.userAlreadyDid.length === 0 && "what the person did",
     journey.item.facts.happeningNow === null && "whether it is still happening",
   ].filter((gap): gap is string => Boolean(gap));
-  const question = await nextQuestion({ story, asked: history, language: journey.item.language, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics, summaryGaps });
+  const question = await nextQuestion({ story, asked: history, language: journey.item.language, audience: journey.item.audience, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics, summaryGaps });
   if (question === "done") journey.interviewDone = true;
   if (!question || question === "done") return response;
   journey.pendingAsk = { id: randomUUID().slice(0, 8), question };

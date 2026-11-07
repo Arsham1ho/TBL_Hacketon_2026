@@ -1,4 +1,4 @@
-import type { Facts, IncidentType, Language } from "./types";
+import type { Audience, Facts, IncidentType, Language } from "./types";
 
 // Deterministic fact reader for Finnish, English and Swedish. It needs no LLM, so it
 // also backs the app when the LLM is down. It reports only what its patterns can
@@ -11,6 +11,7 @@ export type ExtractionInput = {
   incidentChannel: string | null;
   // A link that isn't confirmed clean. A clean result is still not proof of safety.
   hasRiskyLink: boolean;
+  audience: Audience;
 };
 
 // Many users skip ä, ö and å, so patterns and text are both folded before matching.

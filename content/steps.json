@@ -198,5 +198,15 @@
     "en": "Contact your bank now on its official number or in its own app.",
     "fi": "Ota heti yhteyttä pankkiisi sen virallisessa numerossa tai pankin omassa sovelluksessa.",
     "sv": "Kontakta din bank nu på dess officiella nummer eller i bankens egen app."
+  },
+  "audit_staff_accounts": {
+    "en": "Check all staff accounts for the same compromise and reset any that may be affected.",
+    "fi": "Tarkista kaikkien henkilöstön tilit saman hyökkäyksen varalta ja nollaa tarvittaessa.",
+    "sv": "Kontrollera alla personalens konton för samma intrång och återställ vid behov."
+  },
+  "contact_bank_business_fraud": {
+    "en": "Contact your bank's business banking or fraud team now on its official number.",
+    "fi": "Ota nyt yhteyttä pankin yritysasiakaspalveluun tai petosyksikköön virallisessa numerossa.",
+    "sv": "Kontakta bankens företagsavdelning eller bedrägeriteam nu på bankens officiella nummer."
   }
 }

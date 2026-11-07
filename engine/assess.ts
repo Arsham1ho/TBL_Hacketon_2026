@@ -41,6 +41,7 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
     language: input.language,
     incidentChannel: input.incidentChannel,
     hasRiskyLink: hasLink && input.signals.linkVerdict !== "clean",
+    audience: input.audience,
   };
   const primary = extract === offlineExtract ? null : validateFacts(await attempt(extract, extraction), guarded);
   // The keyword reader gets plain text: the wrapper tags are for the LLM only.
@@ -122,7 +123,7 @@ export function assess(item: Case, asked = 0): Assessment {
     interruption: interruptionFor(item.facts) ?? (item.answers.time_of_event === "yes" ? "live_request" : null),
     confidence: caseConfidence(item, unknownTopics.length, outcome.situation === "unclear"),
     confirmedFacts: confirmedFacts(item),
-    composed: compose(outcome, item.language, open, pending?.topic ?? null),
+    composed: compose(outcome, item.language, open, pending?.topic ?? null, item.audience),
   };
 }
 
