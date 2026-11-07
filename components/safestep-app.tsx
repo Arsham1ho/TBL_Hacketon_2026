@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { SlidersHorizontal, X } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenario } from "@/adapters/signals";
 import type { ApiRequest, ApiResponse } from "@/engine/screens";
 import type { Audience, Language } from "@/engine/types";
@@ -25,7 +25,7 @@ import {
   StopScreen,
   UnlockScreen,
 } from "./screens";
-import { Btn, Expandable, Logo, SecretBanner } from "./ui";
+import { Btn, Logo, SecretBanner } from "./ui";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -56,7 +56,6 @@ export function SafeStepApp() {
   const [audience, setAudience] = useState<Audience>("consumer");
   const [message, setMessage] = useState("");
   const [incident, setIncident] = useState("");
-  const [showPaste, setShowPaste] = useState(false);
   const [demo, setDemo] = useState<DemoScenario>("none");
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [view, setView] = useState<LocalView>(null);
@@ -65,6 +64,7 @@ export function SafeStepApp() {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
   const main = useRef<HTMLElement>(null);
+  const options = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const code = navigator.language.slice(0, 2);
@@ -79,6 +79,7 @@ export function SafeStepApp() {
   const t = translator(shown);
   const screen = response?.screen ?? null;
   const onStop = screen?.type === "stop" && !view && !busy;
+  const onStart = !response && !busy && !failed;
 
   useEffect(() => {
     document.documentElement.lang = shown;
@@ -129,7 +130,6 @@ export function SafeStepApp() {
     setFailed(null);
     setMessage("");
     setIncident("");
-    setShowPaste(false);
     setDemo("none");
   }
 
@@ -158,80 +158,16 @@ export function SafeStepApp() {
 
   function startScreen() {
     const consumer = audience === "consumer";
+    const question = t(consumer ? "whatHappened" : "whatHappenedBusiness");
     return (
-      <div className="flex min-h-[55vh] flex-col justify-center gap-5 pb-36">
-        <fieldset className="grid grid-cols-2 gap-1 rounded-full bg-card p-1">
-          <legend className="sr-only">{t("audience")}</legend>
-          {(["consumer", "small_business"] as const).map((value) => (
-            <label
-              key={value}
-              className={cn(
-                "flex min-h-11 cursor-pointer items-center justify-center rounded-full px-3 text-center text-sm font-semibold has-focus-visible:outline-3 has-focus-visible:outline-ring",
-                audience === value ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              <input type="radio" name="audience" value={value} checked={audience === value} onChange={() => setAudience(value)} className="sr-only" />
-              {t(value === "consumer" ? "consumer" : "smallBusiness")}
-            </label>
-          ))}
-        </fieldset>
-        <div className="text-center">
-          <h1 tabIndex={-1} className="text-[1.75rem] leading-tight font-extrabold text-navy focus:outline-none lg:text-[2rem]">
-            {t(consumer ? "whatHappened" : "whatHappenedBusiness")}
+      <>
+        <div className="pointer-events-none fixed inset-0 flex items-center justify-center px-5">
+          <h1 tabIndex={-1} className="w-full max-w-[560px] text-center text-[1.75rem] leading-tight font-extrabold text-navy focus:outline-none lg:text-[2rem]">
+            {question}
           </h1>
-          <p className="mt-2 text-muted-foreground">{t("hint")}</p>
         </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          {(consumer ? CONSUMER_CHOICES : BUSINESS_CHOICES).map((quick) => (
-            <button
-              key={quick.label}
-              type="button"
-              onClick={() => setMessage(t(quick.text))}
-              className="glass min-h-11 rounded-full px-4 py-2 text-sm font-semibold hover:bg-accent"
-            >
-              {t(quick.label)}
-            </button>
-          ))}
-        </div>
-        {showPaste ? (
-          <div>
-            <label htmlFor="incident" className="text-sm font-semibold">
-              {t("pasteLabel")}
-            </label>
-            <textarea
-              id="incident"
-              rows={3}
-              maxLength={10000}
-              value={incident}
-              onChange={(event) => setIncident(event.target.value)}
-              className="mt-1 w-full rounded-2xl border border-border bg-card px-4 py-3 text-base focus:border-primary focus:outline-none"
-            />
-          </div>
-        ) : (
-          <Btn variant="ghost" className="min-h-11 text-base" onClick={() => setShowPaste(true)}>
-            {t("pasteToggle")}
-          </Btn>
-        )}
-        <Expandable title={t("demoLabel")}>
-          <label className="sr-only" htmlFor="demo">
-            {t("demoLabel")}
-          </label>
-          <select
-            id="demo"
-            value={demo}
-            onChange={(event) => setDemo(event.target.value as DemoScenario)}
-            className="min-h-11 w-full rounded-2xl border border-border bg-card px-3 text-base text-foreground"
-          >
-            {DEMO_SCENARIOS.map((scenario) => (
-              <option key={scenario} value={scenario}>
-                {t(`demo${scenario}`)}
-              </option>
-            ))}
-          </select>
-        </Expandable>
-        <p className="text-center text-sm text-muted-foreground">{t("safetyNote")}</p>
         <DescriptionComposer
-          question={t(consumer ? "whatHappened" : "whatHappenedBusiness")}
+          question={question}
           sample={t(consumer ? "sample" : "sampleBusiness")}
           sendLabel={t("send")}
           text={message}
@@ -239,7 +175,109 @@ export function SafeStepApp() {
           onChange={setMessage}
           onSend={start}
         />
-      </div>
+        <dialog
+          ref={options}
+          aria-label={t("options")}
+          className="m-0 mx-auto mt-auto max-h-[85dvh] w-full max-w-[560px] rounded-t-3xl bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-foreground backdrop:bg-navy/40"
+        >
+          <div className="grid gap-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold text-navy">{t("options")}</h2>
+              <button
+                type="button"
+                onClick={() => options.current?.close()}
+                aria-label={t("close")}
+                title={t("close")}
+                className="flex size-11 items-center justify-center rounded-full hover:bg-muted"
+              >
+                <X className="size-5" aria-hidden />
+              </button>
+            </div>
+            <fieldset className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+              <legend className="sr-only">{t("audience")}</legend>
+              {(["consumer", "small_business"] as const).map((value) => (
+                <label
+                  key={value}
+                  className={cn(
+                    "flex min-h-11 cursor-pointer items-center justify-center rounded-full px-3 text-center text-sm font-semibold has-focus-visible:outline-3 has-focus-visible:outline-ring",
+                    audience === value ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  <input type="radio" name="audience" value={value} checked={audience === value} onChange={() => setAudience(value)} className="sr-only" />
+                  {t(value === "consumer" ? "consumer" : "smallBusiness")}
+                </label>
+              ))}
+            </fieldset>
+            <div className="grid gap-1">
+              <label htmlFor="language" className="text-sm font-semibold">
+                {t("language")}
+              </label>
+              <select
+                id="language"
+                value={choice}
+                onChange={(event) => setChoice(event.target.value as Language | "auto")}
+                className="min-h-11 w-full rounded-2xl border border-border bg-card px-3 text-base"
+              >
+                <option value="auto">{t("auto")}</option>
+                {LANGUAGES.map(({ code, label }) => (
+                  <option key={code} value={code}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <p className="text-sm font-semibold">{t("examples")}</p>
+              <div className="flex flex-wrap gap-2">
+                {(consumer ? CONSUMER_CHOICES : BUSINESS_CHOICES).map((quick) => (
+                  <button
+                    key={quick.label}
+                    type="button"
+                    onClick={() => {
+                      setMessage(t(quick.text));
+                      options.current?.close();
+                    }}
+                    className="glass min-h-11 rounded-full px-4 py-2 text-sm font-semibold hover:bg-accent"
+                  >
+                    {t(quick.label)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-1">
+              <label htmlFor="incident" className="text-sm font-semibold">
+                {t("pasteToggle")}
+              </label>
+              <textarea
+                id="incident"
+                rows={3}
+                maxLength={10000}
+                value={incident}
+                onChange={(event) => setIncident(event.target.value)}
+                className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-base focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="grid gap-1">
+              <label htmlFor="demo" className="text-sm font-semibold">
+                {t("demoLabel")}
+              </label>
+              <select
+                id="demo"
+                value={demo}
+                onChange={(event) => setDemo(event.target.value as DemoScenario)}
+                className="min-h-11 w-full rounded-2xl border border-border bg-card px-3 text-base"
+              >
+                {DEMO_SCENARIOS.map((scenario) => (
+                  <option key={scenario} value={scenario}>
+                    {t(`demo${scenario}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm text-muted-foreground">{t("safetyNote")}</p>
+          </div>
+        </dialog>
+      </>
     );
   }
 
@@ -296,27 +334,24 @@ export function SafeStepApp() {
 
   return (
     <div className={cn("min-h-dvh transition-colors", onStop && "on-danger bg-danger-deep")}>
-      <header className={cn("sticky top-0 z-20 pt-[env(safe-area-inset-top)]", onStop ? "bg-danger-deep text-primary-foreground" : "glass-strong")}>
-        <div className="mx-auto flex w-full max-w-[560px] items-center justify-between gap-3 px-5 py-2">
-          <Logo name="SafeStep" inverted={onStop} />
-          <div className="flex items-center gap-1">
-            <label className="sr-only" htmlFor="language">
-              {t("language")}
-            </label>
-            <select
-              id="language"
-              value={response?.language ?? choice}
-              onChange={(event) => setChoice(event.target.value as Language | "auto")}
-              disabled={Boolean(response)}
-              className={cn("min-h-11 rounded-full bg-transparent px-2 text-sm font-semibold disabled:opacity-70", onStop && "[&>option]:text-foreground")}
-            >
-              <option value="auto">{t("auto")}</option>
-              {LANGUAGES.map(({ code, label }) => (
-                <option key={code} value={code}>
-                  {label}
-                </option>
-              ))}
-            </select>
+      {onStart ? (
+        <header className="relative z-20 flex items-center justify-between gap-3 px-3 pt-[max(0.5rem,env(safe-area-inset-top))]">
+          <span className="size-11" aria-hidden />
+          <p className="text-center text-xs text-muted-foreground">{t("prototype")}</p>
+          <button
+            type="button"
+            onClick={() => options.current?.showModal()}
+            aria-label={t("options")}
+            title={t("options")}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5"
+          >
+            <SlidersHorizontal className="size-5" aria-hidden />
+          </button>
+        </header>
+      ) : (
+        <header className={cn("sticky top-0 z-20 pt-[env(safe-area-inset-top)]", onStop ? "bg-danger-deep text-primary-foreground" : "glass-strong")}>
+          <div className="mx-auto flex w-full max-w-[560px] items-center justify-between gap-3 px-5 py-2">
+            <Logo name="SafeStep" inverted={onStop} />
             {response && (
               <button
                 type="button"
@@ -329,9 +364,9 @@ export function SafeStepApp() {
               </button>
             )}
           </div>
-        </div>
-        <p className={cn("px-5 pb-2 text-center text-xs", onStop ? "text-primary-foreground" : "text-muted-foreground")}>{t("prototype")}</p>
-      </header>
+          <p className={cn("px-5 pb-2 text-center text-xs", onStop ? "text-primary-foreground" : "text-muted-foreground")}>{t("prototype")}</p>
+        </header>
+      )}
 
       <div className={cn("mx-auto w-full px-5 pt-6 pb-16", view === "agent" ? "max-w-3xl" : "max-w-[560px]")}>
         {/* A transform here would pull the start screen's fixed composer out of place. */}

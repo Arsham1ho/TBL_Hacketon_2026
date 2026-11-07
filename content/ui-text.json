@@ -49,11 +49,6 @@
     "fi": "Mitä yrityksessäsi tapahtuu?",
     "sv": "Vad händer i ditt företag?"
   },
-  "hint": {
-    "en": "Tell us in your own words. A sentence is enough.",
-    "fi": "Kerro omin sanoin. Yksi lause riittää.",
-    "sv": "Berätta med egna ord. En mening räcker."
-  },
   "sample": {
     "en": "I got a text asking me to pay for a parcel",
     "fi": "Sain tekstiviestin, jossa pyydetään maksamaan paketista",
@@ -538,5 +533,20 @@
     "en": "A former employee's active account",
     "fi": "Entisen työntekijän aktiivinen tili",
     "sv": "Ett aktivt konto för en tidigare anställd"
+  },
+  "options": {
+    "en": "Options",
+    "fi": "Asetukset",
+    "sv": "Alternativ"
+  },
+  "close": {
+    "en": "Close",
+    "fi": "Sulje",
+    "sv": "Stäng"
+  },
+  "examples": {
+    "en": "Examples",
+    "fi": "Esimerkit",
+    "sv": "Exempel"
   }
 }
