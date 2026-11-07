@@ -1,11 +1,11 @@
 import { didAction, topicValue, type Case } from "./case";
-import type { Outcome } from "./situations";
+import { matchSituation, type Outcome } from "./situations";
 import guide from "../content/incident-guide.json";
 import type { Language, Status } from "./types";
 
 export type IncidentCategory = { label: string; title: string; description: string };
 
-type CategoryKey = "code_theft" | "payment_fraud" | "credential_phishing" | "remote_access" | "device_compromise" | "sim_takeover" | "account_takeover" | "ransomware";
+type CategoryKey = "code_theft" | "payment_fraud" | "credential_phishing" | "remote_access" | "device_compromise" | "sim_takeover" | "account_takeover" | "ransomware" | "suspicious_attachment" | "suspicious_link" | "unrequested_reset" | "unfamiliar_login" | "breach_notice" | "credential_exposure" | "former_staff_access" | "router_security" | "monitoring_concern";
 
 const COPY: Record<CategoryKey, Record<Language, IncidentCategory>> = {
   code_theft: {
@@ -48,6 +48,51 @@ const COPY: Record<CategoryKey, Record<Language, IncidentCategory>> = {
     fi: { label: "Todennäköinen tapaustyyppi", title: "Kiristyshaittaohjelma", description: "Laitetta tai tiedostoja näyttää häirittävän tai panttaavan painostus maksamaan tai toimimaan." },
     sv: { label: "Trolig händelsetyp", title: "Ransomware", description: "Enheten eller filer verkar hållas eller störas för att pressa fram betalning eller åtgärd." },
   },
+  suspicious_attachment: {
+    en: { label: "Likely incident type", title: "Suspicious attachment", description: "An attachment may be unsafe. Opening or running it has not been established." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Epäilyttävä liite", description: "Liite voi olla vaarallinen. Sen avaamista tai suorittamista ei ole vahvistettu." },
+    sv: { label: "Trolig händelsetyp", title: "Misstänkt bilaga", description: "En bilaga kan vara osäker. Det är inte fastställt att den öppnades eller kördes." },
+  },
+  suspicious_link: {
+    en: { label: "Likely incident type", title: "Suspicious link", description: "A link was involved, but sharing sign-in details has not been established." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Epäilyttävä linkki", description: "Tapaukseen liittyi linkki, mutta kirjautumistietojen antamista ei ole vahvistettu." },
+    sv: { label: "Trolig händelsetyp", title: "Misstänkt länk", description: "En länk ingick, men det är inte fastställt att inloggningsuppgifter lämnades ut." },
+  },
+  unrequested_reset: {
+    en: { label: "Likely incident type", title: "Unrequested password reset", description: "A reset was requested or announced without your involvement. This alone does not show account access." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Pyytämätön salasanan palautus", description: "Salasanan palautusta pyydettiin tai siitä ilmoitettiin ilman sinua. Tämä ei yksin osoita tilille pääsyä." },
+    sv: { label: "Trolig händelsetyp", title: "Oönskad lösenordsåterställning", description: "En återställning begärdes eller aviserades utan dig. Det visar inte i sig att någon fått åtkomst till kontot." },
+  },
+  unfamiliar_login: {
+    en: { label: "Likely incident type", title: "Unfamiliar sign-in", description: "A sign-in alert or activity was reported as unfamiliar. Check the account directly to confirm it." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Tuntematon kirjautuminen", description: "Kirjautumisilmoitus tai tapahtuma vaikutti tuntemattomalta. Varmista se suoraan tililtä." },
+    sv: { label: "Trolig händelsetyp", title: "Okänd inloggning", description: "En inloggningsavisering eller aktivitet verkar okänd. Kontrollera det direkt i kontot." },
+  },
+  breach_notice: {
+    en: { label: "Likely incident type", title: "Unverified breach notice", description: "A notice mentions a data breach, but what data was affected has not been confirmed." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Vahvistamaton tietovuotoilmoitus", description: "Ilmoitus kertoo tietovuodosta, mutta altistuneita tietoja ei ole vahvistettu." },
+    sv: { label: "Trolig händelsetyp", title: "Obekräftat dataläckage", description: "Ett meddelande nämner ett dataläckage, men vilka uppgifter som berörts är inte bekräftat." },
+  },
+  credential_exposure: {
+    en: { label: "Likely incident type", title: "Exposed sign-in details", description: "The report says a password or sign-in details were exposed in a breach." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Paljastuneet kirjautumistiedot", description: "Ilmoituksen mukaan salasana tai kirjautumistiedot paljastuivat tietovuodossa." },
+    sv: { label: "Trolig händelsetyp", title: "Exponerade inloggningsuppgifter", description: "Enligt uppgifterna exponerades ett lösenord eller inloggningsuppgifter i ett dataläckage." },
+  },
+  former_staff_access: {
+    en: { label: "Likely incident type", title: "Former staff access", description: "A former worker may still have access to a business account or system." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Entisen työntekijän käyttöoikeus", description: "Entisellä työntekijällä voi yhä olla pääsy yrityksen tiliin tai järjestelmään." },
+    sv: { label: "Trolig händelsetyp", title: "Tidigare anställds åtkomst", description: "En tidigare anställd kan fortfarande ha åtkomst till ett företagskonto eller system." },
+  },
+  router_security: {
+    en: { label: "Likely incident type", title: "Router or network concern", description: "The report concerns a router or network device; unauthorized access has not been confirmed." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Reitittimen tai verkon turvallisuushuoli", description: "Ilmoitus koskee reititintä tai verkkolaitetta; luvatonta pääsyä ei ole vahvistettu." },
+    sv: { label: "Trolig händelsetyp", title: "Oro för router eller nätverk", description: "Rapporten gäller en router eller nätverksenhet; obehörig åtkomst är inte bekräftad." },
+  },
+  monitoring_concern: {
+    en: { label: "Likely incident type", title: "Possible device monitoring", description: "Someone may be monitoring the person's device or activity. Safety should be assessed before changing the device." },
+    fi: { label: "Todennäköinen tapaustyyppi", title: "Mahdollinen laitteen seuranta", description: "Joku voi seurata henkilön laitetta tai toimintaa. Turvallisuus on arvioitava ennen laitteen muuttamista." },
+    sv: { label: "Trolig händelsetyp", title: "Möjlig övervakning av enhet", description: "Någon kan övervaka personens enhet eller aktivitet. Bedöm säkerheten innan enheten ändras." },
+  },
 };
 
 function supported(item: Case): boolean {
@@ -56,6 +101,23 @@ function supported(item: Case): boolean {
 }
 
 function categoryKey(item: Case, outcome: Outcome): CategoryKey | null {
+  // An outcome can rule out the harm implied by a broad incident label. Use that
+  // more specific finding before interpreting requested data or the contact medium.
+  const situation = matchSituation(item).id;
+  if (situation === "attachment_opened" && topicValue(item, "app_installed") !== "yes") return "suspicious_attachment";
+  if (situation === "link_opened" && !didAction(item, "entered_login") && !didAction(item, "entered_card")
+    && topicValue(item, "credentials_entered") !== "yes" && topicValue(item, "card_details_entered") !== "yes"
+    && !item.facts.asksFor.includes("login") && !item.facts.asksFor.includes("card")) return "suspicious_link";
+  if (outcome.situation === "personal_safety") return "monitoring_concern";
+  if (outcome.situation === "former_staff_access") return "former_staff_access";
+  if (outcome.situation === "router_or_network") return "router_security";
+  if (outcome.situation === "breach_unverified") return "breach_notice";
+  if (outcome.situation === "breach_password") return "credential_exposure";
+  if (outcome.situation === "unrequested_reset") return "unrequested_reset";
+  if (outcome.situation === "attachment_not_run") return "suspicious_attachment";
+  if (outcome.situation === "link_opened_nothing_entered") return "suspicious_link";
+  if (outcome.situation === "signaled_unknown_login") return "account_takeover";
+  if (outcome.situation === "unknown_login") return "unfamiliar_login";
   if (outcome.situation === "ransomware" || item.facts.incidentType === "ransomware") return "ransomware";
   if (item.facts.incidentType === "sim_or_number_change" || (item.facts.pretendsToBe === "operator" && item.facts.asksFor.includes("code"))) return "sim_takeover";
   if (item.facts.incidentType === "remote_session" || didAction(item, "gave_remote_access") || topicValue(item, "remote_access_given") === "yes") return "remote_access";
@@ -86,7 +148,8 @@ export function incidentStory(item: Case, outcome: Outcome, status: Status): Inc
   if (item.audience === "small_business" && ["payment_held", "payment_detail_change", "payment_sent"].includes(outcome.situation)) return BUSINESS_PAYMENT_STORY[item.language];
   if (outcome.situation === "payment_lure" && !item.signals.hasLink && !item.mentions?.some(mention => mention === "email" || mention === "sms")) return DIRECT_PAYMENT_STORY[item.language];
   const key = outcome.situation === "left_alone" ? "left_alone" : status === "safe" ? "harmless" : outcome.situation === "personal_safety" ? "personal_safety" : categoryKey(item, outcome) ?? "general";
-  const { attempted, why, wanted, spot, prevent } = guide[key][item.language];
+  const storyKey = key in guide ? key as keyof typeof guide : "general";
+  const { attempted, why, wanted, spot, prevent } = guide[storyKey][item.language];
   return { attempted, prevent, investigation: { why, wanted, spot } };
 }
 

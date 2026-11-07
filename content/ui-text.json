@@ -595,9 +595,9 @@
     "sv": "Sammanfattning av händelsen"
   },
   "scamType": {
-    "en": "Scam type",
-    "fi": "Huijauksen tyyppi",
-    "sv": "Typ av bedrägeri"
+    "en": "Incident type",
+    "fi": "Tapaustyyppi",
+    "sv": "Typ av händelse"
   },
   "notClearYet": {
     "en": "Not clear yet",

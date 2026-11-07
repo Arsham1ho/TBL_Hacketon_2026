@@ -127,7 +127,7 @@ const OWN_CHANNEL = re(String.raw`in the app|in your online|as usual|contains no
 // A direct demand beats any reassuring phrase, because scammers can write those too.
 const DEMAND = re(String.raw`\bpay\b|send money|send \d|\bgive\b|\binstall\b|enter your|send your|update your|confirm your|verify your|sign in|log in (here|now|at|via|through)|\bclick\b|\bmaksa\b|syötä|päivitä|vahvista|\banna\b|kirjaudu (tästä|täällä|linkistä)|klikkaa|\bbetala\b|\bange\b|uppdatera|bekräfta|skicka din|logga in (här|nu|via)|klicka`);
 const REPORTED_REQUEST = re(String.raw`asked (me )?(for|to)|wants? (me|my)|told me to|pyysi|pyytää|halusi|vaati|bad (mig|om)|vill ha`);
-const ASKED_NOTHING = re(String.raw`asks? for nothing|asked for nothing|ei pyydä mitään|eivät pyytäneet mitään|ber inte om något|bad inte om något|asked for nothing|asked for no details|no details|ei pyytänyt mitään|ei kysynyt mitään|ei pyytänyt tietoja|bad inte om något|bad inte om några`);
+const ASKED_NOTHING = re(String.raw`asks? for nothing|asked for nothing|ei pyydä mitään|eivät pyytäneet mitään|ber inte om något|bad inte om något|asked for no details|ei pyytänyt mitään|ei kysynyt mitään|ei pyytänyt tietoja|bad inte om några`);
 
 export function offlineExtract(input: ExtractionInput): Facts {
   const { language, incidentChannel, hasRiskyLink } = input;

@@ -29,7 +29,7 @@ const CODE_BEFORE_WORD = new RegExp(`${WORD_START}(${CODE_VALUE})(${CODE_FILLER}
 const PASSWORD_WORD = String.raw`${COMPOUND_START}${PREFIX}(?:salasana|password|passwd|pwd|passphrase|lösenord|losenord)${SUFFIX}`;
 const PASSWORD_LINK = String.raw`(?:\s{0,4}(?:[=:]|(?:is|was|on|oli|är|ar|var|nyt|now|nu)(?=[\s"'“”]|$))){1,4}\s{0,4}`;
 // Words that describe a password rather than being one, as in "the password is still the default".
-const NOT_A_VALUE = String.raw`(?!(?:a|an|any|the|my|your|our|their|his|her|still|same|not|weak|default|changed|reset|stolen|leaked|hacked|wrong|expired|compromised|edelleen|vielä|sama|se|ei|heikko|vaihdettu|muutettu|varastettu|vuotanut|väärä|fortfarande|samma|det|inte|svagt|ändrat|stulet|läckt|fel)${WORD_END})`;
+const NOT_A_VALUE = String.raw`(?!(?:a|an|any|the|my|your|our|their|his|her|still|same|not|weak|default|changed|reset|stolen|leaked|exposed|hacked|wrong|expired|compromised|edelleen|vielä|sama|se|ei|heikko|vaihdettu|muutettu|varastettu|vuotanut|paljastunut|väärä|fortfarande|samma|det|inte|svagt|ändrat|stulet|läckt|exponerat|fel)${WORD_END})`;
 const PASSWORD_VALUE = String.raw`${NOT_A_VALUE}(?:"[^"\n]{1,200}"|'[^'\n]{1,200}'|“[^”\n]{1,200}”|\S+)`;
 const PASSWORD_LISTED = new RegExp(`(${PASSWORD_WORD})(\\s{0,4}[=:]\\s{0,4})(${NOT_A_VALUE}[^\\n.,;!?]{1,60})`, "giu");
 const PASSWORD_DIRECT = new RegExp(`(${PASSWORD_WORD})(${PASSWORD_LINK})(${PASSWORD_VALUE})`, "giu");
