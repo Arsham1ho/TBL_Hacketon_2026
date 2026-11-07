@@ -218,5 +218,25 @@
       "ifRisky": "Om du installerade något eller gav åtkomst:",
       "ifSafe": "Om du inte gjorde något av det:"
     }
+  },
+  "business_access": {
+    "en": {
+      "question": "Is this a work or business account?",
+      "why": "Work accounts can expose shared systems and staff data beyond your own.",
+      "ifRisky": "If this is a work or business account:",
+      "ifSafe": "If this is a personal account:"
+    },
+    "fi": {
+      "question": "Onko kyseessä työ- tai yritystili?",
+      "why": "Työtili voi paljastaa yhteiset järjestelmät ja henkilöstötiedot.",
+      "ifRisky": "Jos kyseessä on työ- tai yritystili:",
+      "ifSafe": "Jos kyseessä on henkilökohtainen tili:"
+    },
+    "sv": {
+      "question": "Är det ett arbets- eller företagskonto?",
+      "why": "Arbetskonton kan exponera delade system och personaldata utöver ditt eget.",
+      "ifRisky": "Om det är ett arbets- eller företagskonto:",
+      "ifSafe": "Om det är ett personligt konto:"
+    }
   }
 }

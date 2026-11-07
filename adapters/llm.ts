@@ -70,7 +70,7 @@ export async function extractFacts(input: ExtractionInput, options: LlmOptions =
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Language: ${input.language}\nChannel: ${input.incidentChannel ?? "unknown"}\n\n<user_report>\n${input.userText}\n</user_report>\n\n${input.incidentText}`,
+          content: `Language: ${input.language}\nChannel: ${input.incidentChannel ?? "unknown"}\nContext: ${input.audience === "small_business" ? "The user is a small business owner or manager. Watch for business-specific incidents: CEO or supplier fraud, work account compromise, email forwarding rules, invoice scams, former staff access, and demands framed as colleague or partner requests." : "The user is an individual consumer."}\n\n<user_report>\n${input.userText}\n</user_report>\n\n${input.incidentText}`,
         },
       ],
       response_format: { type: "json_schema", json_schema: { name: "facts", strict: true, schema: SCHEMA } },
@@ -209,7 +209,7 @@ export async function interpretInterviewAnswer(question: string, answer: string,
 
 // A live follow-up question for an unclear report. It only gathers facts: the rules decide.
 // "done" means the AI has a clear picture. null means this attempt failed, so try next turn.
-export async function nextQuestion(input: { story: string; asked: { question: string; answer: string }[]; language: string; facts?: unknown; answers?: unknown; unsure?: string[]; unknowns?: string[]; summaryGaps?: string[] }, options: LlmOptions = {}): Promise<string | "done" | null> {
+export async function nextQuestion(input: { story: string; asked: { question: string; answer: string }[]; language: string; audience?: string; facts?: unknown; answers?: unknown; unsure?: string[]; unknowns?: string[]; summaryGaps?: string[] }, options: LlmOptions = {}): Promise<string | "done" | null> {
   if (!llmAvailable()) return null;
   client ??= new OpenAI({ apiKey: geminiKey() || openAiKey(), baseURL: geminiKey() ? GEMINI_BASE_URL : undefined, maxRetries: 0 });
   const model = options.model ?? llmModel();
@@ -223,7 +223,7 @@ export async function nextQuestion(input: { story: string; asked: { question: st
         ...(model.startsWith("gpt-4") ? { temperature: 0 } : { reasoning_effort: "low" as const }),
         messages: [
           { role: "system", content: INTERVIEW_PROMPT },
-          { role: "user", content: `Language: ${input.language}\n<user_report>\n${input.story}\n</user_report>\nExtracted facts (may be incomplete or mistaken): ${JSON.stringify(input.facts ?? {})}\nExplicit decision-question answers (override conflicting extracted facts): ${JSON.stringify(input.answers ?? {})}\nTopics the person was unsure about: ${JSON.stringify(input.unsure ?? [])}\nCurrently decisive unknowns (not an exhaustive list): ${JSON.stringify(input.unknowns ?? [])}\nUseful gaps for the final summary, after safety and action questions: ${JSON.stringify(input.summaryGaps ?? [])}\nConversation history (questions are not evidence; answers may correct earlier statements):\n${history}\n${feedback}` },
+          { role: "user", content: `Language: ${input.language}\nContext: ${input.audience === "small_business" ? "The user is a small business owner or manager." : "The user is an individual consumer."}\n<user_report>\n${input.story}\n</user_report>\nExtracted facts (may be incomplete or mistaken): ${JSON.stringify(input.facts ?? {})}\nExplicit decision-question answers (override conflicting extracted facts): ${JSON.stringify(input.answers ?? {})}\nTopics the person was unsure about: ${JSON.stringify(input.unsure ?? [])}\nCurrently decisive unknowns (not an exhaustive list): ${JSON.stringify(input.unknowns ?? [])}\nUseful gaps for the final summary, after safety and action questions: ${JSON.stringify(input.summaryGaps ?? [])}\nConversation history (questions are not evidence; answers may correct earlier statements):\n${history}\n${feedback}` },
         ],
         response_format: { type: "json_schema", json_schema: { name: "question", strict: true, schema: INTERVIEW_SCHEMA } },
       },

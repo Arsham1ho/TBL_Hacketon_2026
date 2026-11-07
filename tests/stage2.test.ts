@@ -344,7 +344,7 @@ describe("reassuring facts need nothing against them", () => {
 
 describe("reading real sentences", () => {
   const extract = (userText: string, language: "en" | "fi" | "sv" = "en") =>
-    offlineExtract({ userText, incidentText: "", language, incidentChannel: null, hasRiskyLink: false });
+    offlineExtract({ userText, incidentText: "", language, incidentChannel: null, hasRiskyLink: false, audience: "consumer" });
 
   it("doesn't read a request as an action taken", () => {
     expect(extract("He asked me to read out codes.").userAlreadyDid).not.toContain("shared_code");

@@ -200,7 +200,7 @@ async function readInterview(journey: Journey, extractor?: Extractor): Promise<C
   const guarded = guardInput(`${journey.input.openingMessage}\n\nFollow-up questions and answers:\n${transcript}`, journey.input.incidentContent);
   let raw: unknown = null;
   try {
-    raw = await extractor({ userText: guarded.userText, incidentText: guarded.incidentContent ?? "", language: current.language, incidentChannel: journey.input.incidentChannel, hasRiskyLink: current.signals.hasLink });
+    raw = await extractor({ userText: guarded.userText, incidentText: guarded.incidentContent ?? "", language: current.language, incidentChannel: journey.input.incidentChannel, hasRiskyLink: current.signals.hasLink, audience: current.audience });
   } catch {
     return current;
   }
@@ -323,7 +323,7 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
-  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
+  else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language, item.audience), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
   return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts, statusLabel: approved.statusLabels[decision.status][item.language], likelyType: likelyCategory(item, outcome, decision.status)?.title ?? null }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }
@@ -342,7 +342,7 @@ export function handoffSummary(journey: Journey, facts: string[]): string[] {
   return [
     ...facts,
     `${labels.status}: ${approved.statusLabels[result.decision.status][language]}; ${labels.risk}: ${labels.riskValue[result.decision.risk]}; ${labels.urgency}: ${labels.urgencyValue[result.decision.urgency]}.`,
-    `${labels.why}: ${reasonText(result.outcome, language)}`,
+    `${labels.why}: ${reasonText(result.outcome, language, journey.item.audience)}`,
     ...completed.map(text => `${labels.completed}: ${text}`),
     ...unable.map(text => `${labels.unable}: ${text}`),
   ];

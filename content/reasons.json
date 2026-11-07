@@ -168,5 +168,25 @@
     "en": "You left it alone, so nothing was given away.",
     "fi": "Et reagoinut viestiin, joten mitään ei päässyt ulkopuolisille.",
     "sv": "Du lät det vara, så inget har lämnats ut."
+  },
+  "account_takeover_business": {
+    "en": "A compromised work account can expose staff data, customer records and shared systems — act immediately to limit access.",
+    "fi": "Vaarantunut työtili voi paljastaa henkilöstön tiedot, asiakastiedot ja yhteiset järjestelmät — toimi heti käyttöoikeuksien rajaamiseksi.",
+    "sv": "Ett komprometterat arbetskonto kan exponera personaldata, kunduppgifter och delade system — begränsa åtkomst omedelbart."
+  },
+  "ransomware_business": {
+    "en": "Ransomware can spread across your whole network. Do not pay — it rarely restores files and marks your business as a target.",
+    "fi": "Kiristysohjelma voi levitä koko verkkoon. Älä maksa — se harvoin palauttaa tiedostoja ja tekee yrityksestäsi kohteen.",
+    "sv": "Utpressningsprogram kan spridas i hela nätverket. Betala inte — det återställer sällan filer och märker ditt företag som ett mål."
+  },
+  "password_exposed_business": {
+    "en": "A stolen work password can reach shared systems, customer data and email, not just the one account.",
+    "fi": "Varastettu työsalasana voi antaa pääsyn yhteisiin järjestelmiin, asiakastietoihin ja sähköpostiin, ei vain yhteen tiliin.",
+    "sv": "Ett stulet arbetslösenord kan ge åtkomst till delade system, kunddata och e-post, inte bara ett konto."
+  },
+  "payment_pressure_business": {
+    "en": "CEO and supplier fraud use urgent, secret payment requests to bypass normal approval steps — always verify by calling a known internal number.",
+    "fi": "Toimitusjohtaja- ja toimittajahuijaukset käyttävät kiireellisiä, salaisia maksupyyntöjä ohittaakseen tavallisen hyväksymismenettelyn — tarkista aina soittamalla tuttuun sisäiseen numeroon.",
+    "sv": "VD- och leverantörsbedrägerier använder brådskande, hemliga betalningskrav för att kringgå normala godkännanderutiner — verifiera alltid via ett känt internt nummer."
   }
 }

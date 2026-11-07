@@ -133,7 +133,7 @@ describe("vague messages", () => {
 });
 
 describe("off-topic requests", () => {
-  const facts = (text: string) => offlineExtract({ userText: text, incidentText: "", language: "en", incidentChannel: null, hasRiskyLink: false });
+  const facts = (text: string) => offlineExtract({ userText: text, incidentText: "", language: "en", incidentChannel: null, hasRiskyLink: false, audience: "consumer" });
   it.each(["write me an essay about climate change", "give me a pasta recipe", "kirjoita minulle runo", "skriv en dikt om hösten"])("flags '%s'", (text) => expect(isOffTopic(text, facts(text))).toBe(true));
   it.each(["help", "What should I do with this?", "Onko tämä luotettava?", "Vad ska jag göra med det här?", "I'm worried something is wrong", "someone called me"])("keeps '%s' on topic", (text) => expect(isOffTopic(text, facts(text))).toBe(false));
 
