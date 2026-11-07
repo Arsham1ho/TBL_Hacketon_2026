@@ -693,5 +693,15 @@
     "en": "Call",
     "fi": "Soita",
     "sv": "Ring"
+  },
+  "understand": {
+    "en": "I understand",
+    "fi": "Ymmärrän",
+    "sv": "Jag förstår"
+  },
+  "skipStep": {
+    "en": "I don't want to do this",
+    "fi": "En halua tehdä tätä",
+    "sv": "Jag vill inte göra det"
   }
 }

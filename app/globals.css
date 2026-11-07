@@ -94,3 +94,9 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Cards and notes slide up gently as they appear. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}

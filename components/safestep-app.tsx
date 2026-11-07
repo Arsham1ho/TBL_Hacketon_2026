@@ -317,10 +317,13 @@ export function SafeStepApp() {
   }, [shown]);
 
   // Keeps the newest message in view, and moves keyboard and screen reader users to it.
+  // Also follows each new card of a result. Waits a frame so the new content is laid out first.
   useEffect(() => {
-    latest.current?.scrollIntoView({ block: "end" });
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frame = requestAnimationFrame(() => latest.current?.scrollIntoView({ block: "end", behavior: reduced ? "auto" : "smooth" }));
     if (!busy) log.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
-  }, [items, response, agent, busy]);
+    return () => cancelAnimationFrame(frame);
+  }, [items, response, agent, busy, stage, revealed]);
 
   // Remembered on this device, or taken from the logged-in profile.
   useEffect(() => {
@@ -348,7 +351,8 @@ export function SafeStepApp() {
     setStage(0);
     setRevealed([]);
     const status = next.state?.status;
-    if (status && status !== lastStatus.current && (status !== "needs_verification" || lastStatus.current)) {
+    // A result has its own summary card with the same gauge, so no note there.
+    if (status && status !== lastStatus.current && (status !== "needs_verification" || lastStatus.current) && next.screen.type !== "result") {
       setItems((previous) => [...previous, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
     }
     lastStatus.current = status ?? lastStatus.current;
@@ -474,51 +478,6 @@ export function SafeStepApp() {
         <div className={WIDTH}>
           <DescriptionComposer question={question} sample={t(consumer ? "sample" : "sampleBusiness")} sendLabel={t("send")} text={message} disabled={busy} onChange={setMessage} onSend={start} />
 
-          {/* Quick Scenario Suggestions */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between px-1 mb-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {shown === "fi"
-                  ? "Kokeile hyökkäysskenaariota:"
-                  : shown === "sv"
-                    ? "Testa ett scenario:"
-                    : "Try an attack scenario:"}
-              </span>
-              <button
-                type="button"
-                onClick={() => options.current?.showModal()}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
-              >
-                <SlidersHorizontal className="size-3" />
-                <span>{t("options")}</span>
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(consumer ? RICH_CONSUMER_SCENARIOS : RICH_BUSINESS_SCENARIOS).map((scenario) => {
-                const isSelected = selectedScenarioId === scenario.id;
-                return (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedScenarioId(scenario.id);
-                      setMessage(scenario.text[shown] ?? scenario.text.en);
-                      setDemo(scenario.signal);
-                    }}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
-                      isSelected
-                        ? "border-foreground bg-foreground text-background shadow-xs font-semibold"
-                        : "border-border-strong bg-card text-foreground hover:border-foreground/30 hover:bg-accent",
-                    )}
-                  >
-                    <span>{scenario.icon}</span>
-                    <span>{scenario.title[shown] ?? scenario.title.en}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
         {prototypeLine}
         <dialog
@@ -811,7 +770,10 @@ export function SafeStepApp() {
       setClosed(true);
     },
     stage,
-    next: () => setStage((value) => value + 1),
+    advance: (recap: string, label: string) => {
+      record({ from: "safestep", text: recap }, { from: "user", text: label });
+      setStage((value) => value + 1);
+    },
     revealed,
     reveal: (part: "why" | "details") => setRevealed((value) => [...value, part]),
     providers,

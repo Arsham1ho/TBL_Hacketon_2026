@@ -3,7 +3,8 @@ import type { ApiRequest, ApiResponse, DataReceipt, SupportRoute } from "@/engin
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { CircleCheck, FileText, Phone, Search, ShieldCheck, TriangleAlert, Zap } from "lucide-react";
+import { CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
 import { Details, StatusLabel } from "./ui";
@@ -24,7 +25,8 @@ type Actions = {
   close: (recap: string, label: string) => void;
   // The result is revealed card by card.
   stage: number;
-  next: () => void;
+  // Records the card and the user's choice as chat lines, then shows the next card.
+  advance: (recap: string, label: string) => void;
   revealed: ("why" | "details")[];
   reveal: (part: "why" | "details") => void;
   providers: ProviderChoice;
@@ -87,13 +89,93 @@ const PANEL = {
   calm: "border-border-strong bg-card",
 };
 const Panel = ({ tone, icon, title, children }: { tone: keyof typeof PANEL; icon: ReactNode; title: string; children: ReactNode }) => (
-  <section className={cn("grid gap-2 rounded-xl border-l-4 border p-4 text-sm", PANEL[tone])}>
+  <section className={cn("grid gap-2 rounded-2xl border-l-4 border p-4 text-sm motion-safe:animate-[fade-up_.35s_ease-out]", PANEL[tone])}>
     <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
       {icon}
       {title}
     </h2>
     {children}
   </section>
+);
+
+// Picks an icon for a step from its words, in Finnish, English or Swedish.
+type StepKind = "card" | "bank" | "police" | "operator" | "call" | "link" | "delete" | "password" | "device" | "check" | "other";
+const STEP_KINDS: [StepKind, RegExp][] = [
+  ["card", /card|kortti|kortin|kort\b|kortet/iu],
+  ["police", /police|poliisi|polis/iu],
+  ["operator", /operator|sim|operaattori|operatör/iu],
+  ["bank", /bank|pankk/iu],
+  ["call", /hang up|call|puhelu|soit|lopeta puhelu|lägg på|samtal/iu],
+  ["link", /link|linkki|länk/iu],
+  ["delete", /delete|report it as|poista|ilmoita|radera|anmäl/iu],
+  ["password", /password|salasan|lösenord|two-step|kaksivaihe|tvåstegs/iu],
+  ["device", /device|disconnect|flight mode|laite|lentotila|enhet|flygläge|app/iu],
+  ["check", /check|tarkista|kontrollera|look/iu],
+];
+const stepKind = (step: string): StepKind => STEP_KINDS.find(([, pattern]) => pattern.test(step))?.[0] ?? "other";
+const STEP_ICON: Record<StepKind, typeof Zap> = {
+  card: CreditCard, bank: Landmark, police: Siren, operator: Smartphone, call: PhoneOff, link: Link2Off,
+  delete: Trash, password: KeyRound, device: WifiOff, check: Eye, other: Zap,
+};
+
+// One action at a time: a big icon, the step, quick buttons to act on it, and progress dots.
+function ActionStep({ title, step, index, total, urgent, quick }: { title: string; step: string; index: number; total: number; urgent: boolean; quick: ReactNode[] }) {
+  const Icon = STEP_ICON[stepKind(step)];
+  return (
+    <section
+      className={cn(
+        "grid gap-4 rounded-2xl border p-4 motion-safe:animate-[fade-up_.35s_ease-out]",
+        urgent ? "border-destructive bg-danger-soft" : "border-border-strong bg-card",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
+          {urgent && (
+            <span className="relative flex size-2.5" aria-hidden>
+              <span className="absolute inline-flex size-full rounded-full bg-destructive opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-flex size-2.5 rounded-full bg-destructive" />
+            </span>
+          )}
+          {title}
+        </h2>
+        <ol className="flex items-center gap-1.5" aria-label={`${index + 1} / ${total}`}>
+          {Array.from({ length: total }, (_, dot) => (
+            <li
+              key={dot}
+              className={cn(
+                "h-1.5 rounded-full transition-all",
+                dot === index ? "w-6" : "w-1.5",
+                dot <= index ? (urgent ? "bg-destructive" : "bg-foreground") : "bg-border-strong",
+              )}
+            />
+          ))}
+        </ol>
+      </div>
+      <div className="flex items-center gap-4">
+        <span
+          className={cn(
+            "flex size-14 shrink-0 items-center justify-center rounded-2xl",
+            urgent ? "bg-destructive text-primary-foreground" : "bg-accent text-foreground",
+          )}
+          aria-hidden
+        >
+          <Icon className="size-7" />
+        </span>
+        <p className="text-xl leading-snug font-semibold text-balance">{step}</p>
+      </div>
+      {quick.length > 0 && <div className="flex flex-wrap gap-2">{quick}</div>}
+    </section>
+  );
+}
+
+const Tile = ({ icon, label, value }: { icon: ReactNode; label: string; value: string }) => (
+  <div className="grid gap-1 rounded-xl bg-accent px-3 py-2.5">
+    <span className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      {icon}
+      {label}
+    </span>
+    <span className="text-sm leading-snug font-semibold">{value}</span>
+  </div>
 );
 
 const ContactRow = ({ name, note, children }: { name: string; note?: string; children: ReactNode }) => (
@@ -118,14 +200,19 @@ const LinkButton = ({ href, children }: { href: string; children: ReactNode }) =
 // Shows the AI's assessment in the chat each time it changes.
 export function AssessmentNote({ state, t }: { state: ApiResponse["state"]; t: Translate }) {
   return (
-    <div role="status" className="grid gap-1 rounded-xl border border-border-strong bg-card px-4 py-3 text-sm">
-      <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("aiAssessment")}</span>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div role="status" className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-border-strong bg-card px-4 py-3 text-sm motion-safe:animate-[fade-up_.35s_ease-out]">
+      <div className="w-[170px] shrink-0">
+        <RiskGauge risk={state.risk} label={t(RISK_TEXT[state.risk])} caption={t("risk")} size="sm" />
+      </div>
+      <div className="grid min-w-0 gap-1.5">
+        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("aiAssessment")}</span>
         <StatusLabel status={state.status} label={state.statusLabel ?? ""} />
-        <span>
-          {t("risk")}: {t(RISK_TEXT[state.risk])}
-        </span>
-        {state.likelyType && <span className="text-muted-foreground">{state.likelyType}</span>}
+        {state.likelyType && (
+          <span className="flex items-center gap-1.5 font-medium">
+            <Tag className="size-4" aria-hidden />
+            {state.likelyType}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -160,7 +247,7 @@ export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t 
 }
 
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
-  const { t, reply, handoff, restart, business, closed, close, stage, next, revealed, reveal, providers, choose } = actions;
+  const { t, reply, handoff, restart, business, closed, close, stage, advance, revealed, reveal, providers, choose } = actions;
   const { screen, state } = response;
   const talk = (recap: string): Reply => ({ label: t("talk"), run: () => reply(recap, t("talk"), { kind: "talk_to_person" }) });
   const contact = (recap: string, route: SupportRoute, label = t("contactRoute").replace("{name}", t(route))): Reply => ({
@@ -317,11 +404,14 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       const needsPolice = screen.supportRoutes.includes("police");
 
       // The result is shown one card at a time, so each part gets the user's attention.
-      const cards: { title: string; node: ReactNode }[] = [];
+      // "info" cards are confirmed with "I understand". Each action step is its own card that
+      // waits for Done, I don't want to, or Can't do this.
+      const cards: { title: string; recap: string; node: ReactNode; action?: boolean }[] = [];
       cards.push({
         title: t("incidentSummary"),
+        recap: `${t("incidentSummary")}: ${screen.statusLabel}${type ? ` · ${type.title}` : ""}`,
         node: (
-          <section aria-labelledby="summary-title" className="grid gap-3 rounded-xl border border-border-strong bg-card p-4">
+          <section aria-labelledby="summary-title" className="grid gap-4 rounded-2xl border border-border-strong bg-card p-4 motion-safe:animate-[fade-up_.4s_ease-out]">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h1 id="summary-title" tabIndex={-1} className="flex items-center gap-2 text-base font-semibold focus:outline-none">
                 <FileText className="size-4" aria-hidden />
@@ -329,27 +419,23 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
               </h1>
               <StatusLabel status={state.status} label={screen.statusLabel} />
             </div>
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-              <Fact label={t("risk")}>
-                <span className="flex items-center gap-2">
-                  <span className="flex gap-0.5" aria-hidden>
-                    {[1, 2, 3, 4, 5].map((step) => (
-                      <span key={step} className={cn("h-2 w-4 rounded-sm", step <= level ? METER[state.risk] : "bg-muted")} />
-                    ))}
-                  </span>
-                  {t(RISK_TEXT[state.risk])}
-                </span>
-              </Fact>
-              <Fact label={t("urgency")}>{t(URGENCY_TEXT[state.urgency])}</Fact>
-              <Fact label={t("scamType")}>{type ? type.title : t("notClearYet")}</Fact>
-              <Fact label={t("howSure")}>{screen.confidence}</Fact>
-            </dl>
-            {type && <p className="text-sm text-muted-foreground">{type.description}</p>}
-            <div className="grid gap-1 border-t border-border pt-3">
-              <h2 className="text-sm font-semibold">{t("whatHappened")}</h2>
-              <p className="text-sm">{story.attempted}</p>
-              {response.summary.length > 0 && <List items={response.summary} />}
-              <p className="text-sm text-muted-foreground">{screen.reason}</p>
+            <RiskGauge risk={state.risk} label={t(RISK_TEXT[state.risk])} caption={t("risk")} />
+            <div className="grid grid-cols-2 gap-2">
+              <Tile icon={<Clock className="size-4" aria-hidden />} label={t("urgency")} value={t(URGENCY_TEXT[state.urgency])} />
+              <Tile icon={<Tag className="size-4" aria-hidden />} label={t("scamType")} value={type ? type.title : t("notClearYet")} />
+            </div>
+            <div className="grid gap-2">
+              <p className="flex items-start gap-2 text-sm font-medium">
+                <Search className="mt-0.5 size-4 shrink-0" aria-hidden />
+                {story.attempted}
+              </p>
+              {response.summary.length > 0 && (
+                <ul className="flex flex-wrap gap-1.5">
+                  {response.summary.map((line) => (
+                    <li key={line} className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium">{line}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           </section>
         ),
@@ -357,6 +443,7 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       if (screen.branches) {
         cards.push({
           title: t("eachCase"),
+          recap: t("eachCase"),
           node: (
             <Panel tone="warning" icon={<TriangleAlert className="size-4" aria-hidden />} title={t("eachCase")}>
               {screen.branches.map((branch) => (
@@ -374,28 +461,35 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         });
       } else if (toDo.length > 0) {
         const title = urgent ? t("doNow") : t(state.status === "incident_occurred" ? "storyClear" : "storyDo");
-        cards.push({
-          title,
-          node: (
-            <Panel tone={urgent ? "danger" : "calm"} icon={urgent ? <Zap className="size-4" aria-hidden /> : <CircleCheck className="size-4" aria-hidden />} title={title}>
-              <ol className="grid list-decimal gap-1.5 pl-5">
-                {toDo.map((step) => (
-                  <li key={step} className={urgent ? "font-medium" : undefined}>{step}</li>
-                ))}
-              </ol>
-            </Panel>
-          ),
+        const bank = providerById("bank", providers.bank);
+        const operator = providerById("operator", providers.operator);
+        toDo.forEach((step, index) => {
+          // Buttons that let the user act on the step straight away.
+          const kind = stepKind(step);
+          const quick = [
+            ...(kind === "card" ? [<LinkButton key="block" href={`tel:${CARD_BLOCKING.tel}`}>{t("call")} {CARD_BLOCKING.display}</LinkButton>] : []),
+            ...((kind === "card" || kind === "bank") && bank ? [<LinkButton key="bank" href={bank.website}>{bank.name}</LinkButton>] : []),
+            ...(kind === "police" ? [<LinkButton key="police" href={POLICE.website}>{t("policeReport")}</LinkButton>] : []),
+            ...(kind === "operator" && operator ? [<LinkButton key="operator" href={operator.website}>{operator.name}</LinkButton>] : []),
+          ];
+          cards.push({
+            title,
+            recap: step,
+            action: true,
+            node: <ActionStep title={title} step={step} index={index} total={toDo.length} urgent={urgent} quick={quick} />,
+          });
         });
       }
       if (done.length > 0) {
-        cards.push({ title: t("storyDone"), node: <Panel tone="success" icon={<CircleCheck className="size-4" aria-hidden />} title={t("storyDone")}><List items={done} /></Panel> });
+        cards.push({ title: t("storyDone"), recap: t("storyDone"), node: <Panel tone="success" icon={<CircleCheck className="size-4" aria-hidden />} title={t("storyDone")}><List items={done} /></Panel> });
       }
-      cards.push({ title: t("storyPrevent"), node: <Panel tone="info" icon={<ShieldCheck className="size-4" aria-hidden />} title={t("storyPrevent")}><List items={story.prevent} /></Panel> });
+      cards.push({ title: t("storyPrevent"), recap: t("storyPrevent"), node: <Panel tone="info" icon={<ShieldCheck className="size-4" aria-hidden />} title={t("storyPrevent")}><List items={story.prevent} /></Panel> });
       if (needsBank || needsOperator || needsPolice) {
         const bank = providerById("bank", providers.bank);
         const operator = providerById("operator", providers.operator);
         cards.push({
           title: t("contactTitle"),
+          recap: t("contactTitle"),
           node: (
             <Panel tone="calm" icon={<Phone className="size-4" aria-hidden />} title={t("contactTitle")}>
               {needsBank && (
@@ -432,6 +526,9 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
           : []),
         ...(revealed.includes("details")
           ? [<Panel key="details" tone="calm" icon={<FileText className="size-4" aria-hidden />} title={t("details")}>
+              {type && <p>{type.description}</p>}
+              <p>{screen.reason}</p>
+              <p>{t("howSure")}: {screen.confidence}</p>
               {screen.unknowns.length > 0 && <p>{t("stillUnknown")}: {screen.unknowns.join(" ")}</p>}
               {screen.sources.length > 0 && <p>{t("syntheticGuidance")}: {screen.sources.map((source) => source.title).join(", ")}</p>}
               <Receipt receipt={response.dataReceipt} t={t} />
@@ -443,9 +540,17 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       // Replies: "Next" until every card is shown, then a provider question if the contact
       // card needs one, then the closing options. A person only for high or critical risk.
       let replies: Reply[];
-      const atContact = cards[shown]?.title === t("contactTitle");
-      if (shown < cards.length - 1) {
-        replies = [{ label: `${t("next")}: ${cards[shown + 1]!.title}`, primary: true, run: next }];
+      const current = cards[shown]!;
+      const atContact = current.title === t("contactTitle");
+      if (current.action) {
+        replies = [
+          { label: t("done"), primary: true, run: () => advance(current.recap, t("done")) },
+          { label: t("skipStep"), run: () => advance(current.recap, t("skipStep")) },
+          { label: t("notPossible"), run: () => advance(current.recap, t("notPossible")) },
+          ...(sensitive ? [talk(current.recap)] : []),
+        ];
+      } else if (shown < cards.length - 1) {
+        replies = [{ label: t("understand"), primary: true, run: () => advance(current.recap, t("understand")) }];
       } else if (atContact && needsBank && !providers.bank) {
         replies = [...BANKS.map((bank) => ({ label: bank.name, run: () => choose("bank", bank.id) })), { label: t("otherProvider"), run: () => choose("bank", "other") }];
       } else if (atContact && needsOperator && !providers.operator) {
@@ -462,9 +567,8 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         recap,
         body: (
           <>
-            {cards.slice(0, shown + 1).map((card) => (
-              <div key={card.title}>{card.node}</div>
-            ))}
+            {/* Only the current card is shown. Earlier ones stay in the chat as one line each. */}
+            <div key={shown}>{current.node}</div>
             {closed && <p className="font-medium">{t("stoppedThanks")}</p>}
             {extras}
             {shown === cards.length - 1 && <p className="text-sm text-muted-foreground">{t("keepChatting")}</p>}
