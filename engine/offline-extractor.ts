@@ -81,6 +81,7 @@ function isDenied(text: string, match: RegExpExecArray, language: Language): boo
   const before = text.slice(Math.max(0, match.index - 60), match.index).split(CLAUSE_BREAK).at(-1) ?? "";
   return DENIED_BEFORE[language].test(before) || DENIED_AFTER.test(text.slice(match.index + match[0].length - 1));
 }
+const NEGATED_OBJECT = re(String.raw`\b(typed|entered|gave|installed|opened|paid)\s+(no|not|nothing)\b`);
 
 const ATTACHMENT = re(String.raw`attachment|\.zip|\.docm|liite|liitteen|bilaga`);
 
@@ -96,7 +97,7 @@ const DID: [Facts["userAlreadyDid"][number], RegExp][] = [
 ];
 
 const SELF_YES = re(String.raw`i('m| am) (logging|signing) in|i ordered|we booked|we ordered|i booked|booked .{0,30}(partner|support)|tiketin tein itse|i made the ticket|tilasin|tilasimme|olen kirjautumassa|olen ottamassa|kirjaudun juuri|lisäsin|i added|jag lade till|jag beställde|vi beställde|vi bokade|jag loggar in`);
-const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|log|logging|sign|order)|i'm not logging|(?<![\p{L}])en (ole kirjautu|pyytänyt|ole pyytänyt|tilannut)|ei tilattu|har inte (bett|begärt|beställt)|bad inte|loggar inte in`);
+const SELF_NO = re(String.raw`(didn't|did not|not) (ask|request|start|initiate|log|logging|sign|order)|i'm not logging|(?<![\p{L}])en (ole kirjautu|pyytänyt|ole pyytänyt|aloittanut|tilannut)|ei tilattu|har inte (bett|begärt|startat|beställt)|bad inte|loggar inte in`);
 const VERIFIED = re(String.raw`(called|phoned|rang).{0,60}(number in our contract|known number|confirmed)|she confirmed|he confirmed|soitin.{0,50}(sopimuksen|tuttuun|vahvisti)|soittamalla.{0,50}tuttuun|vahvisti muutoksen|ringde.{0,50}(avtalet|bekräftade|känt)|genom att ringa|bekräftade ändringen`);
 const ORDER_PLACED_BY = re(String.raw`\((admin|pääkäyttäjä|administratör)\)`);
 
@@ -162,7 +163,7 @@ export function offlineExtract(input: ExtractionInput): Facts {
 
   const did = collect(DID, userText, "userAlreadyDid").filter((action) => {
     const match = DID.find(([value]) => value === action)![1].exec(userText);
-    return match !== null && !isDenied(userText, match, language);
+    return match !== null && !isDenied(userText, match, language) && !NEGATED_OBJECT.test(match[0]);
   });
   const nothing = first(NOTHING_DONE, userText);
   if (nothing && did.length === 0) {

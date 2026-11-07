@@ -144,6 +144,38 @@ export const SITUATIONS: Situation[] = [
       ),
   },
   {
+    id: "signaled_sim_change",
+    when: (c) => is(c, "phone_call") && poses(c, "operator") && asks(c, "code")
+      && !did(c, "shared_code") && c.gatedFindings?.["subscription.recent_events"] === "recent_sim_change",
+    then: (c) => outcome(
+      "signaled_sim_change", "contact_operator_support", "threat_in_progress", "high", "immediate",
+      ["contact_operator", "lock_subscription", "dont_share_codes"],
+      ["guidance_sim_swap", "guidance_operator_impersonation"],
+      { destination: person(c, "operator_support_agent"), rescue: true },
+    ),
+  },
+  {
+    id: "signaled_device_compromise",
+    when: (c) => is(c, "remote_session") && did(c, "gave_remote_access") && !did(c, "entered_login")
+      && c.gatedFindings?.["device.security_findings"] === "suspicious_app",
+    then: (c) => outcome(
+      "signaled_device_compromise", "isolate_device_and_scan", "incident_occurred", "critical", "immediate",
+      ["disconnect_device", "remove_app_or_profile", "get_device_checked"],
+      ["guidance_remote_access", "guidance_device_compromise"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
+  },
+  {
+    id: "signaled_former_staff_access",
+    when: (c) => is(c, "former_staff_access") && c.gatedFindings?.["business.staff_accounts"] === "active_former_staff",
+    then: (c) => outcome(
+      "signaled_former_staff_access", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
+      ["revoke_access", "change_password", "review_sessions"],
+      ["guidance_offboarding", "guidance_shared_accounts"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
+  },
+  {
     id: "ransomware",
     when: (c) => is(c, "ransomware"),
     then: (c) =>
@@ -406,8 +438,18 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "code_given",
-    when: (c) => did(c, "shared_code"),
+    when: (c) => did(c, "shared_code") && poses(c, "bank"),
     then: (c) => bankIncident("code_given", c, ["guidance_one_time_codes", "guidance_bank_verification"], false),
+  },
+  {
+    id: "non_bank_code_given",
+    when: (c) => did(c, "shared_code"),
+    then: (c) => outcome(
+      "non_bank_code_given", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
+      ["change_password", "review_sessions", "dont_share_codes"],
+      ["guidance_one_time_codes", "guidance_credential_compromise"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
   },
   {
     id: "account_password_exposed",
@@ -469,6 +511,16 @@ export const SITUATIONS: Situation[] = [
             ["guidance_mfa_fatigue"],
             { rescue: true },
           ),
+  },
+  {
+    id: "signaled_unknown_login",
+    when: (c) => is(c, "unknown_login") && c.gatedFindings?.["operator_account.recent_logins"] === "unfamiliar_login",
+    then: (c) => outcome(
+      "signaled_unknown_login", "change_password_and_enable_mfa", "incident_occurred", "high", "immediate",
+      ["change_password", "review_sessions", "check_password_reuse"],
+      ["guidance_unknown_login", "guidance_password_reuse"],
+      { destination: person(c, "security_specialist"), rescue: true },
+    ),
   },
   {
     id: "unknown_login",

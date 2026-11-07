@@ -20,6 +20,7 @@ export type Case = {
   signals: VisibleSignals;
   pregrantedSignals: GatedSignal[];
   availableSignals: GatedSignal[];
+  gatedFindings?: Partial<Record<GatedSignal, string>>;
 };
 
 const FROM_ACTIONS: Partial<Record<Topic, Facts["userAlreadyDid"][number]>> = {
