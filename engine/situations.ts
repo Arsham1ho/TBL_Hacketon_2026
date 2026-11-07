@@ -453,7 +453,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "account_password_exposed",
-    when: (c) => did(c, "entered_login"),
+    when: (c) => did(c, "entered_login") || yes(c, "credentials_entered"),
     then: (c) =>
       outcome(
         "account_password_exposed",

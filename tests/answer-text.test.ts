@@ -10,7 +10,8 @@ const input = (message: string): CaseInput => ({
 });
 
 async function firstFlip(message: string) {
-  const started = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+  let started = await handleEvent("test", null, { kind: "start", input: input(message), sentToLlm: false });
+  if (started.response.screen.type === "describe" && started.response.screen.reason === "link_context") started = await handleEvent("test", started.journey, { kind: "add_details", text: "The page asked for my card details." });
   expect(started.response.screen.type).toBe("flip");
   if (started.response.screen.type !== "flip") throw new Error("no flip");
   return { journey: started.journey as Journey, topic: started.response.screen.topic, before: started.response.state };
@@ -64,6 +65,14 @@ describe("typed answers", () => {
 });
 
 describe("follow-up details", () => {
+  it("asks for link context before selecting a credential question", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a message from my boss."), sentToLlm: false });
+    expect(started.response.screen).toMatchObject({ type: "describe", reason: "link_context" });
+    const details = await handleEvent("test", started.journey, { kind: "add_details", text: "It was a survey and asked me to sign in with my work account." });
+    expect(details.response.screen).toMatchObject({ type: "flip", topic: "credentials_entered" });
+    const answered = await handleEvent("test", details.journey, { kind: "answer", topic: "credentials_entered", answer: "yes" });
+    expect(answered.response.state.status).toBe("incident_occurred");
+  });
   it("adds details to the same session and keeps earlier answers", async () => {
     const { journey, topic } = await firstFlip("I opened a link in a parcel text.");
     const answered = await handleEvent("test", journey, { kind: "answer_text", topic, text: "no" });
@@ -95,7 +104,7 @@ describe("vague messages", () => {
     expect(started.response.screen.type).toBe("describe");
     expect(safeScreen(started.response.screen, "en")).toBe(true);
     const added = await handleEvent("test", started.journey, { kind: "add_details", text: "I opened a link in a parcel text." });
-    expect(added.response.screen).toMatchObject({ type: "flip", topic: "card_details_entered" });
+    expect(added.response.screen).toMatchObject({ type: "describe", reason: "link_context" });
   });
 
   it("keeps 'help' on the safety-first question", async () => {
@@ -135,7 +144,7 @@ describe("off-topic requests", () => {
     const yes = await handleEvent("test", started.journey, { kind: "add_details", text: "Yes" });
     expect(yes.response.screen).toMatchObject({ type: "describe", reason: "greeting" });
     const told = await handleEvent("test", yes.journey, { kind: "add_details", text: "I opened a link in a parcel text." });
-    expect(told.response.screen).toMatchObject({ type: "flip", topic: "card_details_entered" });
+    expect(told.response.screen).toMatchObject({ type: "describe", reason: "link_context" });
     expect(told.journey!.input!.openingMessage).not.toContain("essay");
   });
 
@@ -174,6 +183,14 @@ describe("AI-worded questions", () => {
 });
 
 describe("AI interview answers", () => {
+  it("remembers decision-flip answers with the question shown to the person", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("I opened a link in a parcel text asking for card details."), sentToLlm: false });
+    expect(started.response.screen.type).toBe("flip");
+    if (started.response.screen.type !== "flip") throw new Error("expected flip");
+    const screen = started.response.screen;
+    const answered = await handleEvent("test", started.journey, { kind: "answer", topic: screen.topic, answer: "no" });
+    expect(answered.journey!.flipHistory).toEqual([{ topic: screen.topic, question: screen.question, answer: "no" }]);
+  });
   it("reads a Yes to an AI question through the LLM only, and keeps the transcript", async () => {
     const started = await handleEvent("test", null, { kind: "start", input: input("i got a phone call"), sentToLlm: false });
     const journey = { ...started.journey!, pendingAsk: { id: "q1", question: "Did the caller ask you to read out a code?" } };

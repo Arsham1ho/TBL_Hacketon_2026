@@ -91,7 +91,12 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   if (!unclear && !gaps) return response;
   const masked = guardInput(journey.input.openingMessage, journey.input.incidentContent);
   const story = [masked.userText, masked.maskedIncident].filter(Boolean).join("\n");
-  const question = await nextQuestion({ story, asked: journey.interview ?? [], language: journey.item.language });
+  const assessment = assess(journey.item, journey.asked);
+  // Mask every piece of context, including old answers and extracted evidence.
+  const mask = (value: string) => guardInput(value).userText;
+  const history = [...(journey.flipHistory ?? []), ...(journey.interview ?? [])].map(({ question, answer }) => ({ question: mask(question), answer: mask(answer) }));
+  const facts = { ...journey.item.facts, evidence: journey.item.facts.evidence.map(({ fact, quote }) => ({ fact, quote: mask(quote) })) };
+  const question = await nextQuestion({ story, asked: history, language: journey.item.language, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics });
   if (question === "done") journey.interviewDone = true;
   if (!question || question === "done") return response;
   journey.pendingAsk = { id: randomUUID().slice(0, 8), question };

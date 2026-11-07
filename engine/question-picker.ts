@@ -66,7 +66,7 @@ export function pickFlip(item: Case): Flip | null {
   const blocked = match.then(item).status === "safe" && safeIsBlocked(item);
   const situation = blocked ? UNCLEAR : match;
   // Only the triage questions follow what the message mentions. Known situations keep their order.
-  const flips = situation === UNCLEAR ? orderByMentions(UNCLEAR.flips ?? [], item.mentions, item.triagePriority) : situation.flips ?? [];
+  const flips = situation === UNCLEAR ? orderByMentions(UNCLEAR.flips ?? [], item.mentions, item.triagePriority) : situation.id === "link_opened" && item.facts.asksFor.includes("login") ? ["credentials_entered" as Topic] : situation.flips ?? [];
   for (const topic of flips) {
     if (topicValue(item, topic) !== null || item.unsure.includes(topic)) continue;
     const flip = flipFor(item, topic);
