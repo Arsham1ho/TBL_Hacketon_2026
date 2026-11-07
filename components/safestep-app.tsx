@@ -875,6 +875,28 @@ export function SafeStepApp() {
         </div>
       )}
 
+      {response?.screen.type === "ask" && (() => {
+        const askScreen = response.screen;
+        return (
+          <div className={WIDTH}>
+            <DescriptionComposer
+              question=""
+              sample={t("typeAnswerOrDetails")}
+              sendLabel={t("send")}
+              text={followUp}
+              disabled={busy}
+              onChange={setFollowUp}
+              onSend={() => {
+                if (!followUp.trim()) return;
+                const text = followUp.trim();
+                setFollowUp("");
+                reply(askScreen.question, maskSecrets(text).text, { kind: "ai_answer", id: askScreen.id, text });
+              }}
+            />
+          </div>
+        );
+      })()}
+
       {response?.screen.type === "end" && (
         <div className={WIDTH}>
           <DescriptionComposer

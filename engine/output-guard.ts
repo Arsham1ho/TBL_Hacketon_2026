@@ -47,6 +47,7 @@ export function safeScreen(screen: Screen, language?: Language): boolean {
     const copy = screen.reason === "greeting" ? approved.describe[language] : approved.offTopic[language];
     return screen.message === copy.message && screen.hint === copy.hint;
   }
+  if (screen.type === "ask") return screen.question.trim().endsWith("?") && screen.question.length <= 160;
   if (screen.type === "rescue") return stepLines.includes(screen.step.detail);
   return true;
 }

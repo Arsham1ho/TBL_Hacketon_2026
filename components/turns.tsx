@@ -162,6 +162,17 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
         replies: [ask("yes", t("yes")), ask("no", t("no")), ask("unsure", t("notSure"))],
       };
     }
+    case "ask": {
+      const ask = (answer: "yes" | "no" | "unsure", label: string): Reply => ({
+        label,
+        run: () => reply(screen.question, label, { kind: "ai_answer", id: screen.id, answer }),
+      });
+      return {
+        recap: screen.question,
+        body: <Heading>{screen.question}</Heading>,
+        replies: [ask("yes", t("yes")), ask("no", t("no")), ask("unsure", t("notSure"))],
+      };
+    }
     case "describe":
       return {
         recap: screen.message,

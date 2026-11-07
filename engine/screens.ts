@@ -24,6 +24,8 @@ export type Screen =
   // Shown when the first message holds nothing to assess, such as only a greeting.
   // "off_topic" also asks whether anything happened, with Yes and No replies.
   | { type: "describe"; reason: "greeting" | "off_topic"; message: string; hint: string }
+  // A live follow-up question written by the LLM for an unclear report. Answers become facts.
+  | { type: "ask"; id: string; question: string }
   | { type: "unlock"; signal: GatedSignal; what: string; why: string; limit: string; ifRefused: string }
   | {
       type: "result";
@@ -81,6 +83,7 @@ export type ApiRequest =
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "answer_text"; topic: Topic; text: string }
   | { kind: "add_details"; text: string }
+  | { kind: "ai_answer"; id: string; answer?: "yes" | "no" | "unsure"; text?: string }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
   | { kind: "handoff"; approved: boolean };

@@ -172,3 +172,24 @@ describe("AI-worded questions", () => {
     ["Did you share it", "code_shared"],
   ])("rejects '%s'", (question, topic) => expect(acceptablePhrasing(question, topic)).toBe(false));
 });
+
+describe("AI interview answers", () => {
+  it("reads a Yes to an AI question through the LLM only, and keeps the transcript", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("i got a phone call"), sentToLlm: false });
+    const journey = { ...started.journey!, pendingAsk: { id: "q1", question: "Did the caller ask you to read out a code?" } };
+    let seen = "";
+    const extractor = (x: { userText: string }) => { seen = x.userText; return null; };
+    const after = await handleEvent("test", journey, { kind: "ai_answer", id: "q1", answer: "yes", extractor, sentToLlm: true });
+    expect(seen).toContain("Did the caller ask you to read out a code?");
+    expect(seen).toContain("The person answered: yes");
+    expect(after.journey!.interview).toEqual([{ question: "Did the caller ask you to read out a code?", answer: "yes" }]);
+    expect(after.journey!.pendingAsk).toBeUndefined();
+    // With no LLM read, a question's own words never become facts.
+    expect(after.journey!.item.facts.asksFor).not.toContain("code");
+  });
+
+  it("rejects an answer to a question that isn't on screen", async () => {
+    const started = await handleEvent("test", null, { kind: "start", input: input("i got a phone call"), sentToLlm: false });
+    await expect(handleEvent("test", started.journey, { kind: "ai_answer", id: "nope", answer: "yes" })).rejects.toThrow("invalid_event_order");
+  });
+});

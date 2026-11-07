@@ -27,6 +27,7 @@ const SCREENS: Record<Screen["type"], Screen> = {
     statusLabel: "Needs checking",
     branches,
   },
+  ask: { type: "ask", id: "demo", question: "Did the caller say they were from your bank?" },
   describe: {
     type: "describe",
     reason: "greeting",

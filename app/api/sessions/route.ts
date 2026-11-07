@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
-import { extractFacts, llmAvailable, phraseQuestion, rankQuestions } from "../../../adapters/llm";
+import { randomUUID } from "node:crypto";
+import { extractFacts, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
 import { isTriage, pickFlip } from "../../../engine/question-picker";
 import { UNCLEAR } from "../../../engine/situations";
@@ -19,6 +20,7 @@ const Start = z.strictObject({ kind: z.literal("start"), audience: Audience, lan
 const Answer = z.strictObject({ kind: z.literal("answer"), sessionId: z.string().uuid(), topic: Topic, answer: z.enum(["yes", "no", "unsure"]) });
 const AnswerText = z.strictObject({ kind: z.literal("answer_text"), sessionId: z.string().uuid(), topic: Topic, text: z.string().trim().min(1).max(2000) });
 const AddDetails = z.strictObject({ kind: z.literal("add_details"), sessionId: z.string().uuid(), text: z.string().trim().min(1).max(2000) });
+const AiAnswer = z.strictObject({ kind: z.literal("ai_answer"), sessionId: z.string().uuid(), id: z.string().max(40), answer: z.enum(["yes", "no", "unsure"]).optional(), text: z.string().trim().min(1).max(2000).optional() });
 const End = z.strictObject({ kind: z.literal("end"), sessionId: z.string().uuid() });
 const Continue = z.strictObject({ kind: z.literal("continue"), sessionId: z.string().uuid() });
 const Consent = z.strictObject({ kind: z.literal("consent"), sessionId: z.string().uuid(), signal: GatedSignal, granted: z.boolean() });
@@ -38,22 +40,22 @@ export async function POST(request: Request) {
       const demo = demoSignalsFor(start.data.demoScenario ?? "none");
       const { journey, response } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink: demo.visible.hasLink || /https?:\/\/|www\./iu.test(incident ?? "") }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
       const sessionId = createJourneySession(journey as Journey);
-      return NextResponse.json({ ...(await personalise(journey, await rankTriage(sessionId, journey, response))), sessionId });
+      return NextResponse.json({ ...(await respond(sessionId, journey, response)), sessionId });
     } catch {
       return NextResponse.json({ error: "analysis_failed" }, { status: 503 });
     }
   }
-  const event = z.union([Answer, AnswerText, AddDetails, Continue, Consent, Rescue, Handoff, Talk]).safeParse(body);
+  const event = z.union([Answer, AnswerText, AddDetails, AiAnswer, Continue, Consent, Rescue, Handoff, Talk]).safeParse(body);
   if (event.success) {
     const session = getSession(event.data.sessionId);
     if (!session?.journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
     try {
       const { sessionId, ...payload } = event.data;
       const llm = llmAvailable();
-      const next = payload.kind === "answer_text" || payload.kind === "add_details" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
+      const next = payload.kind === "answer_text" || payload.kind === "add_details" || payload.kind === "ai_answer" ? { ...payload, extractor: llm ? extractFacts : undefined, sentToLlm: llm } : payload;
       const { journey, response } = await handleEvent(sessionId, session.journey, next);
       session.journey = journey;
-      return NextResponse.json(await personalise(journey, await rankTriage(sessionId, journey, response)));
+      return NextResponse.json(await respond(sessionId, journey, response));
     } catch {
       return NextResponse.json({ error: "invalid_event" }, { status: 409 });
     }
@@ -67,6 +69,33 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   }
   return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+}
+
+async function respond(sessionId: string, journey: Journey | null, response: ApiResponse): Promise<ApiResponse> {
+  const asked = await interview(sessionId, journey, response);
+  // An AI question needs no ranking or rewording, which keeps each turn to two LLM calls.
+  if (asked.screen.type === "ask") return asked;
+  return personalise(journey, await rankTriage(sessionId, journey, asked));
+}
+
+// While the report is unclear, the LLM writes the next question from the story and the
+// answers so far. Once the rules recognise the situation, their own decisive questions take over.
+async function interview(sessionId: string, journey: Journey | null, response: ApiResponse): Promise<ApiResponse> {
+  // No fixed number of questions: the AI keeps asking until it has a clear picture and
+  // returns no question. A repeated question or a failed LLM call also ends the interview.
+  if (!journey?.input || !llmAvailable() || journey.interviewDone) return response;
+  // An unclear case, or a "needs checking" result that still has gaps, gets a live question.
+  // Clear incidents go straight to their steps.
+  const unclear = response.screen.type === "flip" && isTriage(pickFlip(journey.item));
+  const gaps = response.screen.type === "result" && response.state.status === "needs_verification";
+  if (!unclear && !gaps) return response;
+  const masked = guardInput(journey.input.openingMessage, journey.input.incidentContent);
+  const story = [masked.userText, masked.maskedIncident].filter(Boolean).join("\n");
+  const question = await nextQuestion({ story, asked: journey.interview ?? [], language: journey.item.language });
+  if (question === "done") journey.interviewDone = true;
+  if (!question || question === "done") return response;
+  journey.pendingAsk = { id: randomUUID().slice(0, 8), question };
+  return present(sessionId, journey);
 }
 
 // A vague report gets its triage questions ranked by the LLM once, so the first question

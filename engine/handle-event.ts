@@ -7,24 +7,26 @@ import { questionText, reasonText } from "./composer";
 import { confidenceBand } from "./confidence";
 import { fallbackScreen, stopScreen } from "./fallback";
 import { fastDanger } from "./fast-danger";
-import { isGreetingOnly, isOffTopic, type Mention } from "./mentions";
+import { detectMentions, isGreetingOnly, isOffTopic, type Mention } from "./mentions";
 import { isTriage } from "./question-picker";
 import { incidentCategory, incidentStory, likelyCategory } from "./incident-category";
 import { safeScreen } from "./output-guard";
 import { readSimulatedSignal, signalLabel, type DemoScenario } from "../adapters/signals";
 import { handoffPreview } from "../adapters/handoff";
 import { applyAnswer, topicValue, type Case } from "./case";
-import { mergeFacts } from "./fact-validator";
+import { mergeFacts, validateFacts } from "./fact-validator";
+import { guardInput } from "./input-guard";
 import type { InterruptionKind } from "./interruption";
 import type { ApiResponse, Screen, SupportRoute } from "./screens";
 import type { Destination, GatedSignal, Language, Topic } from "./types";
 
-export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean };
+export type Journey = { item: Case; asked: number; secretFound: boolean; sentToLlm: boolean; stopSeen: boolean; consent: Partial<Record<GatedSignal, "granted" | "refused">>; used: GatedSignal[]; rescueIndex: number; rescueOutcomes: Record<string, "done" | "not_possible">; handoffDone: boolean; handoffApproved: boolean; demoScenario: DemoScenario; personRequested?: boolean; fastStop?: InterruptionKind | null; personRoute?: SupportRoute | null; input?: CaseInput; phrased?: Partial<Record<Topic, string>>; awaitingDetails?: "greeting" | "off_topic"; noIncident?: boolean; interview?: { question: string; answer: string }[]; pendingAsk?: { id: string; question: string }; interviewDone?: boolean };
 export type Event =
   | { kind: "start"; input: CaseInput; extractor?: Extractor; sentToLlm: boolean; demoScenario?: DemoScenario }
   | { kind: "answer"; topic: Topic; answer: "yes" | "no" | "unsure" }
   | { kind: "answer_text"; topic: Topic; text: string; extractor?: Extractor; sentToLlm?: boolean }
   | { kind: "add_details"; text: string; extractor?: Extractor; sentToLlm?: boolean }
+  | { kind: "ai_answer"; id: string; answer?: "yes" | "no" | "unsure"; text?: string; extractor?: Extractor; sentToLlm?: boolean }
   | { kind: "continue" }
   | { kind: "consent"; signal: GatedSignal; granted: boolean }
   | { kind: "rescue"; stepId: string; outcome: "done" | "not_possible" }
@@ -71,6 +73,20 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       journey.item = await readTypedAnswer(journey, event.topic, event.text, event.extractor);
       noteTypedText(journey, event);
     }
+    if (event.kind === "ai_answer") {
+      const ask = current.pendingAsk;
+      if (active.type !== "ask" || !ask || ask.id !== event.id) throw new Error("invalid_event_order");
+      const text = event.text?.trim();
+      const answer = text || { yes: "yes", no: "no", unsure: "not sure" }[event.answer ?? "unsure"];
+      journey.pendingAsk = undefined;
+      journey.interview = [...(current.interview ?? []), { question: ask.question, answer }];
+      journey.asked++;
+      // A typed answer is the user's own words, so it joins the story the rules read.
+      if (text && journey.input) journey.input = { ...journey.input, openingMessage: `${journey.input.openingMessage}\n${text}` };
+      journey.item = await readInterview(journey, event.extractor);
+      if (text) noteTypedText(journey, { ...event, text });
+      else if (event.extractor && event.sentToLlm) journey.sentToLlm = true;
+    }
     if (event.kind === "add_details") {
       if (active.type === "end") throw new Error("invalid_event_order");
       const before = assess(current.item, current.asked).decision;
@@ -90,6 +106,8 @@ export async function handleEvent(sessionId: string, current: Journey | null, ev
       }
       // A greeting or off-topic request isn't part of the story, so the description replaces it.
       journey.item = await reread(journey, event.text, event.extractor, Boolean(current.awaitingDetails));
+      // New details may raise new questions, so the interview can start again.
+      journey.interviewDone = false;
       noteTypedText(journey, event);
       journey.awaitingDetails = journey.fastStop ? undefined : needsDetails(journey.input?.openingMessage ?? event.text, journey.item, Boolean(journey.input?.incidentContent?.trim()));
       const after = assess(journey.item, journey.asked).decision;
@@ -166,6 +184,24 @@ async function reread(journey: Journey, text: string, extractor?: Extractor, rep
   if (result.secretsFound.length > 0) journey.secretFound = true;
   const facts = replace ? result.item.facts : mergeFacts(result.item.facts, current.facts);
   return { ...current, facts: { ...facts, language: current.language }, signals: { ...current.signals, hasLink: current.signals.hasLink || result.item.signals.hasLink }, mentions: result.item.mentions };
+}
+
+// The interview is read by the LLM only. The keyword reader would take a question such as
+// "Did they ask for your code?" as a fact even when the answer is No.
+async function readInterview(journey: Journey, extractor?: Extractor): Promise<Case> {
+  const current = journey.item;
+  if (!extractor || !journey.input) return current;
+  const transcript = (journey.interview ?? []).map((item) => `Question: ${item.question}\nThe person answered: ${item.answer}`).join("\n");
+  const guarded = guardInput(`${journey.input.openingMessage}\n\nFollow-up questions and answers:\n${transcript}`, journey.input.incidentContent);
+  let raw: unknown = null;
+  try {
+    raw = await extractor({ userText: guarded.userText, incidentText: guarded.incidentContent ?? "", language: current.language, incidentChannel: journey.input.incidentChannel, hasRiskyLink: current.signals.hasLink });
+  } catch {
+    return current;
+  }
+  const read = validateFacts(raw, guarded);
+  if (!read) return current;
+  return { ...current, facts: { ...mergeFacts(read, current.facts), language: current.language }, mentions: [...new Set([...(current.mentions ?? []), ...detectMentions(guarded.userText)])] };
 }
 
 // Typed text can reveal live danger, and is sent to the LLM when one is used.
@@ -273,13 +309,14 @@ export function present(sessionId: string, journey: Journey, override?: Screen):
   else if (journey.noIncident) screen = { type: "end", message: approved.offTopic[item.language].none };
   else if (journey.awaitingDetails === "greeting") screen = { type: "describe", reason: "greeting", ...approved.describe[item.language] };
   else if (journey.awaitingDetails === "off_topic") screen = { type: "describe", reason: "off_topic", message: approved.offTopic[item.language].message, hint: approved.offTopic[item.language].hint };
+  else if (journey.pendingAsk) screen = { type: "ask", ...journey.pendingAsk };
   else if (flip && composed.question) screen = { type: "flip", topic: flip.topic, question: composed.question, why: questionText(flip.topic, item.language).why, statusLabel: approved.statusLabels[decision.status][item.language], branches: composed.branches ?? [], ...(isTriage(flip) ? { context: triageContext(item, journey.asked) } : {}) };
   else if (signal) screen = { type: "unlock", signal, what: signalLabel(signal, item.language), why: screenText[item.language].signalWhy, limit: screenText[item.language].signalLimit, ifRefused: screenText[item.language].signalRefusal };
   else if (recovery[journey.rescueIndex]) screen = { type: "rescue", step: recovery[journey.rescueIndex], position: journey.rescueIndex + 1, total: recovery.length };
   else if (destination && !journey.handoffDone) screen = handoffScreen(destination);
   else screen = { type: "result", statusLabel: approved.statusLabels[decision.status][item.language], steps: composed.steps, branches: composed.branches, reason: reasonText(outcome, item.language), confidence: approved.confidence[confidenceBand(result.confidence)][item.language], unknowns: result.unknownTopics.flatMap(topic => unknownText(topic, item.language) ?? []), sources: outcome.guidance.map(id => ({ id, title: sourceTitle(id, item.language) })), classification: incidentCategory(item, outcome, decision.status, result.unknownTopics.length > 0), likelyType: likelyCategory(item, outcome, decision.status), story: incidentStory(item, outcome, decision.status), completed: Object.entries(journey.rescueOutcomes).filter(([, value]) => value === "done").flatMap(([id]) => recovery[Number(id)]?.detail ?? []), stopped: journey.stopSeen, sharedWith: journey.handoffApproved ? journey.personRoute ?? destination : null, supportRoutes: supportRoutes(journey) };
   const all = item.availableSignals;
-  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : fallbackScreen("analysis_failed", item.language), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
+  return { sessionId, language: item.language, screen: safeScreen(screen, item.language) ? screen : (console.warn("GUARD_BLOCKED", JSON.stringify(screen)), fallbackScreen("analysis_failed", item.language)), state: { status: decision.status, risk: decision.risk, urgency: decision.urgency, destination, externalContacts: decision.externalContacts }, summary: confirmedSummary, secretWarning: journey.secretFound ? approved.secretWarning[item.language] : null, notice: approved.prototypeNotice[item.language], dataReceipt: { used: journey.used, refused: all.filter(s => journey.consent[s] === "refused"), notAccessed: all.filter(s => !journey.consent[s]), sentToLlm: journey.sentToLlm } };
 }
 
 export function handoffSummary(journey: Journey, facts: string[]): string[] {
