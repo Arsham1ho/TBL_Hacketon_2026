@@ -29,14 +29,14 @@
 
 :root {
   --radius: 1rem;
-  --background: oklch(0.955 0.008 85);
-  --foreground: oklch(0.24 0.05 258);
+  --background: oklch(0.97 0 0);
+  --foreground: oklch(0.22 0 0);
   --card: oklch(1 0 0);
-  --primary: oklch(0.47 0.11 222);
+  --primary: oklch(0.3 0 0);
   --primary-foreground: oklch(0.99 0 0);
-  --muted: oklch(0.955 0.008 85);
-  --muted-foreground: oklch(0.47 0.03 255);
-  --accent: oklch(0.94 0.03 222);
+  --muted: oklch(0.955 0 0);
+  --muted-foreground: oklch(0.46 0 0);
+  --accent: oklch(0.93 0 0);
   --destructive: oklch(0.5 0.19 25);
   --danger-deep: oklch(0.38 0.14 25);
   --danger-soft: oklch(0.95 0.03 25);
@@ -44,14 +44,14 @@
   --warning-soft: oklch(0.96 0.05 85);
   --success: oklch(0.45 0.1 155);
   --success-soft: oklch(0.95 0.04 155);
-  --navy: oklch(0.24 0.05 258);
-  --border: oklch(0.9 0.01 85);
-  --ring: oklch(0.47 0.11 222);
+  --navy: oklch(0.22 0 0);
+  --border: oklch(0.9 0 0);
+  --ring: oklch(0.3 0 0);
   --glass-bg-strong: oklch(1 0 0 / 0.66);
-  --glass-rim: oklch(0.24 0.05 258 / 0.08);
-  --glass-shadow-lg: inset 0 1px 0 oklch(1 0 0 / 0.8), 0 1px 2px oklch(0.24 0.05 258 / 0.04), 0 24px 48px -28px oklch(0.24 0.05 258 / 0.25);
-  --glass-dark-bg: oklch(0.24 0.05 258 / 0.92);
-  --glass-tint: oklch(0.47 0.11 222 / 0.96);
+  --glass-rim: oklch(0.22 0 0 / 0.08);
+  --glass-shadow-lg: inset 0 1px 0 oklch(1 0 0 / 0.8), 0 1px 2px oklch(0.22 0 0 / 0.04), 0 24px 48px -28px oklch(0.22 0 0 / 0.25);
+  --glass-dark-bg: oklch(0.27 0 0 / 0.95);
+  --glass-tint: oklch(0.3 0 0 / 0.96);
 }
 
 @layer base {
@@ -177,11 +177,11 @@
 @utility glass-dark {
   background: var(--glass-dark-bg);
   backdrop-filter: blur(36px) saturate(180%);
-  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.25), 0 24px 48px -24px oklch(0.2 0.05 258 / 0.6);
+  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.25), 0 24px 48px -24px oklch(0.2 0 0 / 0.6);
 }
 @utility glass-tint {
   background: var(--glass-tint);
-  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.5), 0 12px 28px -12px oklch(0.45 0.11 225 / 0.7);
+  box-shadow: inset 0 1px 1px oklch(1 0 0 / 0.5), 0 12px 28px -12px oklch(0.3 0 0 / 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {

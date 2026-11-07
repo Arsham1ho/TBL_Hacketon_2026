@@ -12,7 +12,6 @@ import { demoScreen } from "@/mocks/journey";
 import { DescriptionComposer } from "./composer";
 import {
   AgentViewScreen,
-  AnswerTrail,
   BusyDots,
   EndScreen,
   FallbackScreen,
@@ -25,7 +24,7 @@ import {
   StopScreen,
   UnlockScreen,
 } from "./screens";
-import { Btn, Logo, SecretBanner } from "./ui";
+import { Btn, SecretBanner } from "./ui";
 
 const LANGUAGES: { code: Language; label: string }[] = [
   { code: "fi", label: "Suomi" },
@@ -45,8 +44,6 @@ const BUSINESS_CHOICES: { label: TextKey; text: TextKey }[] = [
   { label: "quickBusiness", text: "quickBusinessText" },
 ];
 
-const ANSWER_TEXT = { yes: "yes", no: "no", unsure: "notSure" } as const;
-
 // Screens that aren't engine steps: they show data from the last response.
 type LocalView = "agent" | "receipt" | null;
 
@@ -60,7 +57,6 @@ export function SafeStepApp() {
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [view, setView] = useState<LocalView>(null);
   const [agent, setAgent] = useState<AgentPreview | null>(null);
-  const [answers, setAnswers] = useState<{ question: string; answer: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<ApiRequest | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -126,7 +122,6 @@ export function SafeStepApp() {
     setResponse(null);
     setView(null);
     setAgent(null);
-    setAnswers([]);
     setFailed(null);
     setMessage("");
     setIncident("");
@@ -285,9 +280,9 @@ export function SafeStepApp() {
     if (busy && !response) return <LoadingScreen text={t("loading")} />;
     if (!response || !screen) return startScreen();
 
-    const { state, summary } = response;
+    const { state } = response;
     if (view === "agent" && agent) return <AgentViewScreen agent={agent} state={state} t={t} onContinue={() => setView(null)} />;
-    if (view === "receipt") return <ReceiptScreen receipt={response.dataReceipt} t={t} onEnd={() => void endSession()} />;
+    if (view === "receipt") return <ReceiptScreen receipt={response.dataReceipt} notice={response.notice} t={t} onEnd={() => void endSession()} />;
 
     switch (screen.type) {
       case "stop":
@@ -297,14 +292,9 @@ export function SafeStepApp() {
           <FlipScreen
             key={screen.topic}
             screen={screen}
-            status={state.status}
-            summary={summary}
             t={t}
             busy={busy}
-            onAnswer={(answer) => {
-              setAnswers((previous) => [...previous, { question: screen.question, answer: t(ANSWER_TEXT[answer]) }]);
-              void send({ kind: "answer", topic: screen.topic, answer });
-            }}
+            onAnswer={(answer) => void send({ kind: "answer", topic: screen.topic, answer })}
           />
         );
       case "result":
@@ -330,47 +320,38 @@ export function SafeStepApp() {
     }
   }
 
-  const showTrail = answers.length > 0 && !view && (screen?.type === "flip" || screen?.type === "result");
-
   return (
     <div className={cn("min-h-dvh transition-colors", onStop && "on-danger bg-danger-deep")}>
       {onStart ? (
-        <header className="relative z-20 flex items-center justify-between gap-3 px-3 pt-[max(0.5rem,env(safe-area-inset-top))]">
-          <span className="size-11" aria-hidden />
-          <p className="text-center text-xs text-muted-foreground">{t("prototype")}</p>
+        <button
+          type="button"
+          onClick={() => options.current?.showModal()}
+          aria-label={t("options")}
+          title={t("options")}
+          className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5"
+        >
+          <SlidersHorizontal className="size-5" aria-hidden />
+        </button>
+      ) : (
+        response && (
           <button
             type="button"
-            onClick={() => options.current?.showModal()}
-            aria-label={t("options")}
-            title={t("options")}
-            className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-black/5"
-          >
-            <SlidersHorizontal className="size-5" aria-hidden />
-          </button>
-        </header>
-      ) : (
-        <header className={cn("sticky top-0 z-20 pt-[env(safe-area-inset-top)]", onStop ? "bg-danger-deep text-primary-foreground" : "glass-strong")}>
-          <div className="mx-auto flex w-full max-w-[560px] items-center justify-between gap-3 px-5 py-2">
-            <Logo name="SafeStep" inverted={onStop} />
-            {response && (
-              <button
-                type="button"
-                onClick={() => void restart()}
-                aria-label={t("exit")}
-                title={t("exit")}
-                className="flex size-11 items-center justify-center rounded-full hover:bg-black/10"
-              >
-                <X className="size-5" aria-hidden />
-              </button>
+            onClick={() => void restart()}
+            aria-label={t("exit")}
+            title={t("exit")}
+            className={cn(
+              "fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex size-11 items-center justify-center rounded-full hover:bg-black/10",
+              onStop ? "text-primary-foreground" : "text-muted-foreground",
             )}
-          </div>
-          <p className={cn("px-5 pb-2 text-center text-xs", onStop ? "text-primary-foreground" : "text-muted-foreground")}>{t("prototype")}</p>
-        </header>
+          >
+            <X className="size-5" aria-hidden />
+          </button>
+        )
       )}
 
-      <div className={cn("mx-auto w-full px-5 pt-6 pb-16", view === "agent" ? "max-w-3xl" : "max-w-[560px]")}>
+      <div className={cn("mx-auto w-full px-5 pt-16 pb-12", view === "agent" ? "max-w-3xl" : "max-w-[560px]")}>
         {/* A transform here would pull the start screen's fixed composer out of place. */}
-        <main ref={main} key={`${screen?.type ?? "start"}-${view ?? ""}`} className={cn(response && "animate-rise")}>
+        <main ref={main} key={`${screen?.type ?? "start"}-${view ?? ""}`} className={cn(response && screen?.type !== "flip" && "animate-rise")}>
           {response?.secretWarning && (
             <div className="mb-5">
               <SecretBanner text={response.secretWarning} />
@@ -390,14 +371,17 @@ export function SafeStepApp() {
             body()
           )}
           {!failed && busy && response && <BusyDots label={t("loading")} />}
-          {!failed && showTrail && (
-            <div className="mt-5">
-              <AnswerTrail title={t("yourAnswers")} answers={answers} />
-            </div>
-          )}
         </main>
-        {response && <p className="mt-8 text-center text-xs text-muted-foreground">{response.notice}</p>}
       </div>
+
+      <p
+        className={cn(
+          "pointer-events-none fixed inset-x-0 bottom-1 z-50 px-5 text-center text-[11px]",
+          onStop ? "text-primary-foreground" : "text-muted-foreground",
+        )}
+      >
+        {t("prototype")}
+      </p>
     </div>
   );
 }

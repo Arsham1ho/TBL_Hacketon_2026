@@ -59,7 +59,7 @@ export function DescriptionComposer(p: {
   return (
     <form
       style={{ bottom }}
-      className="fixed inset-x-0 z-40 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="fixed inset-x-0 z-40 px-4 pt-3 pb-[max(1.75rem,env(safe-area-inset-bottom))]"
       onSubmit={(event) => {
         event.preventDefault();
         if (text.trim()) p.onSend();

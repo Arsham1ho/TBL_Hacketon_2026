@@ -101,22 +101,3 @@ export function SecretBanner({ text }: { text: string }) {
     </div>
   );
 }
-
-export function Logo({ name, inverted }: { name: string; inverted?: boolean }) {
-  return (
-    <span className="flex items-center gap-2">
-      <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-        <rect width="32" height="32" rx="10" className={inverted ? "fill-primary-foreground" : "fill-primary"} />
-        <path
-          d="M9 19h5v-4h5v-4h4"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          className={inverted ? "stroke-navy" : "stroke-primary-foreground"}
-        />
-      </svg>
-      <span className="text-lg font-extrabold tracking-tight">{name}</span>
-    </span>
-  );
-}

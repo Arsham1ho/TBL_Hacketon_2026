@@ -174,16 +174,6 @@
     "fi": "En ole varma",
     "sv": "Inte säker"
   },
-  "whatWeKnow": {
-    "en": "What we know",
-    "fi": "Mitä tiedämme",
-    "sv": "Det här vet vi"
-  },
-  "whileYouDecide": {
-    "en": "What to do for each answer",
-    "fi": "Mitä tehdä kunkin vastauksen kohdalla",
-    "sv": "Vad du ska göra för varje svar"
-  },
   "eachCase": {
     "en": "Here's what to do in each case",
     "fi": "Näin toimit kussakin tilanteessa",
@@ -194,20 +184,10 @@
     "fi": "Tarkistettava",
     "sv": "Behöver kontrolleras"
   },
-  "why": {
-    "en": "Why",
-    "fi": "Miksi",
-    "sv": "Varför"
-  },
   "stillUnknown": {
     "en": "Still unknown",
     "fi": "Vielä epäselvää",
     "sv": "Fortfarande okänt"
-  },
-  "source": {
-    "en": "Source",
-    "fi": "Lähde",
-    "sv": "Källa"
   },
   "syntheticGuidance": {
     "en": "Synthetic guidance",
@@ -220,24 +200,9 @@
     "sv": "Klart"
   },
   "unlockTitle": {
-    "en": "Can we check one thing?",
-    "fi": "Saammeko tarkistaa yhden asian?",
-    "sv": "Får vi kontrollera en sak?"
-  },
-  "simulatedSignal": {
-    "en": "Simulated signal",
-    "fi": "Simuloitu signaali",
-    "sv": "Simulerad signal"
-  },
-  "what": {
-    "en": "What",
-    "fi": "Mitä",
-    "sv": "Vad"
-  },
-  "limit": {
-    "en": "Limit",
-    "fi": "Rajaus",
-    "sv": "Begränsning"
+    "en": "Can we check this?",
+    "fi": "Saammeko tarkistaa tämän?",
+    "sv": "Får vi kontrollera detta?"
   },
   "allow": {
     "en": "Allow once",
@@ -254,15 +219,10 @@
     "fi": "Vaihe {n}/{total}",
     "sv": "Steg {n} av {total}"
   },
-  "onlyYou": {
-    "en": "Only you can do this",
-    "fi": "Vain sinä voit tehdä tämän",
-    "sv": "Bara du kan göra detta"
-  },
   "notPossible": {
-    "en": "Couldn't do this",
-    "fi": "En pystynyt tähän",
-    "sv": "Det gick inte"
+    "en": "Can't do this",
+    "fi": "En voi tehdä tätä",
+    "sv": "Det går inte"
   },
   "handoffTitle": {
     "en": "Check what we'll share",
@@ -273,16 +233,6 @@
     "en": "Simulated handoff",
     "fi": "Simuloitu siirto",
     "sv": "Simulerad överlämning"
-  },
-  "sentTo": {
-    "en": "Sent to",
-    "fi": "Vastaanottaja",
-    "sv": "Skickas till"
-  },
-  "yourSummary": {
-    "en": "Your summary",
-    "fi": "Yhteenvetosi",
-    "sv": "Din sammanfattning"
   },
   "leftOut": {
     "en": "Left out",
@@ -324,11 +274,6 @@
     "fi": "Simuloitu asiakaspalvelijan näkymä",
     "sv": "Simulerad vy för handläggare"
   },
-  "agentCase": {
-    "en": "Shared case summary",
-    "fi": "Jaettu tapauksen yhteenveto",
-    "sv": "Delad sammanfattning av ärendet"
-  },
   "risk": {
     "en": "Risk",
     "fi": "Riski",
@@ -338,11 +283,6 @@
     "en": "Urgency",
     "fi": "Kiireellisyys",
     "sv": "Brådska"
-  },
-  "agentNote": {
-    "en": "The customer does not need to repeat their story.",
-    "fi": "Asiakkaan ei tarvitse kertoa tarinaansa uudelleen.",
-    "sv": "Kunden behöver inte berätta allt igen."
   },
   "riskNone": {
     "en": "None",
@@ -484,11 +424,6 @@
     "fi": "Automaattinen",
     "sv": "Automatiskt"
   },
-  "yourAnswers": {
-    "en": "Your answers",
-    "fi": "Vastauksesi",
-    "sv": "Dina svar"
-  },
   "continue": {
     "en": "Continue",
     "fi": "Jatka",
@@ -548,5 +483,10 @@
     "en": "Examples",
     "fi": "Esimerkit",
     "sv": "Exempel"
+  },
+  "details": {
+    "en": "Details",
+    "fi": "Lisätiedot",
+    "sv": "Detaljer"
   }
 }
