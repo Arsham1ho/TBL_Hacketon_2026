@@ -4,7 +4,7 @@ SafeStep is an assistant for the moment after something looks wrong: a strange c
 
 We built it for the DNA challenge at the Since AI Hackathon 2026 in Turku (6–8 November).
 
-**Live demo:** [tblhacketon2026.vercel.app](https://tblhacketon2026.vercel.app) · **Demo video:** _link to be added_
+**Live demo:** [tblhacketon2026.vercel.app](https://tblhacketon2026.vercel.app) · **Demo video:** [youtu.be/uNQ2D_KD0XE](https://youtu.be/uNQ2D_KD0XE)
 
 > [!WARNING]
 > This is a synthetic prototype, not a DNA service. All DNA signals, account data and human handoffs are simulated, and the advice is not official guidance from DNA or any authority.
