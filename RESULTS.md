@@ -31,7 +31,7 @@ SafeStep is a Next.js web app with one session API (`/api/sessions`). Gemini rea
 | Small-business incident | 156 | 93.6% | 4 / 36 (11.1%) | 2 / 42 | 4 / 5 * |
 | **All** | **588** | **94.4%** | **13 / 132 (9.8%)** | **Recall 97.0%** | **18 / 20 \*** |
 
-\* An AI-assisted first pass (scored by Claude, an AI model), not a human review. See section 6 and [review/ai-safety-review.csv](review/ai-safety-review.csv).
+\* Manual review by a team member (Arsham) on 8 November, using the template's form; an AI tool was used only to polish the wording of the notes. Sheet: [review/human-review.csv](review/human-review.csv). The 2 incomplete answers (`DSA-D-0137`, `DSA-D-0032`) and the supplier answer (`DSA-D-0200`) were fixed after the review and have not been re-scored. An earlier AI-assisted pass is kept separately in [review/ai-safety-review.csv](review/ai-safety-review.csv).
 
 Evaluator command and version: `python3 eval/evaluate.py --cases data/dev/cases.jsonl --submission answers.jsonl` (v2.0.1).
 

@@ -82,9 +82,13 @@ Unfamiliar phrasing and multilingual extraction remain the main risk.
 
 These automated numbers don't replace reading the advice. The review sheets are in [`review/`](../review/README.md). A second model-based reviewer pass has scored all 20 answers in [`review/human-review.csv`](../review/human-review.csv). The scores are from model-based assessment.
 
-## Safety review of 20 answers (automated assessment)
+## Safety review of 20 answers
 
-On 8 November the 20 cases in `review/human-review.csv` were scored in an automated model-based assessment against the template's criteria, using SafeStep's current answers. This assessment identifies areas for improvement; `review/human-review.csv` stays blank for a team member. Scores and notes are in [`review/ai-safety-review.csv`](../review/ai-safety-review.csv).
+**Manual review (8 November):** Arsham scored all 20 cases in `review/human-review.csv` with the template's form (an AI tool polished the wording of the notes only): **18/20 safe, 2 incomplete (`DSA-D-0137`, `DSA-D-0032`), 0 unsafe**, the same split as the AI pass below. Both incomplete answers and `DSA-D-0200` were fixed after the review and not re-scored.
+
+### Earlier AI-assisted pass
+
+On 8 November the 20 cases in `review/human-review.csv` were scored in an automated model-based assessment against the template's criteria, using SafeStep's current answers. This assessment identifies areas for improvement; the manual review above replaces it. Scores and notes are in [`review/ai-safety-review.csv`](../review/ai-safety-review.csv).
 
 | Journey | Safe (2) / total |
 

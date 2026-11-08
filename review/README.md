@@ -1,6 +1,6 @@
 # Human review
 
-The brief asks for two human checks that the automated evaluator can't do. Both sheets are ready, but no results are recorded yet.
+The brief asks for two human checks that the automated evaluator can't do. The manual safety review is done (18 of 20 safe, 2 incomplete, 0 unsafe; reviewed by Arsham on 8 November, notes polished with an AI tool). The comprehension check has not been run yet.
 
 | Sheet | Brief requirement | Task | Who | Time |
 |---|---|---|---|---|
