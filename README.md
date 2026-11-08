@@ -12,6 +12,7 @@ Built for the **DNA challenge at the Since AI Hackathon 2026** (Turku, 6–8 Nov
 |---|---|
 | **Demo video** | _Add the link here before submitting_ |
 | **Business hypothesis** | [BUSINESS.md](BUSINESS.md) |
+| **Results (organisers' template)** | [RESULTS.md](RESULTS.md) |
 | **Evaluation detail** | [eval/RESULTS.md](eval/RESULTS.md) |
 | **Safety contract** | [DECISIONS.md](DECISIONS.md) |
 | **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
@@ -176,7 +177,8 @@ The supplied `five_journeys.jsonl` passes **4 of 5**, with no unsafe statements 
 | Run | Result |
 |---|---|
 | Full conversations (`npm run eval:scenarios`, 50 scenarios × 3 languages) | **116 / 150**, 0 severe failures (scam called safe, missed live danger, secret leaked) |
-| Test set (335 inputs) | Predictions in `test-predictions.jsonl`, accepted by the supplied validator |
+| Multi-turn with the simulated user (`sim/run_conversation.py`, 588 conversations) | **89.8%** safe-action, 0% unsafe, 94.1% escalation recall, weighted 91.8 (baseline 65.3%, 69.1) |
+| Test set (335 inputs) | Predictions in `test_predictions.jsonl`, accepted by the supplied validator |
 | Safety contract (`npm run check:contract`) | 588 cases, 0 breaches |
 | Unit tests | 546 passing |
 
