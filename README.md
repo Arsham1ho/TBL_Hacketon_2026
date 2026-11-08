@@ -1,40 +1,79 @@
-# SafeStep
+<div align="center">
 
-**Digital Security Assistant: What should I do now?**
+# 🛡️ SafeStep
 
-SafeStep helps consumers and small businesses act on a suspicious call, message, link or account problem. It reads what happened, stops ongoing harm first, asks only the question that would change the advice, and gives one clear, proportionate next step, with the reason behind it and a human handoff when needed.
+### Digital Security Assistant: *What should I do now?*
 
-Built for the **DNA challenge at the Since AI Hackathon 2026** (Turku, 6–8 November).
+One clear, proportionate next step when a call, message, link or account looks wrong.<br/>
+For consumers and small businesses, in Finnish, English and Swedish.
 
+![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?logo=nodedotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-550%20passing-2ea44f)
+![Unsafe statements](https://img.shields.io/badge/unsafe%20statements-0%25-2ea44f)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+**[Demo video](#demo)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Results](#results)** · **[Business model](BUSINESS.md)**
+
+Built for the **DNA challenge** at the **Since AI Hackathon 2026**, Turku, 6–8 November.
+
+</div>
+
+> [!WARNING]
 > **Synthetic prototype.** This is not a live DNA service. All DNA signals, account data and human handoffs are simulated, and the guidance is not official advice from DNA or any authority.
-
-| | |
-|---|---|
-| **Demo video** | _Add the link here before submitting_ |
-| **Business hypothesis** | [BUSINESS.md](BUSINESS.md) |
-| **Results (organisers' template)** | [RESULTS.md](RESULTS.md) |
-| **Evaluation detail** | [eval/RESULTS.md](eval/RESULTS.md) |
-| **Safety contract** | [DECISIONS.md](DECISIONS.md) |
-| **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
 ---
 
-## At a glance
+## Contents
 
-| | Result | Target |
+- [Overview](#overview)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Safety boundaries](#safety-boundaries)
+- [Quick start](#quick-start)
+- [Testing and evaluation](#testing-and-evaluation)
+- [Results](#results)
+- [Integration path](#integration-path)
+- [Business model](#business-model)
+- [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
+- [Known limits](#known-limits)
+- [Team](#team)
+
+---
+
+## Overview
+
+People get warnings about suspicious calls, messages and logins all the time, but a warning doesn't tell them what to do. SafeStep reads what happened, **stops ongoing harm first**, asks **only the question that would change the advice**, and gives **one clear next step** with the reason behind it. When a person is needed, it hands off with a summary the user approves first.
+
+### At a glance
+
+| Metric (588 dev cases) | SafeStep | Target |
 |---|---:|---:|
-| Safe-action pass (588 dev cases) | **91.2%** | 80%+ |
+| Safe-action pass | **91.2%** | 80%+ |
 | Unsafe statements | **0.0%** | 0% |
 | False alarms on harmless cases | **9.8%** | under 10% |
 | Escalation recall | **90.9%** | 90%+ |
 | Consent violations | **0.0%** | 0% |
 | Weighted brief score (automated 80 points) | **92.6** | 80+ |
 
-Measured with the supplied evaluator v2.0.1. Details and caveats are in [Results](#results).
+<sub>Measured with the supplied evaluator v2.0.1. Details and caveats are in [Results](#results).</sub>
+
+### Demo
+
+| | |
+|---|---|
+| 🎬 **Demo video** | _Add the link here before submitting_ |
+| 📋 **Results (organisers' template)** | [RESULTS.md](RESULTS.md) |
+| 📊 **Evaluation detail** | [eval/RESULTS.md](eval/RESULTS.md) |
+| 🔒 **Safety contract** | [DECISIONS.md](DECISIONS.md) |
+| 🏗️ **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| 💼 **Business hypothesis** | [BUSINESS.md](BUSINESS.md) |
 
 ---
 
-## What it does
+## Features
 
 | Feature | What the user gets |
 |---|---|
@@ -46,11 +85,15 @@ Measured with the supplied evaluator v2.0.1. Details and caveats are in [Results
 | **Rescue Mode** | Step-by-step recovery for incidents that already happened, such as money sent or a code shared. |
 | **Signal Unlock** | Uses simulated DNA data (SIM changes, logins, device findings) only after consent, and only when it would change the advice. |
 | **Natural conversation** | Gemini replies to every message in the user's own terms and answers their questions in context. Every reply is checked: it can't contradict the steps, call anything safe unless the rules did, or ask for codes. |
+| **Voice mode** | Speak instead of typing. Speech is turned into the same events as text, so the engine still makes every decision. |
 | **Talk to DNA** | "Talk to a person" opens DNA Customer Service by chat or call-back, with a case number and a summary the user approves before it's sent. The bank or police are shown as extra contacts when they're the ones who can act. |
 | **Decision report** | A record of what was understood, what was decided and why, with sources. |
 | **Plans** | A demo switch showing how DNA could package the service. Safety advice is free on every plan. |
 
-### Scam coverage
+<details>
+<summary><b>Scam coverage</b></summary>
+
+<br/>
 
 Bank, police and operator impostor calls, SIM and eSIM takeover, phishing SMS and email, parcel and tax lures, clicked links, malicious apps and remote access, data breaches, unknown logins, MFA fatigue, invoice and CEO fraud, ransomware, former-staff access, and partner monitoring. In addition:
 
@@ -59,11 +102,13 @@ Bank, police and operator impostor calls, SIM and eSIM takeover, phishing SMS an
 - **Shopping and accounts:** marketplace courier links, fake shops, QR codes, social-account takeovers, unknown card charges, identity theft.
 - **Sextortion and blackmail:** handed to a human advisor, with the police listed.
 
+</details>
+
 ---
 
 ## How it works
 
-**The LLM reads. Code decides.**
+> **The LLM reads. Code decides.**
 
 ```mermaid
 flowchart LR
@@ -83,36 +128,69 @@ flowchart LR
     X --> A[Answer, Rescue Mode<br/>or human handoff]
 ```
 
-1. **Input Guard** masks card numbers, codes and passwords before anything else sees them.
-2. **Fact reading:** the LLM turns the user's words into structured facts. A keyword extractor runs beside it and takes over if the LLM fails or is rate-limited.
-3. **Fact Validator** drops any fact that isn't backed by a real quote from the user's text.
-4. **Decision rules** choose the status, risk, urgency, action and human destination. The LLM can't set any of these.
-5. **Decision Flip** asks a question only when Yes and No lead to different advice.
-6. **Composer** builds the reply only from approved text, and the **Output Guard** blocks anything unsafe before it is shown.
+| # | Stage | What it does |
+|:-:|---|---|
+| 1 | **Input Guard** | Masks card numbers, codes and passwords before anything else sees them. |
+| 2 | **Fact reading** | The LLM turns the user's words into structured facts. A keyword extractor runs beside it and takes over if the LLM fails or is rate-limited. |
+| 3 | **Fact Validator** | Drops any fact that isn't backed by a real quote from the user's text. |
+| 4 | **Decision rules** | Choose the status, risk, urgency, action and human destination. The LLM can't set any of these. |
+| 5 | **Decision Flip** | Asks a question only when Yes and No lead to different advice. |
+| 6 | **Composer + Output Guard** | Builds the reply only from approved text, and blocks anything unsafe before it is shown. |
 
 ---
 
 ## Safety boundaries
 
-- **The model never decides.** Risk, urgency, action and escalation come from rules checked against an action contract. An outcome outside the contract becomes the cautious "unclear" path.
-- **No unjustified reassurance.** "Safe" needs positive evidence. Finding nothing risky is never enough, and text inside a scam message that claims to be "verified safe" is ignored.
-- **Consent before data.** DNA signals are read only after the user agrees, only when they would change the advice, and only for that session.
-- **No irreversible action.** SafeStep never blocks, pays or contacts anyone by itself. Every handoff shows the summary first and waits for approval.
-- **Secrets stay out.** Codes, card numbers and passwords are masked before the LLM, the chat history and the handoff summary.
-- **Sandboxed link check.** Links are fetched as plain text: no scripts run, nothing is submitted, no cookies are kept, and private or internal network addresses are refused.
-- **Safety is never behind a paywall.** Stop-the-harm advice, Rescue Mode and human handoff are free on every plan.
+| Boundary | How it's enforced |
+|---|---|
+| 🧠 **The model never decides** | Risk, urgency, action and escalation come from rules checked against an action contract. An outcome outside the contract becomes the cautious "unclear" path. |
+| ⚖️ **No unjustified reassurance** | "Safe" needs positive evidence. Finding nothing risky is never enough, and text inside a scam message that claims to be "verified safe" is ignored. |
+| ✋ **Consent before data** | DNA signals are read only after the user agrees, only when they would change the advice, and only for that session. |
+| 🔁 **No irreversible action** | SafeStep never blocks, pays or contacts anyone by itself. Every handoff shows the summary first and waits for approval. |
+| 🔑 **Secrets stay out** | Codes, card numbers and passwords are masked before the LLM, the chat history and the handoff summary. |
+| 🧪 **Sandboxed link check** | Links are fetched as plain text: no scripts run, nothing is submitted, no cookies are kept, and private or internal network addresses are refused. |
+| 🆓 **Safety is never behind a paywall** | Stop-the-harm advice, Rescue Mode and human handoff are free on every plan. |
 
 ---
 
-## Try it
+## Quick start
+
+### Prerequisites
+
+- **Node.js 22** or newer
+- **Python 3.10** or newer, for the evaluation commands only
+- Optional: a Gemini or OpenAI API key. Without one, the app runs on the keyword extractor alone.
+
+### Install and run
 
 ```bash
 npm install
-cp .env.example .env.local   # add a GEMINI_API_KEY, or leave it empty for keyword mode
+cp .env.example .env.local   # add your keys, or leave them empty for keyword mode
 npm run dev
 ```
 
-Open <http://localhost:3000> and try these:
+Open **<http://localhost:3000>**.
+
+### Configuration
+
+All variables are optional. Set them in `.env.local`, which is gitignored. Never put real keys in `.env.example`.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `GEMINI_API_KEY` | Fact reading and replies with Gemini. Used first if set | — |
+| `OPENAI_API_KEY` | Fact reading with OpenAI if there is no Gemini key, and speech to text | — |
+| `LLM_MODEL` | Override the LLM model | `gemini-3.5-flash-lite`, or `gpt-5.4-mini` with OpenAI |
+| `LLM_TIMEOUT_MS` | Time before falling back to the keyword extractor | `8000` |
+| `GOOGLE_SAFE_BROWSING_KEY` | Adds Google Safe Browsing to the link check | — |
+| `ELEVENLABS_API_KEY` | Voice output with ElevenLabs, falling back to OpenAI | — |
+| `ELEVENLABS_VOICE_ID` / `ELEVENLABS_MODEL` | ElevenLabs voice and model | `eleven_multilingual_v2` |
+| `SESSION_TTL_MINUTES` | How long a session is kept in memory | `30` |
+| `NEXT_PUBLIC_API_URL` | API base URL, for running the UI separately (for example a mobile shell) | same origin |
+| `SIMSET_DIR` | Full path to the DNA SimSet folder, for evaluation only | — |
+
+The SimSet and challenge brief come from the organisers and aren't in this repository.
+
+### Try these
 
 | Type this | What you'll see |
 |---|---|
@@ -123,26 +201,40 @@ Open <http://localhost:3000> and try these:
 | *The police called and told me to move my money to a safe account. I already moved some.* | Rescue Mode, with contacting the bank as the first step |
 | *Someone threatens to share my intimate photos unless I pay* | Handoff to a human advisor, with the police listed |
 
-In development, `?screen=` opens a single screen with example data, for example `/?screen=fallback`. The options are `stop`, `flip`, `describe`, `unlock`, `rescue`, `handoff`, `fallback`, `end`, `threat`, `unsure` and `safe`.
+> [!TIP]
+> In development, `?screen=` opens a single screen with example data, for example `/?screen=fallback`. The options are `stop`, `flip`, `describe`, `unlock`, `rescue`, `handoff`, `fallback`, `end`, `threat`, `unsure` and `safe`.
 
-### Configuration
+---
 
-You need Node.js 22 or newer. The evaluation commands also need Python 3.10 or newer.
+## Testing and evaluation
 
-| Variable | Purpose |
+| Command | What it does |
 |---|---|
-| `GEMINI_API_KEY` | Fact reading with Gemini. Used first if set |
-| `OPENAI_API_KEY` | Fact reading with OpenAI, if there is no Gemini key |
-| `GOOGLE_SAFE_BROWSING_KEY` | Optional. Adds Google Safe Browsing to the link check |
-| `SIMSET_DIR` | Full path to the DNA SimSet folder, needed for evaluation only |
+| `npm test` | Unit and attack-hardening tests (Vitest) |
+| `npm run typecheck` | TypeScript check |
+| `npm run build` | Production build |
+| `npm run check:contract` | Checks the safety contract against all 588 SimSet dev cases |
+| `npm run eval:dev` | Writes answers for the 588 dev cases to `answers.jsonl` |
+| `npm run eval:scenarios` | Full multi-turn conversations: 50 scenarios × 3 languages |
+| `npm run eval:frozen` | Frozen paraphrase set |
+| `npm run eval:holdout` | Held-out paraphrases written after the rules were frozen |
 
-With no key, the app runs on the keyword extractor alone. The SimSet and challenge brief come from the organisers and aren't in this repository.
+Score the answers with the supplied evaluator (set `SIMSET_DIR` in your shell first):
+
+```bash
+python3 "$SIMSET_DIR/eval/evaluate.py" \
+  --cases "$SIMSET_DIR/data/dev/cases.jsonl" \
+  --submission answers.jsonl
+```
+
+Add `USE_LLM=1` to `eval:dev` to use the LLM instead of keywords. Results are cached in `.cache/`, so rule changes rerun without new calls. On a free API tier, slow the run with `EVAL_CONCURRENCY=1 EVAL_PACE_MS=4500`.
 
 ---
 
 ## Results
 
-All numbers are from 8 November 2026, with the keyword extractor (no LLM), scored by the supplied evaluator v2.0.1. The rules were tuned on the development cases, so these show what the logic can reach, not accuracy on unseen cases.
+> [!NOTE]
+> All numbers are from 8 November 2026, with the keyword extractor (no LLM), scored by the supplied evaluator v2.0.1. The rules were tuned on the development cases, so these show what the logic can reach, not accuracy on unseen cases.
 
 ### Development set (588 cases)
 
@@ -156,7 +248,9 @@ All numbers are from 8 November 2026, with the keyword extractor (no LLM), score
 | Consent violations | — | 0% | **0.0%** |
 | Weighted brief proxy | 67.1 | 80+ | **92.6** |
 
-Brief criteria (automated proxy): correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, privacy and consent 93.1.
+**Brief criteria (automated proxy):** correctness 91.5 · clarity 96.4 · uncertainty and escalation 90.0 · privacy and consent 93.1
+
+### By journey
 
 | Journey | Cases | Safe-action pass |
 |---|---:|---:|
@@ -176,45 +270,33 @@ The supplied `five_journeys.jsonl` passes **4 of 5**, with no unsafe statements 
 
 | Run | Result |
 |---|---|
-| Full conversations (`npm run eval:scenarios`, 50 scenarios × 3 languages) | **116 / 150**, 0 severe failures (scam called safe, missed live danger, secret leaked) |
+| Full conversations (`eval:scenarios`, 50 scenarios × 3 languages) | **116 / 150**, 0 severe failures (scam called safe, missed live danger, secret leaked) |
 | Multi-turn with the simulated user (`sim/run_conversation.py`, 588 conversations) | **89.8%** safe-action, 0% unsafe, 94.1% escalation recall, weighted 91.8 (baseline 65.3%, 69.1) |
 | Test set (335 inputs) | Predictions in `test_predictions.jsonl`, accepted by the supplied validator |
-| Safety contract (`npm run check:contract`) | 588 cases, 0 breaches |
-| Unit tests | 546 passing |
+| Safety contract (`check:contract`) | 588 cases, 0 breaches |
+| Unit tests | 550 passing |
 
-### Failure and escalation examples
+<details>
+<summary><b>Failure and escalation examples</b></summary>
+
+<br/>
 
 - **Escalation:** "Someone threatens to share my intimate photos unless I pay" goes to a human advisor, with the police listed and the advice not to pay, to keep evidence and to report the account.
 - **Failure, fixed:** a bank-impostor caller mentioning "suspicious payments" was read as an unknown card charge, sending 8 call cases to the wrong action. The charge pattern now runs after the call pattern.
 - **Failure, fixed:** the Finnish line "Kerroit jakaneesi koodin" ("You said you shared a code") was flagged by the evaluator as telling users to share a code, in 10 answers. It was reworded.
 - **Remaining:** 31 over-reactions and 13 false alarms on harmless cases, mostly genuine operator and bank notices sent to a cautious check.
 
-### Review status
+</details>
+
+<details>
+<summary><b>Review status</b></summary>
+
+<br/>
 
 - **Safety review:** an AI-assisted first pass scored 18 of 20 sampled answers safe, 2 incomplete and 0 unsafe ([details](eval/RESULTS.md)). The human review sheet is in [review/](review/README.md).
 - **Comprehension:** the check with people outside the team is prepared in [review/comprehension-check.md](review/comprehension-check.md).
 
----
-
-## Evaluate
-
-```bash
-npm test                 # unit tests
-npm run typecheck
-npm run check:contract   # safety contract against the SimSet
-npm run eval:dev         # answers for the 588 dev cases -> answers.jsonl
-npm run eval:scenarios   # full multi-turn conversations
-```
-
-Score the answers with the supplied evaluator (set `SIMSET_DIR` in your shell first):
-
-```bash
-python3 "$SIMSET_DIR/eval/evaluate.py" \
-  --cases "$SIMSET_DIR/data/dev/cases.jsonl" \
-  --submission answers.jsonl
-```
-
-Add `USE_LLM=1` to `eval:dev` to use the LLM instead of keywords. Results are cached in `.cache/`, so rule changes rerun without new calls. On a free API tier, slow the run with `EVAL_CONCURRENCY=1 EVAL_PACE_MS=4500`.
+</details>
 
 ---
 
@@ -232,15 +314,15 @@ How SafeStep could move from prototype to a DNA service. None of this is built a
 | **Sessions** | In-memory, cleared at the end | DNA's data-retention rules; the decision report saved only if the user chooses |
 | **Plans** | Demo switch | Included in DNA Digiturva / Turvapaketti, or added to a DNA Business subscription |
 
-The engine already talks to the UI only through one API (`/api/sessions`), so the DNA app can call the same API, and each simulated adapter can be swapped for a real one without changing the decision rules.
+The engine talks to the UI only through one API (`/api/sessions`), so the DNA app can call the same API, and each simulated adapter can be swapped for a real one without changing the decision rules.
 
 ---
 
 ## Business model
 
-SafeStep is designed to sit inside DNA's app and portal, where users are already identified, and to extend DNA's existing security bundle (built on F-Secure). The hypothesis, with sources, is in [BUSINESS.md](BUSINESS.md):
+SafeStep is designed to sit inside DNA's app and portal, where users are already identified, and to extend DNA's existing security bundle (built on F-Secure). The full hypothesis, with sources, is in [BUSINESS.md](BUSINESS.md).
 
-| Plan | Price (hypothesis) | Adds |
+| Plan | Price *(hypothesis)* | Adds |
 |---|---|---|
 | Free, in the DNA app | €0 | Next step, link check, Rescue Mode, human handoff |
 | DNA Security bundle | €2.99 / month | DNA signal checks, decision report, priority help |
@@ -248,29 +330,47 @@ SafeStep is designed to sit inside DNA's app and portal, where users are already
 
 ---
 
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Language | TypeScript 7 |
+| Web app and API | Next.js 16, React 19 |
+| Styling | Tailwind CSS 4 |
+| Validation | Zod 4 (API input and LLM output) |
+| LLM | Gemini (`gemini-3.5-flash-lite`) or OpenAI (`gpt-5.4-mini`), with a keyword extractor as backstop |
+| Voice | Browser or OpenAI speech to text, ElevenLabs or OpenAI speech |
+| Testing | Vitest, plus the supplied Python evaluator |
+
+---
+
 ## Project structure
 
-```
+```text
 app/            Next.js app and API routes (/api/sessions is the main flow)
 components/     UI: chat turns, link check card, plans sheet, report, voice mode
 engine/         Rules, Decision Flip, fact reading, composer, guards
-adapters/       LLM, link scanner, simulated DNA signals, session store
+adapters/       LLM, link scanner, simulated DNA signals, handoff, session store, voice
 content/        Approved text in Finnish, English and Swedish
+lib/            Client API, mock users, plans, UI text
 eval/           Evaluation runners, scenarios and RESULTS.md
 review/         Safety review and comprehension check sheets
 tests/          Unit and attack-hardening tests
 ```
 
-## Documentation
+### Documentation
 
 | File | Contents |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow, API, LLM layer, security and privacy |
 | [DECISIONS.md](DECISIONS.md) | Action contract, safety rules, decision log |
+| [RESULTS.md](RESULTS.md) | Results in the organisers' template |
 | [eval/RESULTS.md](eval/RESULTS.md) | Full evaluation results and the five journeys |
 | [BUSINESS.md](BUSINESS.md) | Packaging and pricing hypothesis |
 | [strategy.md](strategy.md) | Product strategy and stages |
 | [TASKS.md](TASKS.md) | Team plan and status |
+
+---
 
 ## Known limits
 
@@ -282,6 +382,20 @@ tests/          Unit and attack-hardening tests
 - Swedish source titles fall back to English, because the supplied guidance has no Swedish titles.
 - Full conversations pass 116 of 150. Most misses come from the simulator answering "Not sure" to "Did you transfer money?", where SafeStep takes the cautious path.
 
-## Licence
+---
 
-[MIT](LICENSE)
+## Team
+
+| Member | Role |
+|---|---|
+| **Mehrab** | Safety engine, API and evaluation |
+| **Arsham** | Product, UI, accessibility and usability |
+
+### Acknowledgements
+
+- **DNA Oyj** for the challenge and the Digital Security Assistant SimSet
+- **Since AI** for organising the hackathon
+
+## License
+
+Released under the [MIT License](LICENSE).
