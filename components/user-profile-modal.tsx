@@ -1,5 +1,9 @@
 "use client";
 
+import { PlanRow, planLabel } from "./plans";
+import type { Plan } from "@/lib/plans";
+import type { Language } from "@/engine/types";
+
 import type { ReactNode } from "react";
 import { Building2, Globe, Landmark, Laptop, LogOut, Mail, MapPin, Phone, Smartphone, User, Users, X } from "lucide-react";
 import type { MockUser } from "@/lib/mock-users";
@@ -12,6 +16,10 @@ type UserProfileModalProps = {
   onClose: () => void;
   onSwitchUser: () => void;
   onLogout: () => void;
+  // The demo plan, changed from the profile as well as from Settings.
+  plan?: Plan;
+  language?: Language;
+  onPlans?: () => void;
 };
 
 // Short names read faster than "OP Financial Group (Osuuspankki)".
@@ -39,7 +47,7 @@ const Chip = ({ children, mono }: { children: ReactNode; mono?: boolean }) => (
   <span className={`inline-flex items-center gap-1.5 rounded-full border border-border-strong px-2.5 py-1 text-xs ${mono ? "font-mono" : "font-medium"}`}>{children}</span>
 );
 
-export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout }: UserProfileModalProps) {
+export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout, plan, language = "en", onPlans }: UserProfileModalProps) {
   if (!isOpen) return null;
 
   const { personal, business } = user;
@@ -111,6 +119,13 @@ export function UserProfileModal({ user, isOpen, onClose, onSwitchUser, onLogout
           <Chip mono>IBAN {maskIban(iban)}</Chip>
           {isBusiness ? <Chip mono>Y {business.businessId}</Chip> : <Chip mono>ID {personal.maskedSsn}</Chip>}
         </div>
+
+        {plan && onPlans && (
+          <div className="grid gap-1.5 rounded-xl border border-border p-3">
+            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{planLabel(language)}</span>
+            <PlanRow plan={plan} language={language} onChange={onPlans} />
+          </div>
+        )}
 
         {/* On phones: Done and Switch as full-width thumb buttons, Log out under them. */}
         <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">

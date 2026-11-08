@@ -38,7 +38,7 @@ import { VoiceMode } from "./voice-mode";
 import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { LinkAnalysisCard } from "./link-analysis";
-import { PlanChip, PlansSheet } from "./plans";
+import { PlanRow, PlansSheet, planLabel } from "./plans";
 import { InstallPrompt, useServiceWorker } from "./install-app";
 import { hasFeature, loadPlan, savePlan, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
 import { pasteCopy, wantsPaste } from "@/lib/received";
@@ -747,7 +747,6 @@ export function SafeStepApp() {
       <div className="flex h-dvh flex-col">
         {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
-          <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
           {currentUser ? (
             <button
               type="button"
@@ -823,6 +822,16 @@ export function SafeStepApp() {
             </div>
 
             <SettingsGroup title={t("settingsYou")}>
+              <SettingRow label={planLabel(shown)}>
+                <PlanRow
+                  plan={plan}
+                  language={shown}
+                  onChange={() => {
+                    options.current?.close();
+                    openPlans();
+                  }}
+                />
+              </SettingRow>
               <SettingRow label={t("audience")}>
                 <Segmented
                   label={t("audience")}
@@ -920,6 +929,12 @@ export function SafeStepApp() {
               setShowLoginModal(true);
             }}
             onLogout={handleLogoutUser}
+            plan={plan}
+            language={shown}
+            onPlans={() => {
+              setShowProfileModal(false);
+              openPlans();
+            }}
           />
         )}
 
@@ -977,7 +992,6 @@ export function SafeStepApp() {
     <div className="flex h-dvh flex-col">
       {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
-          <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
         {currentUser ? (
           <button
             type="button"
@@ -1262,6 +1276,12 @@ export function SafeStepApp() {
             setShowLoginModal(true);
           }}
           onLogout={handleLogoutUser}
+          plan={plan}
+          language={shown}
+          onPlans={() => {
+            setShowProfileModal(false);
+            openPlans();
+          }}
         />
       )}
 

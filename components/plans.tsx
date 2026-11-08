@@ -224,3 +224,28 @@ export function PlansSheet({ open, plan, language, highlight, recommended, reaso
     </dialog>
   );
 }
+
+const ROW_TEXT: Record<Language, { label: string; change: string }> = {
+  en: { label: "Plan", change: "Change" },
+  fi: { label: "Paketti", change: "Vaihda" },
+  sv: { label: "Paket", change: "Byt" },
+};
+export const planLabel = (language: Language) => ROW_TEXT[language].label;
+
+// The current plan with a button that opens the plans sheet. Used in Settings and the profile.
+export function PlanRow({ plan, language, onChange }: { plan: Plan; language: Language; onChange: () => void }) {
+  const Icon = ICON[plan];
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+        <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-full", plan === "free" ? "bg-accent" : "bg-success-soft text-success")} aria-hidden>
+          <Icon className="size-3.5" />
+        </span>
+        <span className="truncate">{PLAN_COPY[language].plans[plan].name}</span>
+      </span>
+      <button type="button" onClick={onChange} className="inline-flex min-h-9 shrink-0 items-center rounded-lg border border-border-strong px-3 text-sm font-medium hover:bg-accent">
+        {ROW_TEXT[language].change}
+      </button>
+    </div>
+  );
+}
