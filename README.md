@@ -142,7 +142,7 @@ People get warnings about suspicious calls, messages and logins all the time, bu
 | **Talk to DNA** | "Talk to a person" opens DNA Customer Service by chat or call-back, with a case number and a summary the user approves before it's sent. The bank or police are shown as extra contacts when they're the ones who can act. |
 | **Decision report** | A record of what was understood, what was decided and why, with sources. |
 | **Plans** | A demo switch showing how DNA could package the service. Safety advice is free on every plan. |
-| **Installable app** | A PWA: install it from the browser on Android, iPhone, iPad, Windows or Mac. Loads fast, and shows emergency guidance when offline. The chat API is never cached, so no case data stays on the device. |
+| **Installable app** | A PWA: on the first visit a one-time notification offers to install it on Android, iPhone, iPad, Windows or Mac. Loads fast, and shows emergency guidance when offline. The chat API is never cached, so no case data stays on the device. |
 
 <details>
 <summary><b>Scam coverage</b></summary>

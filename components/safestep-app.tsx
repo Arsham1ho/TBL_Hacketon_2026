@@ -39,7 +39,7 @@ import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { LinkAnalysisCard } from "./link-analysis";
 import { PlanChip, PlansSheet } from "./plans";
-import { InstallButton, useServiceWorker } from "./install-app";
+import { InstallPrompt, useServiceWorker } from "./install-app";
 import { hasFeature, loadPlan, savePlan, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
 import { pasteCopy, wantsPaste } from "@/lib/received";
 import type { ContentAnalysis } from "@/adapters/link-scan";
@@ -747,7 +747,6 @@ export function SafeStepApp() {
       <div className="flex h-dvh flex-col">
         {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
-          <InstallButton language={shown} />
           <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
           {currentUser ? (
             <button
@@ -799,6 +798,7 @@ export function SafeStepApp() {
 
         </div>
         {prototypeLine}
+        <InstallPrompt language={shown} />
         <dialog
           ref={options}
           aria-label={t("options")}
@@ -977,7 +977,6 @@ export function SafeStepApp() {
     <div className="flex h-dvh flex-col">
       {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
-          <InstallButton language={shown} />
           <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
         {currentUser ? (
           <button
@@ -1276,6 +1275,7 @@ export function SafeStepApp() {
       )}
 
       {prototypeLine}
+      <InstallPrompt language={shown} />
     </div>
   );
 }

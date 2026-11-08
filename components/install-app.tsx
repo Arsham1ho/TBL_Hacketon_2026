@@ -7,10 +7,25 @@ import type { Language } from "@/engine/types";
 // Chrome, Edge and Android fire this event when the app can be installed.
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
-const COPY: Record<Language, { install: string; title: string; step1: string; step2: string; done: string }> = {
-  en: { install: "Install app", title: "Install SafeStep", step1: "Tap Share in the browser bar", step2: "Choose Add to Home Screen", done: "Got it" },
-  fi: { install: "Asenna sovellus", title: "Asenna SafeStep", step1: "Napauta Jaa-painiketta selaimen palkissa", step2: "Valitse Lisää Koti-valikkoon", done: "Selvä" },
-  sv: { install: "Installera appen", title: "Installera SafeStep", step1: "Tryck på Dela i webbläsarens fält", step2: "Välj Lägg till på hemskärmen", done: "Okej" },
+const COPY: Record<Language, { install: string; title: string; body: string; later: string; step1: string; step2: string; done: string }> = {
+  en: { install: "Install", title: "Install SafeStep", body: "Keep it on your home screen for quick help when something looks wrong.", later: "Not now", step1: "Tap Share in the browser bar", step2: "Choose Add to Home Screen", done: "Got it" },
+  fi: { install: "Asenna", title: "Asenna SafeStep", body: "Pidä se aloitusnäytöllä, niin apu on lähellä, kun jokin näyttää oudolta.", later: "Ei nyt", step1: "Napauta Jaa-painiketta selaimen palkissa", step2: "Valitse Lisää Koti-valikkoon", done: "Selvä" },
+  sv: { install: "Installera", title: "Installera SafeStep", body: "Ha den på hemskärmen för snabb hjälp när något verkar fel.", later: "Inte nu", step1: "Tryck på Dela i webbläsarens fält", step2: "Välj Lägg till på hemskärmen", done: "Okej" },
+};
+
+// Shown once per device: the first visit marks it as seen, whatever the user does.
+const SEEN_KEY = "safestep-install-offered";
+const alreadyOffered = () => {
+  try {
+    return localStorage.getItem(SEEN_KEY) === "1";
+  } catch {
+    return true;
+  }
+};
+const markOffered = () => {
+  try {
+    localStorage.setItem(SEEN_KEY, "1");
+  } catch {}
 };
 
 const standalone = () => window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
@@ -24,26 +39,36 @@ export function useServiceWorker() {
   }, []);
 }
 
-// One tap to install where the browser supports it; Share → Add to Home Screen steps on iOS.
-export function InstallButton({ language }: { language: Language }) {
+// A one-time notification on the first visit. Install opens the browser's prompt, or the
+// Share → Add to Home Screen steps on iPhone and iPad. It never comes back after that.
+export function InstallPrompt({ language }: { language: Language }) {
   const c = COPY[language];
   const [prompt, setPrompt] = useState<InstallEvent | null>(null);
   const [showIos, setShowIos] = useState(false);
   const [available, setAvailable] = useState<"prompt" | "ios" | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
 
+  const [open, setOpen] = useState(false);
+
   useEffect(() => {
-    if (standalone()) return;
-    if (ios()) setAvailable("ios");
+    if (standalone() || alreadyOffered()) return;
+    const offer = (kind: "prompt" | "ios") => {
+      setAvailable(kind);
+      setOpen(true);
+      markOffered();
+    };
+    // Give the first screen a moment before offering.
+    const timer = ios() ? window.setTimeout(() => offer("ios"), 1500) : undefined;
     const onPrompt = (event: Event) => {
       event.preventDefault();
       setPrompt(event as InstallEvent);
-      setAvailable("prompt");
+      offer("prompt");
     };
     const onInstalled = () => setAvailable(null);
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
+      if (timer) window.clearTimeout(timer);
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
@@ -56,29 +81,44 @@ export function InstallButton({ language }: { language: Language }) {
     if (!showIos && element.open) element.close();
   }, [showIos]);
 
-  if (!available) return null;
+  if (!available || (!open && !showIos)) return null;
 
   async function install() {
+    setOpen(false);
     if (available === "ios") return setShowIos(true);
     if (!prompt) return;
     await prompt.prompt();
-    const { outcome } = await prompt.userChoice;
-    if (outcome === "accepted") setAvailable(null);
+    await prompt.userChoice;
     setPrompt(null);
   }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => void install()}
-        title={c.install}
-        aria-label={c.install}
-        className="inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-card/90 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground"
-      >
-        <Download className="size-3.5" aria-hidden />
-        <span className="hidden sm:inline">{c.install}</span>
-      </button>
+      {open && (
+        <div role="dialog" aria-label={c.title} className="fixed inset-x-0 top-[max(3.75rem,calc(env(safe-area-inset-top)+3.25rem))] z-50 mx-auto w-[calc(100%-2rem)] max-w-[420px] motion-safe:animate-[fade-up_.35s_ease-out]">
+          <div className="flex items-start gap-3 rounded-2xl border border-border-strong bg-card p-3.5 shadow-xl">
+            <img src="/icons/icon-192.png" alt="" className="size-10 shrink-0 rounded-xl ring-1 ring-border" />
+            <div className="grid min-w-0 flex-1 gap-2">
+              <div className="grid gap-0.5">
+                <p className="text-sm font-semibold">{c.title}</p>
+                <p className="text-xs leading-snug text-muted-foreground">{c.body}</p>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => void install()} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground hover:opacity-90">
+                  <Download className="size-4" aria-hidden />
+                  {c.install}
+                </button>
+                <button type="button" onClick={() => setOpen(false)} className="inline-flex min-h-9 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-accent">
+                  {c.later}
+                </button>
+              </div>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} aria-label={c.later} className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent">
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
       <dialog
         ref={dialog}
         aria-label={c.title}
