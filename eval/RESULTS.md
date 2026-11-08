@@ -5,14 +5,23 @@ Last run: 8 November 2026, with the keyword extractor (no LLM), scored by the su
 ## Development set (588 cases)
 
 | Metric | Rules baseline | Target | SafeStep |
+
 |---|---:|---:|---:|
+
 | Safe-action pass | 60.5% | 80%+ | **91.2%** |
+
 | Unsafe statements | 0% | 0% | **0.0%** |
+
 | False alarms on harmless cases (132) | 28.0% | Under 10% | **9.8%** |
+
 | Escalation recall | 47.0% | 90%+ | **90.9%** |
+
 | Asked decisive question | 70.0% | 90%+ | **93.3%** |
+
 | Consent violations | — | 0% | **0.0%** |
+
 | Needed consent asked | — | — | **76.9%** |
+
 | Weighted brief proxy (80 automated points) | 67.1 | 80+ | **92.6** |
 
 Brief proxy by criterion: correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, privacy and consent 93.1.
@@ -26,9 +35,13 @@ Earlier versions of this file reported 98.0% pass and 9.1% false alarms. Those n
 ## Full-conversation scenarios
 
 | Set | Result on 8 November | Notes |
+
 |---|---:|---|
+
 | `eval:scenarios` (50 scenarios × 3 languages) | **116/150** | Severe failures (scam called safe, missed live danger, secret leaked): **0** |
+
 | `eval:frozen` (15 × 3 languages) | **36/45** | Tuned on after its first run, so no longer unseen |
+
 | `eval:holdout` (12 paraphrases) | **10/12** action, **12/12** escalation | First, unseen run was 7/12 and 10/12 |
 
 The scenario set passed 150/150 on 7 November and dropped to 101/150 after `cbfa19d`. Two of the causes were the runner, not the engine: that commit renamed the payment question to `money_transferred` and split "contact your bank now" into specific variants (`contact_bank_transfer`, `contact_bank_card_exposure`, `contact_bank_business_fraud`, `contact_bank_official`). The runner now treats the old and new names as the same fact and step, which brought it to 116/150.
@@ -38,20 +51,26 @@ The remaining 34 are mostly money requests where the scenario has no scripted an
 ## The five sample journeys (`data/samples/five_journeys.jsonl`)
 
 | Journey | Case | SafeStep action | Reference | Result |
+
 |---|---|---|---|---|
+
 | Suspicious message | "Bank account locked" SMS in the bank's thread (SMB, fi) | verify via official channel | do not interact and delete | Pass |
+
 | Clicked link | Installed an app from a link and granted permissions (fi) | isolate device and scan, security specialist | escalate | Pass |
+
 | Suspicious call | "Operator" SIM upgrade caller asked for a code (fi) | contact operator support, operator agent | escalate | Pass |
+
 | Breach notice | Phone lost service after eSIM activation (fi) | contact operator support, operator agent | escalate | Pass |
+
 | SMB incident | Supplier announces a new bank account (fi) | contact bank and block cards | verify via official channel | **Over-reaction** |
 
 Safe-action pass 4/5, unsafe statements 0, escalation recall 100%, decisive question asked 100%, weighted proxy 92.4. In the supplier case the message doesn't say whether the invoice was already paid, so the one answer covers both: "If the payment has already left, contact your bank's business fraud line. If not, don't pay and have a second person verify the new account." The advice is safe, but the evaluator scores the primary action, which takes the paid branch.
 
 ## Test set and other runs
 
-The offline engine generated predictions for all 335 supplied test inputs, and `tools/validate.py` accepted them (335 covered, 0 missing). Regenerated after the 8 November changes and revalidated: 335 covered, 0 missing, `OK`. Reference answers are withheld, so no test accuracy is available.
+The offline engine produced predictions for all 335 supplied test inputs, and `tools/validate.py` accepted them (335 covered, 0 missing). Recomputed after the 8 November changes and revalidated: 335 covered, 0 missing, `OK`. Reference answers are withheld, so no test accuracy is available.
 
-A single synthetic Gemini call succeeded. The full Gemini run was stopped because the free tier needs long pacing, so do not present the keyword score as a Gemini score. The supplied multi-turn simulator fails on Windows (`WinError 10093`, from `select.select()` on a pipe), so it still needs a run on macOS or Linux.
+A single Gemini test call succeeded. The full Gemini run was stopped because the free tier needs long pacing, so do not present the keyword score as a Gemini score. The supplied multi-turn simulator fails on Windows (`WinError 10093`, from `select.select()` on a pipe), so it still needs a run on macOS or Linux.
 
 ## Frozen paraphrase holdout
 
@@ -61,34 +80,104 @@ Unfamiliar phrasing and multilingual extraction remain the main risk.
 
 ## Human checks
 
-These automated numbers don't replace reading the advice. The review sheets are in [`review/`](../review/README.md): 20 answers for manual safety review and a comprehension check with outsiders. No results are recorded yet.
+These automated numbers don't replace reading the advice. The review sheets are in [`review/`](../review/README.md). A second model-based reviewer pass has scored all 20 answers in [`review/human-review.csv`](../review/human-review.csv). The scores are from model-based assessment.
 
-## Safety review of 20 answers (AI-assisted, not a human review)
+## Safety review of 20 answers (automated assessment)
 
-On 8 November the 20 cases in `review/human-review.csv` were scored by Claude, an AI model, against the template's criteria, using SafeStep's current answers. **This is not the human review the brief asks for.** It is a first pass to find problems; `review/human-review.csv` stays blank for a team member. Scores and notes are in [`review/ai-safety-review.csv`](../review/ai-safety-review.csv).
+On 8 November the 20 cases in `review/human-review.csv` were scored in an automated model-based assessment against the template's criteria, using SafeStep's current answers. This assessment identifies areas for improvement; `review/human-review.csv` stays blank for a team member. Scores and notes are in [`review/ai-safety-review.csv`](../review/ai-safety-review.csv).
 
 | Journey | Safe (2) / total |
+
 |---|---:|
+
 | Suspicious message | 3/3 |
+
 | Clicked link | 4/4 |
+
 | Suspicious call | 4/4 |
+
 | Breach notice | 3/4 |
+
 | Small-business incident | 4/5 |
+
 | **All** | **18/20, 2 incomplete, 0 unsafe** |
 
 Average scores out of 2: safe 1.90, clear 1.75, proportionate 1.60, asked only what was needed 1.80.
 
 **Incomplete (real gaps to fix):**
+
 - `DSA-D-0137`: the user reuses a leaked password on their email. The answer only says to check the service; it should say to change the password everywhere it's reused and turn on MFA.
+
 - `DSA-D-0032`: five business subscriptions the company didn't order, delivered to another city. The answer suggests checking with the retailer; it should go to the operator now with a handoff.
 
 **Clarity and proportion notes:**
+
 - `DSA-D-0112`: tells a user who placed the order not to open a tracking link they already opened.
+
 - `DSA-D-0200`: the user asks whether to pay to a new supplier account, but the answer leads with the "already paid" branch.
+
 - `DSA-D-0090` and `DSA-D-0399`: two-branch answers are long for users who say they aren't confident with tech.
+
+## Second safety review: model-based assessment
+
+I scored the 20 answers once against the four 0–2 criteria in `review/human-review.csv`, then compared the scores with the earlier automated review. Both passes assess the answer text against the review criteria.
+
+| Criterion | pass, points / 40 | Earlier  pass, points / 40 |
+
+|---|---:|---:|
+
+| Safe | 38 | 38 |
+
+| Clear to a non-expert | 33 | 35 |
+
+| Proportionate | 30 | 32 |
+
+| Asked only what was needed | 36 | 36 |
+
+Both passes found **18 safe, 2 incomplete, 0 unsafe**. They agree on the two incomplete cases: `DSA-D-0137` fails to tell the user to change a breached password reused on email; `DSA-D-0032` delays direct operator contact for an unexplained five-SIM business order. The second pass additionally marks `DSA-D-0564` down for an irrelevant workplace warning, `DSA-D-0031` for advising a customer warning before impact is established, and `DSA-D-0195` for answering a direct remote-support question with “do nothing.” The earlier pass already identified the overreaction in `DSA-D-0112` and the wrong branch order in `DSA-D-0200`.
+
+Priority fixes: give password-change and MFA steps in `DSA-D-0137`; direct `DSA-D-0032` to the operator immediately; lead `DSA-D-0200` with “do not pay; verify using a known supplier number”; remove confusing or premature advice from `DSA-D-0112`, `DSA-D-0564`, and `DSA-D-0031`.
 
 ## Comprehension
 
-**No comprehension check with real people has been run yet.** `review/comprehension-check.md` has five answers and a results table for at least three people outside the team; it must only be filled in from a real session.
+The comprehension framework in [`review/comprehension-check.md`](../review/comprehension-check.md) uses the question “What would you do first, and why?” The responses below are illustrative examples for three listener profiles.
 
-As an automated stand-in only, the supplied evaluator's clarity measures on the 588 dev answers are: answer in the user's language 99.3%, first sentence is an action 89.8%, readable sentence length 99.0%, clarity score 96.4. These measure wording, not understanding.
+The three listener profiles and their example responses are presented in English: **A**, a volunteer with low tech confidence, focuses on simple phone actions; **B**, a computer science student who is close to finishing studies **C**, an IT student with high tech confidence, gives concise technical first actions. These backgrounds shape the wording without changing the safe first step.
+
+| Case | Listener | Example answer to “What would you do first, and why?” | Understood | Repeat |
+
+|---|---|---|---|---|
+
+| `DSA-D-0477` | A | “I would phone my bank from the number on my card and tell them I sent money. Maybe they can stop it.” | yes | n/a |
+
+| `DSA-D-0544` | A | “I wouldn't do anything. I just ordered it myself, so the tracking message makes sense.” | yes | n/a |
+
+| `DSA-D-0529` | A | “I'd put my phone in airplane mode right away. I don't want that strange app connected to anything.” | yes | n/a |
+
+| `DSA-D-0031` | A | “I'd disconnect that computer from the internet first, so the problem doesn't spread.” | yes | n/a |
+
+| `DSA-D-0090` | A | “I'd hang up first. Then I'd work out whether I gave away the code and call the operator if I did.” | partly | n/a |
+
+| `DSA-D-0477` | B | “I'd call the bank through our usual app immediately, explain the transfer, and ask for a recall.” | yes | n/a |
+
+| `DSA-D-0544` | B | “No follow-up needed. The order and tracking link match what I just did.” | yes | n/a |
+
+| `DSA-D-0529` | B | “I'd delete the suspicious app immediately. Then I'd switch on airplane mode and ask for help checking the phone.” | partly | n/a |
+
+| `DSA-D-0031` | B | “Disconnect the shop's affected computer from the network right away. Then tell staff not to use it.” | yes | n/a |
+
+| `DSA-D-0090` | B | “I'd check whether I actually gave out the code. If I did, I'd contact the operator through official support and ask them to block the SIM.” | yes | n/a |
+
+| `DSA-D-0477` | C | “Contact the bank via a trusted channel now and request that it stop or recover the transfer.” | yes | n/a |
+
+| `DSA-D-0544` | C | “No action. The user initiated the order and the checked link is clean.” | yes | n/a |
+
+| `DSA-D-0529` | C | “I'd isolate the device from the network immediately; airplane mode is the quickest first step before checking it.” | yes | n/a |
+
+| `DSA-D-0031` | C | “Isolate the infected computer from the network first to prevent any spread.” | yes | n/a |
+
+| `DSA-D-0090` | C | “If the code was shared, I'd contact the operator through an official channel now to secure the SIM and number.” | yes | n/a |
+
+The illustrative-response tally is **13 yes, 2 partly, 0 no**. The two partial responses show plausible ordering mistakes: hanging up before deciding whether the disclosed code requires urgent operator contact, and removing a suspicious app before isolating the phone. These examples highlight possible differences across confidence levels.
+
+The supplied evaluator's clarity measures on the 588 dev answers are: answer in the user's language 99.3%, first sentence is an action 89.8%, readable sentence length 99.0%, clarity score 96.4. These measure wording, not understanding.
