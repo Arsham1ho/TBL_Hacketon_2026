@@ -186,11 +186,13 @@ async function interview(sessionId: string, journey: Journey | null, response: A
   const mask = (value: string) => guardInput(value).userText;
   const history = [...(journey.flipHistory ?? []), ...(journey.interview ?? [])].map(({ question, answer }) => ({ question: mask(question), answer: mask(answer) }));
   const facts = { ...journey.item.facts, evidence: journey.item.facts.evidence.map(({ fact, quote }) => ({ fact, quote: mask(quote) })) };
+  // A fact the user already settled in their own words ("Can I pay?" = not paid yet) is not a gap.
+  const settled = Object.keys(journey.item.answers).length > 0;
   const summaryGaps = [
     !journey.item.facts.incidentType && "what happened",
     journey.item.facts.asksFor.length === 0 && journey.item.facts.asksNothing !== true && "what was requested",
-    journey.item.facts.userAlreadyDid.length === 0 && "what the person did",
-    journey.item.facts.happeningNow === null && response.state.status === "threat_in_progress" && "whether the threat is still happening",
+    journey.item.facts.userAlreadyDid.length === 0 && !settled && "what the person did",
+    journey.item.facts.happeningNow === null && !settled && response.state.status === "threat_in_progress" && "whether the threat is still happening",
   ].filter((gap): gap is string => Boolean(gap));
   if (followUp && summaryGaps.length === 0 && assessment.unknownTopics.length === 0) return response;
   const question = await nextQuestion({ story, asked: history, language: journey.item.language, audience: journey.item.audience, facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: assessment.unknownTopics, summaryGaps });
