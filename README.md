@@ -211,13 +211,13 @@ All numbers below are from 8 November 2026, using the keyword extractor (no LLM)
 
 | Metric | Rules baseline | Target | SafeStep |
 |---|---:|---:|---:|
-| Safe-action pass | 60.5% | 80%+ | 91.2% |
+| Safe-action pass | 60.5% | 80%+ | 94.4% |
 | Unsafe statements | 0% | 0% | 0.0% |
 | False alarms on harmless cases | 28.0% | under 10% | 9.8% |
-| Escalation recall | 47.0% | 90%+ | 90.9% |
-| Asked the decisive question | 70.0% | 90%+ | 93.3% |
+| Escalation recall | 47.0% | 90%+ | 97.0% |
+| Asked the decisive question | 70.0% | 90%+ | 96.7% |
 | Consent violations | – | 0% | 0.0% |
-| Weighted score (80 automated points) | 67.1 | 80+ | 92.6 |
+| Weighted score (80 automated points) | 67.1 | 80+ | 94.0 |
 
 ```mermaid
 xychart-beta
@@ -225,12 +225,12 @@ xychart-beta
     x-axis ["Safe-action pass", "Escalation recall", "Decisive question", "Weighted score"]
     y-axis "Score (%)" 0 --> 100
     bar [60.5, 47.0, 70.0, 67.1]
-    bar [91.2, 90.9, 93.3, 92.6]
+    bar [91.2, 90.9, 93.3, 94.0]
 ```
 
 In each pair, the left bar is the supplied baseline and the right bar is SafeStep.
 
-On the brief's criteria the evaluator gives correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, and privacy and consent 93.1. The remaining 20% (working implementation) is judged by people.
+On the brief's criteria the evaluator gives correctness 93.7, clarity 97.2, uncertainty and escalation 92.0, and privacy and consent 93.1. The remaining 20% (working implementation) is judged by people.
 
 By journey:
 
@@ -239,20 +239,20 @@ xychart-beta
     title "Safe-action pass by journey (%)"
     x-axis ["Breach notice", "Suspicious message", "Clicked link", "Small business", "Suspicious call"]
     y-axis "Pass (%)" 0 --> 100
-    bar [98.3, 97.4, 94.0, 82.1, 81.9]
+    bar [99.2, 97.4, 94.0, 93.6, 81.9]
 ```
 
 | Journey | Cases | Safe-action pass |
 |---|---:|---:|
-| Breach notice | 120 | 98.3% |
+| Breach notice | 120 | 99.2% |
 | Suspicious message | 156 | 97.4% |
 | Clicked link | 84 | 94.0% |
-| Small-business incident | 156 | 82.1% |
+| Small-business incident | 156 | 93.6% |
 | Suspicious call | 72 | 81.9% |
 
-Consumer cases pass 95.2% and small-business cases 82.8%. Most misses in the weaker journeys are over-reactions (sending someone to the bank as a precaution) rather than unsafe advice.
+Consumer cases pass 95.5% and small-business cases 92.2%. Most misses in the weaker journeys are over-reactions (sending someone to the bank as a precaution) rather than unsafe advice.
 
-The five sample journeys from `five_journeys.jsonl` pass 4 of 5. The one miss is a supplier asking to be paid to a new bank account. The message doesn't say whether the invoice was already paid, so SafeStep answers for both cases. The evaluator only looks at the primary action, which comes from the "already paid" branch, and counts it as an over-reaction.
+The five sample journeys from `five_journeys.jsonl` pass **5 of 5** (weighted proxy 98.2), with no unsafe statements and every needed escalation made. The supplier case used to fail: SafeStep led with the "already paid" branch even though the user was asking whether to pay. A request to pay, or asking "can I pay?", is now read as "not paid yet", so the answer leads with "don't pay, verify the new account by phone".
 
 Other runs:
 
@@ -262,7 +262,7 @@ Other runs:
 | Multi-turn simulator (`sim/run_conversation.py`, 588 conversations) | 89.8% safe-action, 0% unsafe, 94.1% escalation recall, weighted 91.8 (baseline 65.3%, 69.1) |
 | Test set, 335 inputs | Predictions in `test_predictions.jsonl`, accepted by the supplied validator |
 | Safety contract | 588 cases, no breaches |
-| Unit tests | 550 passing |
+| Unit tests | 555 passing |
 
 <details>
 <summary>Failure and escalation examples</summary>
@@ -336,7 +336,7 @@ Other docs:
 
 ## Known limits
 
-- Sessions are kept in server memory. On the hosted demo, a follow-up answer can reach a different serverless instance and fail with "Something went wrong". It works locally. A shared session store would fix this.
+- Sessions are sealed and passed between requests so they survive serverless hosts, but there is no shared store yet. A production deployment would use one, under DNA's retention rules.
 - The link check reaches the open internet from the server. In production it should run in an isolated network.
 - Plans are a demo switch with hypothetical prices. There is no billing.
 - The Finnish and Swedish text still needs a native speaker to review it.

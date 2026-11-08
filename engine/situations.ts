@@ -59,6 +59,8 @@ const did = didAction;
 const evidenceText = (c: Case) => c.facts.evidence.map((item) => item.quote).join(" ").toLowerCase();
 const CRYPTO = /seed|recovery ?phrase|private ?key|mnemonic|wallet|crypto|bitcoin|btc|usdt|ethereum|metamask|token|siemenlause|palautuslause|lompako|krypto|seedfras|plånbok/u;
 const crypto = (c: Case) => Boolean(c.mentions?.includes("crypto")) || CRYPTO.test(evidenceText(c));
+// Subscriptions or SIM cards ordered on a company account: the operator can stop them.
+const OPERATOR_ORDER = /subscription|sim[- ]?(card|kort)|liittym|sim-kort|abonnemang/u;
 const SEXTORTION = /sextort|nude|intimate|naked|webcam|alastonkuv|intiimi|nakenbild|intima bilder/u;
 const selfStarted = (item: Case) => topicValue(item, "self_initiated");
 const asks = (item: Case, request: Case["facts"]["asksFor"][number]) => item.facts.asksFor.includes(request);
@@ -333,6 +335,17 @@ export const SITUATIONS: Situation[] = [
     then: (c) =>
       selfStarted(c) === "yes"
         ? explainBenign("own_order", ["guidance_order_confirmations", "guidance_proportionate_advice"])
+        : c.audience === "small_business" && OPERATOR_ORDER.test(evidenceText(c))
+        ? outcome(
+            "sim_takeover",
+            "contact_operator_support",
+            "incident_occurred",
+            "critical",
+            "immediate",
+            ["contact_operator", "lock_subscription", "change_password", "review_sessions"],
+            ["guidance_order_confirmations", "guidance_shared_accounts"],
+            { destination: "business_security_support", rescue: true },
+          )
         : outcome(
             "unauthorised_order",
             "verify_via_official_channel",
@@ -637,7 +650,7 @@ export const SITUATIONS: Situation[] = [
   },
   {
     id: "breach_password",
-    when: (c) => is(c, "data_breach_notice") && (c.facts.dataExposed.includes("password") || c.facts.dataExposed.includes("bank_login")),
+    when: (c) => is(c, "data_breach_notice") && (c.facts.dataExposed.includes("password") || c.facts.dataExposed.includes("bank_login") || yes(c, "password_reused")),
     then: () =>
       outcome(
         "breach_password",

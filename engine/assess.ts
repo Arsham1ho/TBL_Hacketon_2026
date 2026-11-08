@@ -71,7 +71,12 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
   const paymentDenied = /\b(?:(?:i|we) (?:have not|haven't|did not|didn't|never) (?:paid|sent|transferred)\b(?:.{0,35}\b(?:money|payment|invoice|funds|anything|it)\b| yet\b|(?=[.!?;,]|$))|en (?:ole )?(?:vielä )?(?:maksanut|lähettänyt maksua|siirtänyt rahaa)|jag har inte (?:ännu )?(?:betalat|skickat pengar|fört över pengar))\b/iu.test(guarded.userText);
   const codeDenied = facts.asksFor.includes("code") && !facts.userAlreadyDid.includes("shared_code")
     && /\b(?:i (?:refused|declined)(?:\b|\b.{0,25}\b(?:code|it))|i (?:did not|didn't|have not|haven't)\b.{0,25}\b(?:code|share|give|read|send|it)|en (?:antanut|kertonut|jakanut|lähettänyt)\b.{0,20}\b(?:koodi|koodia|sitä)|jag (?:vägrade|delade inte|gav inte|läste inte upp)\b.{0,20}\b(?:kod|koden|den))\b/iu.test(guarded.userText);
-  const explicitAnswers: Answers = paymentDenied && !facts.userAlreadyDid.includes("paid")
+  // "Can I pay to the new account?" means the money hasn't left yet.
+  const asksWhetherToPay = /(?<![\p{L}])(?:(?:can|should|may) (?:i|we) pay|voi(?:nko|mmeko) maksaa|saan(?:ko)? maksaa|pitäisikö (?:minun |meidän )?maksaa|(?:kan|ska|får) (?:jag|vi) betala)\b/iu.test(guarded.userText);
+  // A supplier "asking us to pay" to a new account is a request that hasn't been acted on.
+  const pendingPaymentChange = facts.incidentType === "payment_detail_change"
+    && /(?:pyytää|pyysi) (?:meitä |minua )?maksamaan|asks? (?:us |me )?to pay|asking (?:us |me )?to pay|ber (?:oss|mig) (?:att )?betala/iu.test(guarded.userText);
+  const explicitAnswers: Answers = (paymentDenied || asksWhetherToPay || pendingPaymentChange) && !facts.userAlreadyDid.includes("paid")
     ? { payment_status: "no", money_transferred: "no" } : {};
   if (codeDenied) explicitAnswers.code_shared = "no";
   return {

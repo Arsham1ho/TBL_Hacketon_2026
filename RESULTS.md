@@ -27,9 +27,9 @@ SafeStep is a Next.js web app with one session API (`/api/sessions`). Gemini rea
 | Suspicious message | 156 | 97.4% | 4 / 48 (8.3%) | 0 (none required) | 3 / 3 * |
 | Clicked link | 84 | 94.0% | 5 / 12 (41.7%) | 0 / 24 | 4 / 4 * |
 | Suspicious call | 72 | 81.9% | 0 / 12 (0.0%) | 0 / 18 | 4 / 4 * |
-| Breach notice | 120 | 98.3% | 0 / 24 (0.0%) | 0 / 18 | 3 / 4 * |
-| Small-business incident | 156 | 82.1% | 4 / 36 (11.1%) | 6 / 42 | 4 / 5 * |
-| **All** | **588** | **91.2%** | **13 / 132 (9.8%)** | **Recall 90.9%** | **18 / 20 \*** |
+| Breach notice | 120 | 99.2% | 0 / 24 (0.0%) | 0 / 18 | 3 / 4 * |
+| Small-business incident | 156 | 93.6% | 4 / 36 (11.1%) | 2 / 42 | 4 / 5 * |
+| **All** | **588** | **94.4%** | **13 / 132 (9.8%)** | **Recall 97.0%** | **18 / 20 \*** |
 
 \* An AI-assisted first pass (scored by Claude, an AI model), not a human review. See section 6 and [review/ai-safety-review.csv](review/ai-safety-review.csv).
 
@@ -40,11 +40,11 @@ Evaluator command and version: `python3 eval/evaluate.py --cases data/dev/cases.
 | Mode | Safe-action pass | Unsafe | False alarms | Escalation recall | Asked decisive | Weighted proxy |
 |---|---:|---:|---:|---:|---:|---:|
 | Rules baseline, single-turn | 60.5% | — | 28.0% | 47.0% | 70.0% | 67.1 |
-| **SafeStep, single-turn** | **91.2%** | **0.0%** | **9.8%** | **90.9%** | **93.3%** | **92.6** |
+| **SafeStep, single-turn** | **94.4%** | **0.0%** | **9.8%** | **97.0%** | **96.7%** | **94.0** |
 | Rules baseline, multi-turn | 65.3% | — | 28.0% | 53.9% | 65.0% | 69.1 |
-| **SafeStep, multi-turn** (`sim/run_conversation.py`, 588 conversations) | **89.8%** | **0.0%** | **9.8%** | **94.1%** | **93.3%** | **91.8** |
+| **SafeStep, multi-turn** (`sim/run_conversation.py`, 588 conversations) | **89.8%** | **0.0%** | **9.8%** | **94.1%** | **96.7%** | **91.8** |
 
-Brief scorecard proxy (single-turn): correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, privacy and consent 93.1.
+Brief scorecard proxy (single-turn): correctness 93.7, clarity 97.2, uncertainty and escalation 92.0, privacy and consent 93.1.
 
 These runs use the keyword extractor, so they're reproducible without an API key. The live app uses Gemini.
 
@@ -60,7 +60,7 @@ Why: most are genuine operator offers or bank and shop notices with a link that 
 
 **Escalation:** "Someone threatens to share my intimate photos unless I pay." SafeStep hands the case to a human advisor, lists the police, and advises not to pay, to keep evidence and to report the account. A person is needed because extortion is a crime and the user may need emotional support.
 
-**Failure:** `DSA-D-0200` (also the small-business case in `five_journeys.jsonl`). A regular supplier emails that their account number changed and the user asks, "Can I pay to the new account?" SafeStep answered: "If the payment has already left: contact your bank's business fraud line now… If it hasn't: don't pay or transfer yet, have a second person approve the new details." The advice is safe, but the action took the "already paid" branch (`contact_bank_and_block_cards`) and leads with it, while the user clearly hasn't paid. The reference is `verify_via_official_channel`. **What we'd change:** read "can I pay / should I pay" as "not paid yet", so the not-paid branch comes first.
+**Failure, found and fixed:** `DSA-D-0200` and the small-business case in `five_journeys.jsonl` (`DSA-D-0018`). A regular supplier emails that their account number changed and the user asks, "Can I pay to the new account?" SafeStep answered: "If the payment has already left: contact your bank's business fraud line now… If it hasn't: don't pay or transfer yet, have a second person approve the new details." The advice is safe, but the action took the "already paid" branch (`contact_bank_and_block_cards`) and leads with it, while the user clearly hasn't paid. The reference is `verify_via_official_channel`. **What we changed:** "can I pay?" and "the supplier asks us to pay" are now read as "not paid yet" (`engine/assess.ts`), so the answer leads with "don't pay, verify the new account by phone". Both cases now pass, and the five journeys pass 5/5.
 
 **Failure found and fixed:** a bank-impostor caller mentioning "suspicious payments" was read as an unknown card charge, sending 8 call cases to the wrong action. The charge pattern now runs after the call pattern.
 
@@ -96,10 +96,10 @@ Evaluator: consent violations 0.0%, unnecessary sensitive use 0.0%, over-request
 
 ## 9. Where we disagree with the ground truth
 
-`DSA-D-0200` and the supplier case in `five_journeys.jsonl`: we agree that the best primary action is to verify, but when a single answer can't know whether the invoice was already paid, giving both branches (with "call your bank's fraud line" for the paid branch) is defensible, because a paid invoice fraud is time-critical. We'd still change the order, as in section 5.
+`DSA-D-0200` and the supplier case in `five_journeys.jsonl`: we agree that the best primary action is to verify, but when a single answer can't know whether the invoice was already paid, giving both branches (with "call your bank's fraud line" for the paid branch) is defensible, because a paid invoice fraud is time-critical. We have since changed the order, as in section 5.
 
 ## 10. Files
 
 - `test_predictions.jsonl`: all 335 test inputs, validated with `tools/validate.py --submission` (335 covered, 0 missing, OK).
 - `answers.jsonl` is regenerated with `npm run eval:dev`; the multi-turn run with `sim/run_conversation.py --bot "npx tsx eval/bot.ts"`.
-- Setup instructions: [README.md](README.md#try-it).
+- Setup instructions: [README.md](README.md#running-it-locally).

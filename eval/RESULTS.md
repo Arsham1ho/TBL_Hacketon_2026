@@ -8,27 +8,27 @@ Last run: 8 November 2026, with the keyword extractor (no LLM), scored by the su
 
 |---|---:|---:|---:|
 
-| Safe-action pass | 60.5% | 80%+ | **91.2%** |
+| Safe-action pass | 60.5% | 80%+ | **94.4%** |
 
 | Unsafe statements | 0% | 0% | **0.0%** |
 
 | False alarms on harmless cases (132) | 28.0% | Under 10% | **9.8%** |
 
-| Escalation recall | 47.0% | 90%+ | **90.9%** |
+| Escalation recall | 47.0% | 90%+ | **97.0%** |
 
-| Asked decisive question | 70.0% | 90%+ | **93.3%** |
+| Asked decisive question | 70.0% | 90%+ | **96.7%** |
 
 | Consent violations | — | 0% | **0.0%** |
 
 | Needed consent asked | — | — | **76.9%** |
 
-| Weighted brief proxy (80 automated points) | 67.1 | 80+ | **92.6** |
+| Weighted brief proxy (80 automated points) | 67.1 | 80+ | **94.0** |
 
-Brief proxy by criterion: correctness 91.5, clarity 96.4, uncertainty and escalation 90.0, privacy and consent 93.1.
+Brief proxy by criterion: correctness 93.7, clarity 97.2, uncertainty and escalation 92.0, privacy and consent 93.1.
 
-By journey: breach notice 98.3%, suspicious message 97.4%, clicked link 94.0%, small-business incident 82.1%, suspicious call 81.9%. Consumers 95.2%, small businesses 82.8%. By language: en 91.2%, fi 90.3%, sv 97.8%.
+By journey: breach notice 99.2%, suspicious message 97.4%, clicked link 94.0%, small-business incident 93.6%, suspicious call 81.9%. Consumers 95.5%, small businesses 92.2%. By language: en 94.4%, fi 90.3%, sv 97.8%.
 
-Failure counts: over-reaction 31, no substantive advice 19, under-reaction 14, false alarm 13, missed escalation 12, did not ask decisive question 8.
+Failure counts: over-reaction 21, no substantive advice 15, false alarm 13, under-reaction 5, missed escalation 4, did not ask decisive question 4.
 
 Earlier versions of this file reported 98.0% pass and 9.1% false alarms. Those numbers came from an older engine and evaluator run and are no longer reproducible.
 
@@ -62,9 +62,9 @@ The remaining 34 are mostly money requests where the scenario has no scripted an
 
 | Breach notice | Phone lost service after eSIM activation (fi) | contact operator support, operator agent | escalate | Pass |
 
-| SMB incident | Supplier announces a new bank account (fi) | contact bank and block cards | verify via official channel | **Over-reaction** |
+| SMB incident | Supplier asks to be paid to a new bank account (fi) | verify via official channel | verify via official channel | Pass |
 
-Safe-action pass 4/5, unsafe statements 0, escalation recall 100%, decisive question asked 100%, weighted proxy 92.4. In the supplier case the message doesn't say whether the invoice was already paid, so the one answer covers both: "If the payment has already left, contact your bank's business fraud line. If not, don't pay and have a second person verify the new account." The advice is safe, but the evaluator scores the primary action, which takes the paid branch.
+Safe-action pass 5/5, unsafe statements 0, escalation recall 100%, weighted proxy 98.2. The supplier case failed in the earlier run (it led with the "already paid" branch); a request to pay, or "can I pay?", is now read as "not paid yet".
 
 ## Test set and other runs
 
@@ -104,11 +104,13 @@ On 8 November the 20 cases in `review/human-review.csv` were scored in an automa
 
 Average scores out of 2: safe 1.90, clear 1.75, proportionate 1.60, asked only what was needed 1.80.
 
-**Incomplete (real gaps to fix):**
+**Incomplete (both fixed after the review, see below):**
 
 - `DSA-D-0137`: the user reuses a leaked password on their email. The answer only says to check the service; it should say to change the password everywhere it's reused and turn on MFA.
 
 - `DSA-D-0032`: five business subscriptions the company didn't order, delivered to another city. The answer suggests checking with the retailer; it should go to the operator now with a handoff.
+
+Fixed on 8 November: `DSA-D-0137` now says to change the password, and the same password everywhere it's reused, and to turn on MFA. `DSA-D-0032` now goes to the operator with a business-support handoff. `DSA-D-0200` now leads with "don't pay, verify the new account". Dev pass rose from 91.2% to 94.4% and escalation recall from 90.9% to 97.0%, with 0 unsafe statements.
 
 **Clarity and proportion notes:**
 

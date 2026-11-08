@@ -78,7 +78,7 @@ const ASKS: [Facts["asksFor"][number], RegExp][] = [
 ];
 
 // Only a statement about everything. "I didn't pay" says nothing about a code.
-const NOTHING_DONE = re(String.raw`deleted (it|the (message|text|sms|email))|ignored it|did(n't| not) (click|open|reply|respond)|poistin (sen|viestin)|(?<![\p{L}])en (klikannut|avannut|vastannut)|raderade (det|den|meddelandet)|tog bort (det|den|meddelandet)|klickade inte|öppnade inte|svarade inte|hung up before|i did(n't| not) do anything|i did nothing|i haven't done anything|nothing yet|löin luurin ennen|lopetin puhelun ennen|(?<![\p{L}])en (tehnyt|ole tehnyt) mitään|lade på innan|gjorde inget|har inte gjort något`);
+const NOTHING_DONE = re(String.raw`(?<![\p{L}])(can|should|may) (i|we) pay|voi(nko|mmeko) maksaa|saan(ko)? maksaa|pitäisikö (minun |meidän )?maksaa|(kan|ska|får) (jag|vi) betala|deleted (it|the (message|text|sms|email))|ignored it|did(n't| not) (click|open|reply|respond)|poistin (sen|viestin)|(?<![\p{L}])en (klikannut|avannut|vastannut)|raderade (det|den|meddelandet)|tog bort (det|den|meddelandet)|klickade inte|öppnade inte|svarade inte|hung up before|i did(n't| not) do anything|i did nothing|i haven't done anything|nothing yet|löin luurin ennen|lopetin puhelun ennen|(?<![\p{L}])en (tehnyt|ole tehnyt) mitään|lade på innan|gjorde inget|har inte gjort något`);
 
 // Covers "I didn't type it" and "they asked me to type it", which are not actions taken.
 // "en" means "not" in Finnish but "a" in Swedish, so denial is checked per language.
