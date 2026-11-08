@@ -1,6 +1,6 @@
 # Human review
 
-The brief asks for two human checks that the automated evaluator can't do. The manual safety review is done (20 of 20 safe after re-scoring 3 fixed answers; first pass 18 of 20; reviewed by Arsham on 8 November, notes polished with an AI tool). The comprehension check has not been run yet.
+The brief asks for two human checks that the automated evaluator can't do. The manual safety review is done (20 of 20 safe after re-scoring 3 fixed answers; first pass 18 of 20; reviewed by Arsham on 8 November, notes polished with an AI tool). The comprehension check was run with 3 people outside the team (4 of 6 responses understood, 1 partly, 1 not).
 
 | Sheet | Brief requirement | Task | Who | Time |
 |---|---|---|---|---|

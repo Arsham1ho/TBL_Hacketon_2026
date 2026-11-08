@@ -66,13 +66,20 @@ Why: most are genuine operator offers or bank and shop notices with a link that 
 
 ## 6. Comprehension check
 
-**Not yet run with real people.** The sheet with five answers is ready in [review/comprehension-check.md](review/comprehension-check.md), and results will only be recorded from a real session.
+Run on 8 November with 3 people outside the team, reading each answer once and asking “What would you do first, and why?” Words are written down as said, lightly cleaned for spelling. Not every listener heard every answer: C was read only to a listener who could follow it. **Result: 6 responses, 4 understood, 1 partly, 0 repeats needed, 1 not understood.**
 
-| Case | Listener's own words | Understood? |
-|---|---|---|
-| — | Not yet run | — |
+What we learned: the harmless answer (B) was understood by everyone. The money-sent answer (A) was understood by the high-confidence listener; the medium-confidence listener got the bank but put “block the number” first; the low-confidence listener went to the police and friends instead of the bank. Answer A mentions the police in the same breath as the bank, so we would make the order explicit: “First call your bank. Then report to the police.”
 
-As an automated stand-in only, the evaluator's clarity measures are: answer in the user's language 99.3%, first sentence is an action 89.8%, readable sentence length 99.0%. These measure wording, not understanding.
+| Case | Listener (tech confidence) | Their own words | Understood? | Needed a repeat? |
+|---|---|---|---|---|
+| A `DSA-D-0477` | P1 (medium) | “Block the number, freeze my bank, then contact my bank and then the police.” | partly | no |
+| B `DSA-D-0544` | P1 (medium) | “I did it by myself, so no problem.” | yes | no |
+| A `DSA-D-0477` | P2 (high) | “Contact the bank and the police, try to get a new card, check my last transactions and figure out how I can get my money back.” | yes | no |
+| B `DSA-D-0544` | P2 (high) | “Why should I worry? Everything is fine.” | yes | no |
+| C `DSA-D-0529` | P2 (high) | “Disconnect the internet, remove the app, show it to an expert, run antivirus, change my password and credentials.” | yes | no |
+| A `DSA-D-0477` | P3 (low) | “Call the police and follow their guide, ask my friends, turn off my phone.” | no | no |
+
+The full sheet is in [review/comprehension-check.md](review/comprehension-check.md). In addition, the evaluator's clarity measures are: answer in the user's language 99.3%, first sentence is an action 89.8%, readable sentence length 99.0%. These measure wording, not understanding.
 
 ## 7. Privacy and consent
 

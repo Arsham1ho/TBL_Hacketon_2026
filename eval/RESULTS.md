@@ -146,44 +146,17 @@ Priority fixes: give password-change and MFA steps in `DSA-D-0137`; direct `DSA-
 
 ## Comprehension
 
-The comprehension framework in [`review/comprehension-check.md`](../review/comprehension-check.md) uses the question “What would you do first, and why?” The responses below are illustrative examples for three listener profiles.
+Run on 8 November with 3 people outside the team, reading each answer once and asking “What would you do first, and why?” Words are written down as said, lightly cleaned for spelling. Not every listener heard every answer: C was read only to a listener who could follow it. **Result: 6 responses, 4 understood, 1 partly, 0 repeats needed, 1 not understood.**
 
-The three listener profiles and their example responses are presented in English: **A**, a volunteer with low tech confidence, focuses on simple phone actions; **B**, a computer science student who is close to finishing studies **C**, an IT student with high tech confidence, gives concise technical first actions. These backgrounds shape the wording without changing the safe first step.
+What we learned: the harmless answer (B) was understood by everyone. The money-sent answer (A) was understood by the high-confidence listener; the medium-confidence listener got the bank but put “block the number” first; the low-confidence listener went to the police and friends instead of the bank. Answer A mentions the police in the same breath as the bank, so we would make the order explicit: “First call your bank. Then report to the police.”
 
-| Case | Listener | Example answer to “What would you do first, and why?” | Understood | Repeat |
-
+| Case | Listener (tech confidence) | Their own words | Understood? | Needed a repeat? |
 |---|---|---|---|---|
-
-| `DSA-D-0477` | A | “I would phone my bank from the number on my card and tell them I sent money. Maybe they can stop it.” | yes | n/a |
-
-| `DSA-D-0544` | A | “I wouldn't do anything. I just ordered it myself, so the tracking message makes sense.” | yes | n/a |
-
-| `DSA-D-0529` | A | “I'd put my phone in airplane mode right away. I don't want that strange app connected to anything.” | yes | n/a |
-
-| `DSA-D-0031` | A | “I'd disconnect that computer from the internet first, so the problem doesn't spread.” | yes | n/a |
-
-| `DSA-D-0090` | A | “I'd hang up first. Then I'd work out whether I gave away the code and call the operator if I did.” | partly | n/a |
-
-| `DSA-D-0477` | B | “I'd call the bank through our usual app immediately, explain the transfer, and ask for a recall.” | yes | n/a |
-
-| `DSA-D-0544` | B | “No follow-up needed. The order and tracking link match what I just did.” | yes | n/a |
-
-| `DSA-D-0529` | B | “I'd delete the suspicious app immediately. Then I'd switch on airplane mode and ask for help checking the phone.” | partly | n/a |
-
-| `DSA-D-0031` | B | “Disconnect the shop's affected computer from the network right away. Then tell staff not to use it.” | yes | n/a |
-
-| `DSA-D-0090` | B | “I'd check whether I actually gave out the code. If I did, I'd contact the operator through official support and ask them to block the SIM.” | yes | n/a |
-
-| `DSA-D-0477` | C | “Contact the bank via a trusted channel now and request that it stop or recover the transfer.” | yes | n/a |
-
-| `DSA-D-0544` | C | “No action. The user initiated the order and the checked link is clean.” | yes | n/a |
-
-| `DSA-D-0529` | C | “I'd isolate the device from the network immediately; airplane mode is the quickest first step before checking it.” | yes | n/a |
-
-| `DSA-D-0031` | C | “Isolate the infected computer from the network first to prevent any spread.” | yes | n/a |
-
-| `DSA-D-0090` | C | “If the code was shared, I'd contact the operator through an official channel now to secure the SIM and number.” | yes | n/a |
-
-The illustrative-response tally is **13 yes, 2 partly, 0 no**. The two partial responses show plausible ordering mistakes: hanging up before deciding whether the disclosed code requires urgent operator contact, and removing a suspicious app before isolating the phone. These examples highlight possible differences across confidence levels.
+| A `DSA-D-0477` | P1 (medium) | “Block the number, freeze my bank, then contact my bank and then the police.” | partly | no |
+| B `DSA-D-0544` | P1 (medium) | “I did it by myself, so no problem.” | yes | no |
+| A `DSA-D-0477` | P2 (high) | “Contact the bank and the police, try to get a new card, check my last transactions and figure out how I can get my money back.” | yes | no |
+| B `DSA-D-0544` | P2 (high) | “Why should I worry? Everything is fine.” | yes | no |
+| C `DSA-D-0529` | P2 (high) | “Disconnect the internet, remove the app, show it to an expert, run antivirus, change my password and credentials.” | yes | no |
+| A `DSA-D-0477` | P3 (low) | “Call the police and follow their guide, ask my friends, turn off my phone.” | no | no |
 
 The supplied evaluator's clarity measures on the 588 dev answers are: answer in the user's language 99.3%, first sentence is an action 89.8%, readable sentence length 99.0%, clarity score 96.4. These measure wording, not understanding.
