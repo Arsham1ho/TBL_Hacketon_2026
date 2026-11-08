@@ -39,6 +39,7 @@ import { ProviderLogo, SelectMenu } from "./select-menu";
 import { HistoryPanel } from "./history-panel";
 import { LinkAnalysisCard } from "./link-analysis";
 import { PlanChip, PlansSheet } from "./plans";
+import { InstallButton, useServiceWorker } from "./install-app";
 import { hasFeature, loadPlan, savePlan, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
 import { pasteCopy, wantsPaste } from "@/lib/received";
 import type { ContentAnalysis } from "@/adapters/link-scan";
@@ -351,6 +352,7 @@ export function SafeStepApp() {
   const [plansOpen, setPlansOpen] = useState<Plan | true | false>(false);
   // The locked feature that opened the sheet, so it can say what upgrading unlocks right now.
   const [planReason, setPlanReason] = useState<Feature | undefined>();
+  useServiceWorker();
   const [channel, setChannel] = useState<"chat" | "call">("chat");
   const [reportAfterUpgrade, setReportAfterUpgrade] = useState(false);
   useEffect(() => setPlan(loadPlan()), []);
@@ -745,6 +747,7 @@ export function SafeStepApp() {
       <div className="flex h-dvh flex-col">
         {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+          <InstallButton language={shown} />
           <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
           {currentUser ? (
             <button
@@ -974,6 +977,7 @@ export function SafeStepApp() {
     <div className="flex h-dvh flex-col">
       {historyButton}
         <div className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-3 z-40 flex items-center gap-2">
+          <InstallButton language={shown} />
           <PlanChip plan={plan} language={shown} onClick={() => openPlans()} />
         {currentUser ? (
           <button

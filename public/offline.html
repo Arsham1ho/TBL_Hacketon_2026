@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SafeStep: offline</title>
+<style>
+  :root { --bg: #fff; --fg: #222; --muted: #666; --card: #f2f2f2; --alert: #8a1f1f; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1b1b1b; --fg: #eee; --muted: #aaa; --card: #2a2a2a; --alert: #ff8a8a; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 520px; margin: 0 auto; padding: 48px 16px; display: grid; gap: 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  p { margin: 0; color: var(--muted); }
+  ul { margin: 0; padding: 16px 16px 16px 34px; background: var(--card); border-radius: 16px; display: grid; gap: 8px; }
+  strong { color: var(--alert); }
+  button { justify-self: start; font: inherit; padding: 12px 20px; border-radius: 10px; border: 0; background: var(--fg); color: var(--bg); cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/icons/icon-192.png" width="48" height="48" alt="">
+  <h1>You're offline</h1>
+  <p>SafeStep needs a connection to check what happened. While you wait, these steps are safe in almost any situation:</p>
+  <ul>
+    <li><strong>Don't</strong> share codes, passwords or card numbers with anyone who contacted you.</li>
+    <li>If money has left your account, call your bank on the number on your card or in its own app.</li>
+    <li>If someone is still on the phone pressuring you, hang up.</li>
+    <li>In an emergency, call <strong>112</strong>.</li>
+  </ul>
+  <button onclick="location.reload()">Try again</button>
+</main>
+</body>
+</html>
