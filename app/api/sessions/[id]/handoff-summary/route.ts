@@ -6,11 +6,11 @@ import { assess } from "../../../../../engine/assess";
 import { handoffDetails, handoffSummary, journeyDestination } from "../../../../../engine/handle-event";
 
 // Simulated support handoff. A session ID is a bearer secret, not agent authentication.
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const headers = { "Cache-Control": "no-store" };
   if (!z.string().uuid().safeParse(id).success) return NextResponse.json({ error: "invalid_input" }, { status: 400, headers });
-  const journey = getSession(id)?.journey;
+  const journey = getSession(id, request.headers.get("x-session-token"))?.journey;
   if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404, headers });
   if (!journey.handoffApproved) return NextResponse.json({ error: "approval_required" }, { status: 403, headers });
   const destination = journeyDestination(journey);

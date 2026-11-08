@@ -4,8 +4,11 @@ import type { Language } from "../engine/types";
 // Speech to text on OpenAI. Text to speech on ElevenLabs when its key is set, for a more
 // natural voice, otherwise on OpenAI. Gemini's OpenAI-compatible endpoint has no audio routes.
 
-const openAiKey = () => process.env.OPENAI_API_KEY || process.env.open_ai_api_key;
-const elevenLabsKey = () => process.env.ELEVENLABS_API_KEY;
+// A key pasted into a hosting dashboard often keeps stray quotes or whitespace, which the
+// provider then rejects. Clean them off.
+const clean = (value: string | undefined) => value?.trim().replace(/^["']|["']$/g, "").trim() || undefined;
+const openAiKey = () => clean(process.env.OPENAI_API_KEY) || clean(process.env.open_ai_api_key);
+const elevenLabsKey = () => clean(process.env.ELEVENLABS_API_KEY);
 
 export const sttAvailable = () => Boolean(openAiKey());
 export const ttsAvailable = () => Boolean(elevenLabsKey() || openAiKey());

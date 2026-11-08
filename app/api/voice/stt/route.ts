@@ -11,9 +11,13 @@ const MAX_BYTES = 1_200_000;
 // Finnish, English and Swedish are all written in Latin script. Text in another script, such as
 // Chinese from a burst of noise, is a transcription of nothing the user said, so it is dropped.
 const OTHER_SCRIPT = /[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}]/u;
+const PROMPT = "The speaker talks Finnish, English or Swedish to a security helpline about a possible scam, hacked account or suspicious message.";
+// On silence the model can return the prompt itself, which must not be taken as the user's words.
+const simplify = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const echoesPrompt = (text: string) => simplify(text).length > 12 && simplify(PROMPT).includes(simplify(text));
 function plausible(text: string) {
   const trimmed = text.trim();
-  return trimmed.length > 0 && !OTHER_SCRIPT.test(trimmed);
+  return trimmed.length > 0 && !OTHER_SCRIPT.test(trimmed) && !echoesPrompt(trimmed);
 }
 
 export async function POST(request: Request) {
@@ -27,10 +31,13 @@ export async function POST(request: Request) {
       model: STT_MODEL(),
       ...(LANGUAGES.has(language) ? { language } : {}),
       // Without a hint, noise or a short sound can come back as words in a language nobody spoke.
-      prompt: "The speaker talks Finnish, English or Swedish to a security helpline about a possible scam, hacked account or suspicious message.",
+      prompt: PROMPT,
     });
     return NextResponse.json({ text: plausible(result.text) ? result.text : "" });
-  } catch {
+  } catch (error) {
+    // Logged without the audio or the key, so a rejected key or a quota problem shows in the host's logs.
+    const { status, code, message } = error as { status?: number; code?: string; message?: string };
+    console.error("[voice] transcription failed:", status ?? "", code ?? "", (message ?? "").slice(0, 200));
     return NextResponse.json({ error: "Transcription failed" }, { status: 502 });
   }
 }

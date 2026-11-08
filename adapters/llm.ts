@@ -61,9 +61,10 @@ const SCHEMA = (() => {
 // Gemini is used through Google's OpenAI-compatible endpoint, and wins if both keys are set.
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
-const geminiKey = () => process.env.GEMINI_API_KEY;
+const geminiKey = () => cleanKey(process.env.GEMINI_API_KEY);
 // OpenAI is off unless USE_OPENAI=1 is set, so an OpenAI key is never charged by accident.
-const openAiKey = () => (process.env.USE_OPENAI === "1" ? process.env.OPENAI_API_KEY || process.env.open_ai_api_key : undefined);
+const cleanKey = (value: string | undefined) => value?.trim().replace(/^["']|["']$/g, "").trim() || undefined;
+const openAiKey = () => (process.env.USE_OPENAI === "1" ? cleanKey(process.env.OPENAI_API_KEY) || cleanKey(process.env.open_ai_api_key) : undefined);
 
 export const llmAvailable = () => Boolean(geminiKey() || openAiKey());
 export const llmModel = () => process.env.LLM_MODEL || (geminiKey() ? "gemini-3.5-flash-lite" : "gpt-5.4-mini");

@@ -17,39 +17,47 @@ export type SafeStepClient = {
 
 export function createClient(request: typeof fetch = (...args) => fetch(...args)): SafeStepClient {
   let sessionId: string | null = null;
+  // Encrypted copy of the session from the server. Sent back with each request so any server
+  // instance can continue the conversation. The client can't read it.
+  let sessionToken: string | null = null;
+  const tokenHeader = (): Record<string, string> => (sessionToken ? { "x-session-token": sessionToken } : {});
 
   async function post(body: object): Promise<ApiResponse> {
     const response = await request(`${API_URL}/api/sessions`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(sessionToken ? { ...body, sessionToken } : body),
     });
     if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-    return response.json();
+    const { sessionToken: next, ...data } = await response.json();
+    if (typeof next === "string") sessionToken = next;
+    return data as ApiResponse;
   }
 
   return {
     send: async (event) => {
+      if (event.kind === "start") sessionToken = null;
       const data = await post(event.kind === "start" ? event : { ...event, sessionId });
       sessionId = data.sessionId;
       return data;
     },
     agentView: async () => {
-      const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}`);
+      const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}`, { headers: tokenHeader() });
       if (!response.ok) throw new Error(`Request failed: ${response.status}`);
       return response.json();
     },
     report: async () => {
       if (!sessionId) return null;
-      const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}&view=report`);
+      const response = await request(`${API_URL}/api/sessions?sessionId=${sessionId}&view=report`, { headers: tokenHeader() });
       if (!response.ok) return null;
       return response.json();
     },
-    // Ends the session on the server, so its data is cleared.
+    // Ends the session on the server and forgets the encrypted copy, so its data is cleared.
     end: async () => {
       if (!sessionId) return null;
       const data = await post({ kind: "end", sessionId });
       sessionId = null;
+      sessionToken = null;
       return data;
     },
   };

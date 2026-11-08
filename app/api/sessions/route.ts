@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
+import { createJourneySession, getSession, endSession, sessionToken } from "../../../adapters/session-store";
 import { randomUUID } from "node:crypto";
 import { extractFacts, interpretInterviewAnswer, isSecurityConcern, replyToUser, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
@@ -32,7 +32,11 @@ const Talk = z.strictObject({ kind: z.literal("talk_to_person"), sessionId: z.st
 const Handoff = z.strictObject({ kind: z.literal("handoff"), sessionId: z.string().uuid(), approved: z.boolean() });
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
+  const raw = await request.json().catch(() => null);
+  // The encrypted session copy travels beside the event; the event schemas stay strict.
+  const isObject = raw !== null && typeof raw === "object" && !Array.isArray(raw);
+  const { sessionToken: token, ...rest } = isObject ? (raw as Record<string, unknown>) : {};
+  const body = isObject ? rest : raw;
   const start = Start.safeParse(body);
   if (start.success) {
     const { audience, message, incident } = start.data;
@@ -53,14 +57,15 @@ export async function POST(request: Request) {
       if (journey) await keepRealReport(journey, message);
       const response = journey ? present("pending", journey) : first;
       const sessionId = createJourneySession(journey as Journey);
-      return NextResponse.json({ ...(await respond(sessionId, journey, response, incident?.trim() ? `${message}\n${incident}` : message)), sessionId });
+      const answered = await respond(sessionId, journey, response, incident?.trim() ? `${message}\n${incident}` : message);
+      return NextResponse.json({ ...answered, sessionId, sessionToken: sessionToken(sessionId) });
     } catch {
       return NextResponse.json({ error: "analysis_failed" }, { status: 503 });
     }
   }
   const event = z.union([Answer, AnswerText, AddDetails, AiAnswer, Continue, Consent, Rescue, Handoff, Talk]).safeParse(body);
   if (event.success) {
-    const session = getSession(event.data.sessionId);
+    const session = getSession(event.data.sessionId, token);
     if (!session?.journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
     try {
       const { sessionId, ...payload } = event.data;
@@ -90,14 +95,15 @@ export async function POST(request: Request) {
       if (journey && (payload.kind === "add_details" || payload.kind === "ai_answer") && typed) await keepRealReport(journey, journey.input?.openingMessage ?? typed);
       session.journey = journey;
       const said = "text" in payload && payload.text ? payload.text : payload.kind === "answer" ? ({ yes: "Yes", no: "No", unsure: "Not sure" } as const)[payload.answer] : payload.kind === "ai_answer" && payload.answer ? ({ yes: "Yes", no: "No", unsure: "Not sure" } as const)[payload.answer] : null;
-      return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response, said));
+      const answered = await respond(sessionId, journey, journey ? present(sessionId, journey) : response, said);
+      return NextResponse.json({ ...answered, sessionToken: sessionToken(sessionId) });
     } catch {
       return NextResponse.json({ error: "invalid_event" }, { status: 409 });
     }
   }
   const end = End.safeParse(body);
   if (end.success) {
-    const session = getSession(end.data.sessionId);
+    const session = getSession(end.data.sessionId, token);
     if (!session?.journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
     const { response } = await handleEvent(end.data.sessionId, session.journey, { kind: "end" });
     endSession(end.data.sessionId);
@@ -228,7 +234,7 @@ async function personalise(journey: Journey | null, response: ApiResponse): Prom
 export async function GET(request: Request) {
   const sessionId = new URL(request.url).searchParams.get("sessionId");
   if (!sessionId || !z.string().uuid().safeParse(sessionId).success) return NextResponse.json({ error: "invalid_input" }, { status: 400 });
-  const journey = getSession(sessionId)?.journey;
+  const journey = getSession(sessionId, request.headers.get("x-session-token"))?.journey;
   if (!journey) return NextResponse.json({ error: "session_expired" }, { status: 404 });
   // The user's own decision report. It holds only what this session already has, with
   // secrets masked, so it needs no handoff approval.
