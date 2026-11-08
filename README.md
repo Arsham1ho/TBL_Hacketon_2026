@@ -44,7 +44,8 @@ Measured with the supplied evaluator v2.0.1. Details and caveats are in [Results
 | **Link and message check** | When someone says they received something, SafeStep asks them to paste it, opens any link safely on the server and gives it a 0–100 risk score. |
 | **Rescue Mode** | Step-by-step recovery for incidents that already happened, such as money sent or a code shared. |
 | **Signal Unlock** | Uses simulated DNA data (SIM changes, logins, device findings) only after consent, and only when it would change the advice. |
-| **Human handoff** | Hands the case to the right person (bank, operator agent, security specialist, police) with a summary the user approves first. |
+| **Natural conversation** | Gemini replies to every message in the user's own terms and answers their questions in context. Every reply is checked: it can't contradict the steps, call anything safe unless the rules did, or ask for codes. |
+| **Talk to DNA** | "Talk to a person" opens DNA Customer Service by chat or call-back, with a case number and a summary the user approves before it's sent. The bank or police are shown as extra contacts when they're the ones who can act. |
 | **Decision report** | A record of what was understood, what was decided and why, with sources. |
 | **Plans** | A demo switch showing how DNA could package the service. Safety advice is free on every plan. |
 

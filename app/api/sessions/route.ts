@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createJourneySession, getSession, endSession } from "../../../adapters/session-store";
 import { randomUUID } from "node:crypto";
-import { extractFacts, interpretInterviewAnswer, isSecurityConcern, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
+import { extractFacts, interpretInterviewAnswer, isSecurityConcern, replyToUser, llmAvailable, nextQuestion, phraseQuestion, rankQuestions } from "../../../adapters/llm";
 import { questionText } from "../../../engine/composer";
 import { isTriage, pickFlip } from "../../../engine/question-picker";
 import { UNCLEAR } from "../../../engine/situations";
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       if (journey) await keepRealReport(journey, message);
       const response = journey ? present("pending", journey) : first;
       const sessionId = createJourneySession(journey as Journey);
-      return NextResponse.json({ ...(await respond(sessionId, journey, response)), sessionId });
+      return NextResponse.json({ ...(await respond(sessionId, journey, response, incident?.trim() ? `${message}\n${incident}` : message)), sessionId });
     } catch {
       return NextResponse.json({ error: "analysis_failed" }, { status: 503 });
     }
@@ -89,7 +89,8 @@ export async function POST(request: Request) {
       }
       if (journey && (payload.kind === "add_details" || payload.kind === "ai_answer") && typed) await keepRealReport(journey, journey.input?.openingMessage ?? typed);
       session.journey = journey;
-      return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response));
+      const said = "text" in payload && payload.text ? payload.text : payload.kind === "answer" ? ({ yes: "Yes", no: "No", unsure: "Not sure" } as const)[payload.answer] : payload.kind === "ai_answer" && payload.answer ? ({ yes: "Yes", no: "No", unsure: "Not sure" } as const)[payload.answer] : null;
+      return NextResponse.json(await respond(sessionId, journey, journey ? present(sessionId, journey) : response, said));
     } catch {
       return NextResponse.json({ error: "invalid_event" }, { status: 409 });
     }
@@ -105,11 +106,35 @@ export async function POST(request: Request) {
   return NextResponse.json({ error: "invalid_input" }, { status: 400 });
 }
 
-async function respond(sessionId: string, journey: Journey | null, response: ApiResponse): Promise<ApiResponse> {
+async function respond(sessionId: string, journey: Journey | null, response: ApiResponse, said: string | null = null): Promise<ApiResponse> {
   const asked = await interview(sessionId, journey, response);
   // An AI question needs no ranking or rewording, which keeps each turn to two LLM calls.
-  if (asked.screen.type === "ask") return asked;
-  return personalise(journey, await rankTriage(sessionId, journey, asked));
+  const final = asked.screen.type === "ask" ? asked : await personalise(journey, await rankTriage(sessionId, journey, asked));
+  return { ...final, chat: await converse(journey, final, said) };
+}
+
+// The model's own reply to what the user just said, so the chat reads like a conversation.
+// It only explains the rules' decision; the screens below it still carry the actions.
+async function converse(journey: Journey | null, response: ApiResponse, said: string | null): Promise<string | null> {
+  if (!journey || !said?.trim() || !llmAvailable()) return null;
+  const { screen, state } = response;
+  if (screen.type === "fallback" || screen.type === "end" || screen.type === "describe") return null;
+  const masked = guardInput(said).userText;
+  const decision = assess(journey.item, journey.asked);
+  const nextQuestion = screen.type === "flip" ? screen.question : screen.type === "ask" ? screen.question : null;
+  const chat = await replyToUser({
+    language: journey.item.language,
+    said: masked,
+    history: journey.chatLog ?? [],
+    status: state.status,
+    statusLabel: state.statusLabel ?? state.status,
+    likelyType: state.likelyType ?? null,
+    steps: decision.composed.steps,
+    reason: screen.type === "result" ? screen.reason : null,
+    nextQuestion,
+  });
+  journey.chatLog = [...(journey.chatLog ?? []), `User: ${masked}`, ...(chat ? [`SafeStep: ${chat}`] : [])].slice(-12);
+  return chat;
 }
 
 // While the report is unclear, the LLM writes the next question from the story and the
@@ -132,11 +157,19 @@ async function interview(sessionId: string, journey: Journey | null, response: A
     || (journey.item.facts.asksFor.length === 0 && journey.item.facts.userAlreadyDid.length === 0
       && journey.item.facts.evidence.length <= 2);
   if (unclear && lacksIncidentStory && !journey.interview?.length && !journey.flipHistory?.length) {
-    const question = {
+    // Gemini writes the first question from the user's own words. The fixed question is only a
+    // fallback for when the model fails, so a vague report still gets a sensible next step.
+    const opening = guardInput(journey.input.openingMessage, journey.input.incidentContent);
+    const asked = await nextQuestion({ story: [opening.userText, opening.maskedIncident].filter(Boolean).join("\n"), asked: [], language: journey.item.language, audience: journey.item.audience, facts: journey.item.facts, answers: journey.item.answers, unsure: journey.item.unsure, unknowns: [], summaryGaps: ["what happened", "what was requested", "what the person did"] }).catch(() => null);
+    if (asked && asked !== "done") {
+      journey.pendingAsk = { id: randomUUID().slice(0, 8), question: asked.question, topic: asked.topic, open: asked.open };
+      return present(sessionId, journey);
+    }
+    const question = (openingQuestion(`${journey.input.openingMessage}\n${journey.input.incidentContent ?? ""}`, journey.item.language) ?? {
       en: "What happened that made you concerned, without including codes or passwords?",
       fi: "Mitä tapahtui ja mikä huolestutti sinua ilman koodeja tai salasanoja?",
       sv: "Vad hände som gjorde dig orolig, utan att skriva koder eller lösenord?",
-    }[journey.item.language];
+    })[journey.item.language];
     journey.pendingAsk = { id: randomUUID().slice(0, 8), question, open: true };
     return present(sessionId, journey);
   }
@@ -224,4 +257,19 @@ function inferDemoScenario(text: string): (typeof DEMO_SCENARIOS)[number] {
   if (/(installed|asensin|installerade|downloaded|latasin).{0,40}(app|sovellu|program)|remote access|etäyhteys|fjärr/u.test(t)) return "device_issue";
   if (/(log ?in|sign-?in|kirjautu|inlogg).{0,40}(unknown|unfamiliar|abroad|spain|tuntemat|ulkomail|espanja|okänd|utlandet)|(unknown|unfamiliar|tuntemat|okänd).{0,30}(log ?in|kirjautu|inlogg)/u.test(t)) return "unknown_login";
   return "none";
+}
+
+// Without a model, the first question still fits what the user said. Each one asks for the
+// detail that decides the advice, never for codes or passwords.
+const OPENING: { pattern: RegExp; question: Record<Language, string> }[] = [
+  { pattern: /\b(won|win|winner|prize|lottery|giveaway|reward|inheritance)\b|voit|palkin|arvonta|perintö|vann|vinst|lotteri|\barv\b/iu, question: { en: "Did they ask you to pay a fee, click a link or share your details to claim it?", fi: "Pyydettiinkö sinua maksamaan maksu, avaamaan linkki tai antamaan tietojasi palkinnon saamiseksi?", sv: "Bad de dig betala en avgift, öppna en länk eller lämna uppgifter för att få vinsten?" } },
+  { pattern: /seed|recovery phrase|private key|wallet|crypto|bitcoin|siemenlause|lompako|krypto|seedfras|plånbok/iu, question: { en: "Has anyone asked for your seed phrase or private key, or has crypto already left your wallet?", fi: "Onko joku pyytänyt siemenlausettasi tai yksityistä avaintasi, vai onko kryptoa jo siirtynyt lompakostasi?", sv: "Har någon bett om din seedfras eller privata nyckel, eller har krypto redan lämnat din plånbok?" } },
+  { pattern: /account|log ?in|password|hacked|tili|kirjautu|salasan|hakkeroi|konto|inlogg|lösenord|hackad/iu, question: { en: "What happened with your account: a login you don't recognise, a password change, or are you locked out?", fi: "Mitä tilillesi tapahtui: tuntematon kirjautuminen, salasanan vaihto vai pääsetkö sisään ollenkaan?", sv: "Vad hände med ditt konto: en inloggning du inte känner igen, ett byte av lösenord, eller är du utelåst?" } },
+  { pattern: /call|called|phone|soitt|puhelu|ringde|samtal/iu, question: { en: "Who did the caller say they were, and what did they ask you to do?", fi: "Kuka soittaja sanoi olevansa, ja mitä hän pyysi sinua tekemään?", sv: "Vem sa uppringaren att de var, och vad bad de dig göra?" } },
+  { pattern: /pay|paid|money|transfer|invoice|maks|raha|siirs|lasku|betal|pengar|faktura/iu, question: { en: "Has any money already been sent, or are you being asked to pay?", fi: "Onko rahaa jo lähetetty, vai pyydetäänkö sinua maksamaan?", sv: "Har pengar redan skickats, eller blir du ombedd att betala?" } },
+  { pattern: /link|clicked|email|text|sms|message|linkki|klikkas|sähköpost|viesti|länk|klickade|mejl|meddelande/iu, question: { en: "What did the message ask you to do, and did you click or reply to it?", fi: "Mitä viestissä pyydettiin tekemään, ja klikkasitko tai vastasitko siihen?", sv: "Vad bad meddelandet dig göra, och klickade eller svarade du?" } },
+];
+
+function openingQuestion(text: string, language: Language): Record<Language, string> | null {
+  return OPENING.find((entry) => entry.pattern.test(text))?.question ?? null;
 }

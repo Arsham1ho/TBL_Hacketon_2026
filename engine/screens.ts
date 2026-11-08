@@ -83,6 +83,8 @@ export type ApiResponse = {
   radar?: { id: string; title: string; clue: string } | null;
   // What the link and message check found in content the user received.
   analysis?: ContentAnalysis | null;
+  // A short reply written by the model to what the user just said. Explains, never decides.
+  chat?: string | null;
 };
 
 // Requests the UI sends. Each one goes to the route named in ARCHITECTURE.md.

@@ -5,7 +5,7 @@ import type { Audience, Language, Risk, Status } from "../engine/types";
 // Past chats, kept only in this browser. Nothing here is sent anywhere. Messages are stored
 // exactly as the chat shows them, which already has codes and passwords masked.
 
-export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; analysis?: ApiResponse["analysis"] & object };
+export type HistoryItem = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; analysis?: ApiResponse["analysis"] & object; chat?: boolean };
 
 // The decision report saved with a finished chat, plus the risk after each update in the chat.
 export type SavedReport = DecisionReport & { timeline: Risk[] };

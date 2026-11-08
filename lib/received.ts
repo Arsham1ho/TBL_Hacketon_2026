@@ -3,6 +3,7 @@ import type { Language } from "../engine/types";
 // Spots a first message that says the user received a message, email or link but didn't
 // include it, so SafeStep can ask them to paste it before assessing.
 const RECEIVED = [
+  /\b(?:emailed|e-mailed|texted|messaged|dm'?d|whatsapped|sms'?d)\s+(?:me|us)\b/iu,
   /\b(?:got|get|getting|received?|recieved?|recived?|have|has|was sent|sent me|keep getting|i've got|came)\b[\s\S]{0,60}\b(?:texts?|sms|messages?|massages?|msg|e-?mails?|mails?|links?|dms?|whatsapp|letters?|invoices?)\b/iu,
   /\b(?:texts?|sms|messages?|massages?|e-?mails?|links?)\b[\s\S]{0,40}\b(?:arrived|came|sent to me|i got|i received)\b/iu,
   /\b(?:sain|saan|tuli|saapui|lähetettiin|lähetti)\b[\s\S]{0,60}(?:viesti|tekstiviesti|sähköposti|linkki|meili|sms|whatsapp|lasku)/iu,

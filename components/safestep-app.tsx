@@ -267,7 +267,7 @@ export const RICH_BUSINESS_SCENARIOS: AttackScenario[] = [
 ];
 
 // What has been said so far.
-type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; analysis?: ContentAnalysis };
+type Item = { from: "user" | "safestep"; text: string; assessment?: ApiResponse["state"]; analysis?: ContentAnalysis; chat?: boolean };
 
 const SettingsGroup = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="grid gap-1">
@@ -351,6 +351,7 @@ export function SafeStepApp() {
   const [plansOpen, setPlansOpen] = useState<Plan | true | false>(false);
   // The locked feature that opened the sheet, so it can say what upgrading unlocks right now.
   const [planReason, setPlanReason] = useState<Feature | undefined>();
+  const [channel, setChannel] = useState<"chat" | "call">("chat");
   const [reportAfterUpgrade, setReportAfterUpgrade] = useState(false);
   useEffect(() => setPlan(loadPlan()), []);
   function openPlans(highlight?: Plan, feature?: Feature) {
@@ -537,6 +538,11 @@ export function SafeStepApp() {
       setItems((previous) => [...previous, { from: "safestep", text: next.state.statusLabel ?? status, assessment: next.state }]);
     }
     lastStatus.current = status ?? lastStatus.current;
+    // The model's reply to what the user said, shown as a chat message before the next step.
+    if (next.chat) {
+      const chat = next.chat;
+      setItems((previous) => [...previous, { from: "safestep", text: chat, chat: true }]);
+    }
     // The link and message check is shown once, and again only if a new link was checked.
     if (next.analysis) {
       const key = JSON.stringify(next.analysis.links.map((link) => link.url)) + next.analysis.message.length;
@@ -953,8 +959,10 @@ export function SafeStepApp() {
     openReport: report ? () => setReportOpen(true) : undefined,
     plan,
     showPlans: openPlans,
+    channel,
+    setChannel,
   };
-  const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null)) : screenTurn(response, actions);
+  const turn = busy || failed || !response ? null : agent ? agentTurn(agent, response.state, actions, () => setAgent(null), response.language) : screenTurn(response, actions);
   const replies: Reply[] = failed
     ? [
         { label: t("tryAgain"), primary: true, run: () => void send(failed) },
@@ -1010,6 +1018,13 @@ export function SafeStepApp() {
           {items.map((item, index) =>
             item.assessment ? (
               <AssessmentNote key={index} state={item.assessment} t={t} />
+            ) : item.chat ? (
+              <div key={index} className="flex max-w-[92%] items-start gap-2.5 motion-safe:animate-[fade-up_.3s_ease-out]">
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-accent" aria-hidden>
+                  <StepMark className="size-4 text-foreground" />
+                </span>
+                <p className="rounded-2xl rounded-tl-sm bg-card px-3.5 py-2 leading-relaxed ring-1 ring-border-strong">{item.text}</p>
+              </div>
             ) : item.analysis ? (
               // Chats saved before the scored check have no risk level, so they're skipped.
               item.analysis.risk ? <LinkAnalysisCard key={index} analysis={item.analysis} language={shown} t={t} /> : null

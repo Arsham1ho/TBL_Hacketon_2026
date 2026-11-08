@@ -1,11 +1,13 @@
 import { hasFeature, planFor, signalFeature, PLAN_COPY, type Feature, type Plan } from "@/lib/plans";
-import { LockedNote, QueueChip } from "./plans";
+import { LockedNote } from "./plans";
+import type { Language } from "@/engine/types";
+import { DnaConnectedCard, DnaHandoffCard, dnaTeamName, sendLabel, dontShareLabel, type Channel } from "./dna-handoff";
 import type { ReactNode } from "react";
 import type { ApiRequest, ApiResponse, DataReceipt, Screen, SupportRoute } from "@/engine/screens";
 import type { Risk, Urgency } from "@/engine/types";
 import type { AgentPreview } from "@/lib/client";
 import type { TextKey, Translate } from "@/lib/ui-text";
-import { Lock, ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
+import { Lock, MessageCircle, ArrowUpRight, BadgeCheck, BookOpen, Database, Info, Target, Wallet, Headset, Hourglass, PenLine, Ban, Check, CircleQuestionMark, MessageCircleQuestionMark, SkipForward, SquarePen, Send, X, CircleCheck, Clock, CreditCard, Eye, FileText, KeyRound, Landmark, Link2Off, Phone, PhoneOff, Search, ShieldCheck, Siren, Smartphone, Tag, Trash, TriangleAlert, WifiOff, Zap } from "lucide-react";
 import { RiskGauge } from "./risk-gauge";
 import { BANKS, CARD_BLOCKING, OPERATORS, POLICE, providerById, type ProviderChoice, type ProviderKind } from "@/lib/providers";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,9 @@ type Actions = {
   // Voice mode leaves these out, so it isn't gated.
   plan?: Plan;
   showPlans?: (highlight?: Plan, feature?: Feature) => void;
+  // How the user wants to reach DNA Customer Service.
+  channel?: Channel;
+  setChannel?: (channel: Channel) => void;
 };
 
 const RISK_TEXT: Record<Risk, TextKey> = { none: "riskNone", low: "riskLow", medium: "riskMedium", high: "riskHigh", critical: "riskCritical" };
@@ -697,16 +702,26 @@ function AgentCard({ agent, state, t }: { agent: AgentPreview; state: ApiRespons
   );
 }
 
-export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t }: Actions, onContinue: () => void): Turn {
+export function agentTurn(agent: AgentPreview, state: ApiResponse["state"], { t, plan = "business", channel = "chat" }: Actions, onContinue: () => void, language: Language = "en"): Turn {
   return {
     recap: t(agent.route),
-    body: <AgentCard agent={agent} state={state} t={t} />,
+    body: (
+      <DnaConnectedCard
+        route={agent.route}
+        summary={agent.summary}
+        state={state}
+        language={language}
+        channel={channel}
+        priority={hasFeature(plan, "priority")}
+        agentView={<AgentCard agent={agent} state={state} t={t} />}
+      />
+    ),
     replies: [{ label: t("continue"), primary: true, run: onContinue }],
   };
 }
 
 export function screenTurn(response: ApiResponse, actions: Actions): Turn | null {
-  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport, plan = "business", showPlans = () => {} } = actions;
+  const { t, reply, handoff, restart, business, closed, close, stage, advance, confirmed, revealed, reveal, providers, choose, finish, ended, openReport, plan = "business", showPlans = () => {}, channel = "chat", setChannel = () => {} } = actions;
   const planText = PLAN_COPY[response.language];
   const { screen, state } = response;
   // A person is offered only when the risk is critical, or the rules found the case needs
@@ -818,18 +833,13 @@ export function screenTurn(response: ApiResponse, actions: Actions): Turn | null
       };
     }
     case "handoff": {
-      const recap = t("handoffTitle");
+      const recap = dnaTeamName(response.language, screen.route);
       return {
         recap,
-        body: (
-          <>
-            <QueueChip priority={hasFeature(plan, "priority")} language={response.language} />
-            <HandoffCard screen={screen} state={state} t={t} />
-          </>
-        ),
+        body: <DnaHandoffCard screen={screen} state={state} language={response.language} priority={hasFeature(plan, "priority")} channel={channel} onChannel={setChannel} />,
         replies: [
-          { label: t("approve"), primary: true, run: () => handoff(recap, t("approve"), true) },
-          { label: t("dontShare"), run: () => handoff(recap, t("dontShare"), false) },
+          { label: sendLabel(response.language, channel), primary: true, icon: channel === "chat" ? <MessageCircle className="size-4" aria-hidden /> : <Phone className="size-4" aria-hidden />, run: () => handoff(recap, sendLabel(response.language, channel), true) },
+          { label: dontShareLabel(response.language), run: () => handoff(recap, dontShareLabel(response.language), false) },
         ],
       };
     }
