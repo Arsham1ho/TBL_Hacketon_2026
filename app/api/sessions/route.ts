@@ -39,12 +39,13 @@ export async function POST(request: Request) {
     const language = start.data.language === "auto" ? detectLanguage(message, start.data.fallbackLanguage ?? "fi") : start.data.language;
     try {
       const llm = llmAvailable();
-      const demo = demoSignalsFor(start.data.demoScenario ?? "none");
+      const scenario = start.data.demoScenario ?? inferDemoScenario(`${message}\n${incident ?? ""}`);
+      const demo = demoSignalsFor(scenario);
       // Links in what the user received are opened and checked before the rules run.
       const analysis = await analyzeContent(incident ?? "", message, language).catch(() => null);
       const linkVerdict = analysis && analysis.links.length ? (demo.visible.linkVerdict ? worse(demo.visible.linkVerdict, analysis.verdict) : analysis.verdict) : demo.visible.linkVerdict;
       const hasLink = demo.visible.hasLink || Boolean(analysis?.links.length) || /https?:\/\/|www\./iu.test(incident ?? "");
-      const { journey, response: first } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: start.data.demoScenario ?? "none", input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink, linkVerdict }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
+      const { journey, response: first } = await handleEvent("pending", null, { kind: "start", sentToLlm: llm, extractor: llm ? extractFacts : undefined, demoScenario: scenario, input: { audience, language, openingMessage: message, incidentContent: incident ?? null, incidentChannel: null, signals: { ...demo.visible, hasLink, linkVerdict }, consent: { requires: [...new Set([...demo.gated, ...(start.data.demoSignals ?? [])])], preGranted: [] } } });
       if (journey && analysis) {
         journey.analysis = analysis;
         if (journey.input) journey.input = { ...journey.input, signals: { ...journey.input.signals, hasLink, linkVerdict } };
@@ -211,4 +212,16 @@ export async function GET(request: Request) {
 async function keepRealReport(journey: Journey, text: string) {
   if (journey.awaitingDetails !== "off_topic" || !llmAvailable()) return;
   if (await isSecurityConcern(text)) journey.awaitingDetails = undefined;
+}
+
+// The demo has no scenario picker, so the simulated DNA data that fits the report is chosen
+// from its words. Every signal stays synthetic and is still only read after consent.
+function inferDemoScenario(text: string): (typeof DEMO_SCENARIOS)[number] {
+  const t = text.toLowerCase();
+  if (/(operator|operaattori|operatör|dna|elisa|telia).{0,80}(code|koodi|kod)|(code|koodi|kod).{0,80}(operator|operaattori|operatör)/u.test(t)) return "sim_change";
+  if (/e-?sim|\bsim\b|no signal|lost (signal|service|coverage)|number (transfer|port)|ei kenttää|kenttä|numeron siirto|täckning|nummerflytt/u.test(t)) return "sim_change";
+  if (/(former|ex-?)\s?(employee|staff)|entinen työntekijä|tidigare anställd/u.test(t)) return "business_access";
+  if (/(installed|asensin|installerade|downloaded|latasin).{0,40}(app|sovellu|program)|remote access|etäyhteys|fjärr/u.test(t)) return "device_issue";
+  if (/(log ?in|sign-?in|kirjautu|inlogg).{0,40}(unknown|unfamiliar|abroad|spain|tuntemat|ulkomail|espanja|okänd|utlandet)|(unknown|unfamiliar|tuntemat|okänd).{0,30}(log ?in|kirjautu|inlogg)/u.test(t)) return "unknown_login";
+  return "none";
 }
