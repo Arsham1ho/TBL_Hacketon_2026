@@ -14,9 +14,17 @@ For consumers and small businesses, in Finnish, English and Swedish.
 ![Unsafe statements](https://img.shields.io/badge/unsafe%20statements-0%25-2ea44f)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**[Demo video](#demo)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Results](#results)** · **[Business model](BUSINESS.md)**
+**[Live demo](https://tblhacketon2026.vercel.app)** · **[Screenshots](#screenshots)** · **[Quick start](#quick-start)** · **[How it works](#how-it-works)** · **[Results](#results)** · **[Business model](BUSINESS.md)**
 
 Built for the **DNA challenge** at the **Since AI Hackathon 2026**, Turku, 6–8 November.
+
+<br/>
+
+<img src="docs/screenshots/02-stop.png" alt="Stop screen: a caller is asking for a code right now" width="250"/>&nbsp;&nbsp;
+<img src="docs/screenshots/03-link-check.png" alt="Link and message check with a 100/100 risk score" width="250"/>&nbsp;&nbsp;
+<img src="docs/screenshots/05-rescue.png" alt="Rescue Mode: contact your bank first" width="250"/>
+
+<sub><b>Stop the harm</b> &nbsp;·&nbsp; <b>Check the link</b> &nbsp;·&nbsp; <b>Recover step by step</b></sub>
 
 </div>
 
@@ -28,6 +36,7 @@ Built for the **DNA challenge** at the **Since AI Hackathon 2026**, Turku, 6–8
 ## Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Safety boundaries](#safety-boundaries)
@@ -64,12 +73,56 @@ People get warnings about suspicious calls, messages and logins all the time, bu
 
 | | |
 |---|---|
+| 🌐 **Live demo** | [tblhacketon2026.vercel.app](https://tblhacketon2026.vercel.app) |
 | 🎬 **Demo video** | _Add the link here before submitting_ |
 | 📋 **Results (organisers' template)** | [RESULTS.md](RESULTS.md) |
 | 📊 **Evaluation detail** | [eval/RESULTS.md](eval/RESULTS.md) |
 | 🔒 **Safety contract** | [DECISIONS.md](DECISIONS.md) |
 | 🏗️ **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | 💼 **Business hypothesis** | [BUSINESS.md](BUSINESS.md) |
+
+---
+
+## Screenshots
+
+<sub>Taken from the live demo on a phone-sized screen (390 × 844).</sub>
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/01-start.png" alt="Start screen" width="240"/><br/>
+      <b>1. Describe what happened</b><br/>
+      <sub>One open question, in Finnish, English or Swedish, by text or voice.</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/02-stop.png" alt="Stop screen" width="240"/><br/>
+      <b>2. Stop the harm first</b><br/>
+      <sub>A caller asking for a code right now gets a Stop screen before anything else.</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/03-link-check.png" alt="Link and message check" width="240"/><br/>
+      <b>3. Link and message check</b><br/>
+      <sub>The link is opened safely on the server and scored 0–100, with the warning signs explained.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/04-decision-flip.png" alt="Decision Flip question" width="240"/><br/>
+      <b>4. Decision Flip</b><br/>
+      <sub>Only the question that would change the advice, with Yes, No and Not sure.</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/05-rescue.png" alt="Rescue Mode" width="240"/><br/>
+      <b>5. Rescue Mode</b><br/>
+      <sub>Money already sent: one recovery step at a time, starting with the bank.</sub>
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/06-plans.png" alt="Plans sheet" width="240"/><br/>
+      <b>6. Plans</b><br/>
+      <sub>How DNA could package it. Safety help is free on every plan.</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -126,7 +179,18 @@ flowchart LR
     F -- no --> O[Composer<br/>approved text in fi, en, sv]
     O --> X[Output Guard<br/>blocks unsafe or unapproved text]
     X --> A[Answer, Rescue Mode<br/>or human handoff]
+
+    classDef guard fill:#b42318,stroke:#7a1810,color:#fff
+    classDef llm fill:#6941c6,stroke:#42307d,color:#fff
+    classDef rules fill:#1570ef,stroke:#1849a9,color:#fff
+    classDef out fill:#067647,stroke:#054f31,color:#fff
+    class G,X guard
+    class R,L llm
+    class V,D,F,Q rules
+    class O,A out
 ```
+
+<sub>🟥 Guards &nbsp; 🟪 Reading (LLM and link check) &nbsp; 🟦 Deterministic rules &nbsp; 🟩 Output</sub>
 
 | # | Stage | What it does |
 |:-:|---|---|
@@ -136,6 +200,37 @@ flowchart LR
 | 4 | **Decision rules** | Choose the status, risk, urgency, action and human destination. The LLM can't set any of these. |
 | 5 | **Decision Flip** | Asks a question only when Yes and No lead to different advice. |
 | 6 | **Composer + Output Guard** | Builds the reply only from approved text, and blocks anything unsafe before it is shown. |
+
+### A journey, step by step
+
+What happens when someone says *"A caller from my bank wants the code I just got"*:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant A as SafeStep app
+    participant E as Engine (rules)
+    participant L as LLM
+    U->>A: "A caller from my bank wants the code I just got"
+    A->>E: Masked text
+    E-->>A: Live danger detected (Fast Danger Check, no LLM wait)
+    A-->>U: 🛑 Stop. Don't read out any code. End the call.
+    U->>A: "I've stopped"
+    A->>L: Read the facts
+    L-->>E: Facts, each with a quote from the user
+    E->>E: Rules choose action. Decision Flip: does any answer change it?
+    E-->>A: "Did you read out the code?"  Yes / No / Not sure
+    U->>A: Not sure
+    E-->>A: Advice that covers both answers, with sources
+    A-->>U: Contact your bank via its official app or number
+    opt User wants help
+        U->>A: Talk to a person
+        A-->>U: Summary to review first
+        U->>A: Approve
+        A->>A: Simulated handoff to DNA Customer Service
+    end
+```
 
 ---
 
@@ -248,9 +343,36 @@ Add `USE_LLM=1` to `eval:dev` to use the LLM instead of keywords. Results are ca
 | Consent violations | — | 0% | **0.0%** |
 | Weighted brief proxy | 67.1 | 80+ | **92.6** |
 
-**Brief criteria (automated proxy):** correctness 91.5 · clarity 96.4 · uncertainty and escalation 90.0 · privacy and consent 93.1
+```mermaid
+xychart-beta
+    title "SafeStep vs the supplied rules baseline (higher is better)"
+    x-axis ["Safe-action pass", "Escalation recall", "Decisive question", "Weighted score"]
+    y-axis "Score (%)" 0 --> 100
+    bar [60.5, 47.0, 70.0, 67.1]
+    bar [91.2, 90.9, 93.3, 92.6]
+```
+
+<sub>Left bar in each pair: supplied rules baseline. Right bar: SafeStep. False alarms also fell, from 28.0% to 9.8%.</sub>
+
+### Brief criteria (automated proxy)
+
+| Criterion | Weight | Score | |
+|---|---:|---:|---|
+| Security advice and correctness | 25% | **91.5** | `██████████████████░░` |
+| Clarity for both audiences | 20% | **96.4** | `███████████████████░` |
+| Uncertainty and escalation | 20% | **90.0** | `██████████████████░░` |
+| Privacy and consent | 15% | **93.1** | `███████████████████░` |
+| Working implementation | 20% | judged by people | |
 
 ### By journey
+
+```mermaid
+xychart-beta
+    title "Safe-action pass by journey (%)"
+    x-axis ["Breach notice", "Suspicious message", "Clicked link", "Small business", "Suspicious call"]
+    y-axis "Pass (%)" 0 --> 100
+    bar [98.3, 97.4, 94.0, 82.1, 81.9]
+```
 
 | Journey | Cases | Safe-action pass |
 |---|---:|---:|
@@ -352,6 +474,7 @@ components/     UI: chat turns, link check card, plans sheet, report, voice mode
 engine/         Rules, Decision Flip, fact reading, composer, guards
 adapters/       LLM, link scanner, simulated DNA signals, handoff, session store, voice
 content/        Approved text in Finnish, English and Swedish
+docs/           README screenshots
 lib/            Client API, mock users, plans, UI text
 eval/           Evaluation runners, scenarios and RESULTS.md
 review/         Safety review and comprehension check sheets
@@ -374,6 +497,7 @@ tests/          Unit and attack-hardening tests
 
 ## Known limits
 
+- Sessions are kept in server memory. On the hosted demo, a follow-up answer can land on a different serverless instance and fail with "Something went wrong"; locally it works. A shared session store would fix this.
 - The link check reaches the open internet from the server. In production it should run in an isolated network.
 - Plans are a demo switch with hypothesis prices, not billing.
 - Finnish and Swedish text still needs review by native speakers.
