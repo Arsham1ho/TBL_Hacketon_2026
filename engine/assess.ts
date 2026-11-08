@@ -56,6 +56,13 @@ export async function intake(input: CaseInput, extract: Extractor = offlineExtra
   if (facts.incidentType === "data_breach_notice" && facts.dataExposed.includes("password") && !exposureClaim.test(`${guarded.userText}\n${guarded.maskedIncident ?? ""}`)) {
     facts = { ...facts, dataExposed: facts.dataExposed.filter(value => value !== "password"), evidence: facts.evidence.filter(entry => entry.fact !== "dataExposed") };
   }
+  // "Asks for nothing" needs evidence: the pasted message itself, or the user saying so.
+  // A short report that simply doesn't mention a request ("I won something") is unknown, not
+  // harmless, so the model can't make it look safe by leaving the request out.
+  const saysNothingAsked = /asks? for nothing|asked for nothing|didn'?t ask (me )?for anything|no links?\b|in the app|as usual|ei pyyd|ei pyytänyt|ei kysynyt|sovelluksessa|kuten tavallisesti|ber inte om|bad inte om|i appen|som vanligt/iu;
+  if (facts.asksNothing === true && !guarded.maskedIncident?.trim() && !saysNothingAsked.test(guarded.userText)) {
+    facts = { ...facts, asksNothing: null, evidence: facts.evidence.filter(entry => entry.fact !== "asksNothing") };
+  }
   // A request to disclose a code is not evidence that the user disclosed it.
   // Explicit first-person denial wins over an extracted quote from the request.
   if (/\b(?:i (?:have not|haven't|did not|didn't|never) (?:shared|given|read out|sent|typed)|en (?:ole )?(?:jakanut|antanut|kertonut|syöttänyt)|jag har inte (?:delat|gett|läst upp|skickat))\b.{0,25}\b(?:code|pin|koodi|koodia|kod|it)\b/iu.test(guarded.userText)) {
