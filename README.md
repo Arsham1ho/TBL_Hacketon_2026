@@ -277,7 +277,7 @@ Other runs:
 <details>
 <summary>Review status</summary>
 
-- Safety review: a manual review by a team member rated 18 of 20 sampled answers safe, 2 incomplete and none unsafe; both incomplete answers were fixed afterwards ([details](eval/RESULTS.md)). The sheet for the human review is in [review/](review/README.md).
+- Safety review: a manual review by a team member rated 18 of 20 sampled answers safe and 2 incomplete; after fixing those, all 20 were re-scored safe, none unsafe ([details](eval/RESULTS.md)). The sheet for the human review is in [review/](review/README.md).
 - Comprehension: the test with people outside the team is set up in [review/comprehension-check.md](review/comprehension-check.md).
 
 </details>

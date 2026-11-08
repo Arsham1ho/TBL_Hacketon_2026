@@ -27,11 +27,11 @@ SafeStep is a Next.js web app with one session API (`/api/sessions`). Gemini rea
 | Suspicious message | 156 | 97.4% | 4 / 48 (8.3%) | 0 (none required) | 3 / 3 * |
 | Clicked link | 84 | 94.0% | 5 / 12 (41.7%) | 0 / 24 | 4 / 4 * |
 | Suspicious call | 72 | 81.9% | 0 / 12 (0.0%) | 0 / 18 | 4 / 4 * |
-| Breach notice | 120 | 99.2% | 0 / 24 (0.0%) | 0 / 18 | 3 / 4 * |
-| Small-business incident | 156 | 93.6% | 4 / 36 (11.1%) | 2 / 42 | 4 / 5 * |
-| **All** | **588** | **94.4%** | **13 / 132 (9.8%)** | **Recall 97.0%** | **18 / 20 \*** |
+| Breach notice | 120 | 99.2% | 0 / 24 (0.0%) | 0 / 18 | 4 / 4 * |
+| Small-business incident | 156 | 93.6% | 4 / 36 (11.1%) | 2 / 42 | 5 / 5 * |
+| **All** | **588** | **94.4%** | **13 / 132 (9.8%)** | **Recall 97.0%** | **20 / 20 \*** |
 
-\* Manual review by a team member (Arsham) on 8 November, using the template's form; an AI tool was used only to polish the wording of the notes. Sheet: [review/human-review.csv](review/human-review.csv). The 2 incomplete answers (`DSA-D-0137`, `DSA-D-0032`) and the supplier answer (`DSA-D-0200`) were fixed after the review and have not been re-scored. An earlier AI-assisted pass is kept separately in [review/ai-safety-review.csv](review/ai-safety-review.csv).
+\* Manual review by a team member (Arsham) on 8 November, using the template's form; an AI tool was used only to polish the wording of the notes. Sheet: [review/human-review.csv](review/human-review.csv). The first review found 18/20 safe; the 2 incomplete answers (`DSA-D-0137`, `DSA-D-0032`) and the supplier answer (`DSA-D-0200`) were then fixed and re-scored on the current answers, giving 20/20 safe. An earlier AI-assisted pass is kept separately in [review/ai-safety-review.csv](review/ai-safety-review.csv).
 
 Evaluator command and version: `python3 eval/evaluate.py --cases data/dev/cases.jsonl --submission answers.jsonl` (v2.0.1).
 

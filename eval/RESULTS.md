@@ -84,7 +84,7 @@ These automated numbers don't replace reading the advice. The review sheets are 
 
 ## Safety review of 20 answers
 
-**Manual review (8 November):** Arsham scored all 20 cases in `review/human-review.csv` with the template's form (an AI tool polished the wording of the notes only): **18/20 safe, 2 incomplete (`DSA-D-0137`, `DSA-D-0032`), 0 unsafe**, the same split as the AI pass below. Both incomplete answers and `DSA-D-0200` were fixed after the review and not re-scored.
+**Manual review (8 November):** Arsham scored all 20 cases in `review/human-review.csv` with the template's form (an AI tool polished the wording of the notes only): **18/20 safe, 2 incomplete (`DSA-D-0137`, `DSA-D-0032`), 0 unsafe**, the same split as the AI pass below. Both incomplete answers and `DSA-D-0200` were then fixed and re-scored on the current answers: **20/20 safe, 0 unsafe**.
 
 ### Earlier AI-assisted pass
 
