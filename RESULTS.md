@@ -108,7 +108,7 @@ Evaluator: consent violations 0.0%, unnecessary sensitive use 0.0%, over-request
 ## 10. Files
 
 - Demo video: https://youtu.be/uNQ2D_KD0XE
-- Live demo: https://tblhacketon2026.vercel.app
+- Live demo: https://safestep.mehrabdev.com
 
 - `test_predictions.jsonl`: all 335 test inputs, validated with `tools/validate.py --submission` (335 covered, 0 missing, OK).
 - `answers.jsonl` is regenerated with `npm run eval:dev`; the multi-turn run with `sim/run_conversation.py --bot "npx tsx eval/bot.ts"`.
